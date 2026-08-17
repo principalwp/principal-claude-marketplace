@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<!--
+  Example page built from invented data (a fictional Northwind notification-settings
+  redesign) for the Principal WP htmlizer gallery — a showcase of the compare-and-flip
+  view type. No real commits, tickets, or people are represented. House style via base.css.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notification preferences redesign — Option A vs Option B</title>
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzhDMzM0NCIvPjxwYXRoIGQ9Ik0zMCAyMiBINTggYTE4IDE4IDAgMCAxIDAgMzYgSDQyIFY3OCBIMzAgWiBNNDIgMzMgVjQ3IEg1NiBhNyA3IDAgMCAwIDAgLTE0IFoiIGZpbGw9IiNmZmYiLz48L3N2Zz4=">
+<link rel="stylesheet" href="base.css">
+<style>
+/* ---- page-specific layout on top of base.css (house style) ---- */
+
+.reco-line{margin:0 0 var(--space-4)}
+
+.flip-toggle{display:flex;gap:8px;margin:0 0 var(--space)}
+
+.compare-surface{margin-bottom:var(--space)}
+
+.overlay-swap{display:none;gap:8px;margin-bottom:var(--space-2)}
+.compare-surface.is-overlay .overlay-swap{display:flex}
+
+.compare-surface.is-sidebyside .cmp{display:grid;grid-template-columns:1fr 1fr;gap:var(--space)}
+@media (max-width:700px){.compare-surface.is-sidebyside .cmp{grid-template-columns:1fr}}
+.compare-surface.is-overlay .cmp{display:block}
+.compare-surface.is-overlay .option-panel{display:none}
+.compare-surface.is-overlay .option-panel.is-shown{display:block}
+
+.option-panel h2{font-size:18px;margin:0 0 14px}
+
+.mock-ui{border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface-2);
+  padding:4px 16px;margin-bottom:var(--space-2)}
+.mock-group{padding:10px 0;border-top:1px solid var(--border)}
+.mock-group:first-child{border-top:none}
+.mock-group-head label,.mock-group-head{display:flex;align-items:center;gap:8px;
+  font-weight:600;color:var(--ink);margin-bottom:2px}
+.mock-row{padding:3px 0 3px 26px;font-size:14.5px}
+.mock-row label{display:flex;align-items:center;gap:8px;font-weight:400;color:var(--text)}
+
+.whatdiffers{margin-bottom:var(--space-2)}
+.whatdiffers h4{margin:0 0 8px}
+.whatdiffers p{font-size:14.5px;margin:0 0 8px}
+.whatdiffers p:last-child{margin-bottom:0}
+
+.option-json{margin-bottom:var(--space-2)}
+.option-json .step-label{font-family:var(--font-mono);font-size:12.5px;font-weight:600;
+  color:var(--text-muted);margin-bottom:4px}
+
+.panel-pick{margin-top:var(--space-2);padding-top:14px;border-top:1px solid var(--border)}
+
+.escape-hatch{border:1px solid var(--border-strong);border-radius:var(--r-lg);padding:20px;
+  margin:0 0 var(--space-4)}
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <h1>Notification preferences redesign — pick a layout</h1>
+  <p class="lede">Two ways to reorganize the notification settings page. Flip between side by side and one at a time to compare them, then say which one should ship.</p>
+</header>
+
+<main class="wrap">
+
+<p class="reco reco-line">Recommended: <strong>Option B — grouped by event type</strong> <span class="why" tabindex="0">(why)<span class="why-pop">Support has logged several tickets where a customer thought they'd turned off all security alerts by unchecking just one channel. Option B puts every channel for an event in one place, so that mistake is harder to make.</span></span></p>
+
+<div class="flip-toggle" role="group" aria-label="Layout">
+  <button type="button" class="btn btn-secondary flip-btn is-selected" data-mode="sidebyside" aria-pressed="true">Side by side</button>
+  <button type="button" class="btn btn-secondary flip-btn" data-mode="overlay" aria-pressed="false">One at a time</button>
+</div>
+
+<div class="compare-surface is-sidebyside" id="compare-surface">
+
+  <div class="overlay-swap" role="group" aria-label="Show option">
+    <button type="button" class="btn btn-secondary btn-sm swap-btn is-selected" data-show="a" aria-pressed="true">Option A</button>
+    <button type="button" class="btn btn-secondary btn-sm swap-btn" data-show="b" aria-pressed="false">Option B</button>
+  </div>
+
+  <div class="cmp">
+
+    <div class="option-panel card is-shown" data-option="by-channel" id="panel-a">
+      <h2>Option A — Grouped by channel</h2>
+
+      <div class="mock-ui">
+        <div class="mock-group">
+          <div class="mock-group-head"><input type="checkbox" checked disabled> <strong>Email</strong></div>
+          <div class="mock-row"><label><input type="checkbox" checked disabled> Order updates</label></div>
+          <div class="mock-row"><label><input type="checkbox" disabled> Promotions &amp; offers</label></div>
+          <div class="mock-row"><label><input type="checkbox" checked disabled> Security alerts</label></div>
+        </div>
+        <div class="mock-group">
+          <div class="mock-group-head"><input type="checkbox" disabled> <strong>SMS</strong></div>
+          <div class="mock-row"><label><input type="checkbox" disabled> Order updates</label></div>
+          <div class="mock-row"><label><input type="checkbox" disabled> Promotions &amp; offers</label></div>
+          <div class="mock-row"><label><input type="checkbox" checked disabled> Security alerts</label></div>
+        </div>
+        <div class="mock-group">
+          <div class="mock-group-head"><input type="checkbox" checked disabled> <strong>Push notifications</strong></div>
+          <div class="mock-row"><label><input type="checkbox" checked disabled> Order updates</label></div>
+          <div class="mock-row"><label><input type="checkbox" checked disabled> Promotions &amp; offers</label></div>
+          <div class="mock-row"><label><input type="checkbox" checked disabled> Security alerts</label></div>
+        </div>
+      </div>
+
+      <div class="whatdiffers">
+        <h4>What differs</h4>
+        <p><span class="pos">+</span> Matches the grouping already used on the Team Settings page — familiar to anyone who's changed a setting there before.</p>
+        <p><span class="pos">+</span> The API response shape is flat, one object per channel — the existing mobile app already reads this shape, so shipping this needs no mobile client changes.</p>
+        <p><span class="neg">&minus;</span> Turning off "order shipped" emails means scanning three separate channel sections to find every place email touches an order update.</p>
+        <p><span class="neg">&minus;</span> Security alerts can be muted per channel without the other channels being visible at the same time — support has flagged tickets where a customer thought unchecking Email under Security also silenced SMS.</p>
+      </div>
+
+      <div class="option-json">
+        <div class="step-label">API response shape — GET /account/notification-preferences</div>
+        <pre><code>{
+  <span class="tok-str">"email"</span>: { <span class="tok-str">"enabled"</span>: <span class="tok-kw">true</span>, <span class="tok-str">"order_updates"</span>: <span class="tok-kw">true</span>, <span class="tok-str">"promotions"</span>: <span class="tok-kw">false</span>, <span class="tok-str">"security_alerts"</span>: <span class="tok-kw">true</span> },
+  <span class="tok-str">"sms"</span>: { <span class="tok-str">"enabled"</span>: <span class="tok-kw">false</span>, <span class="tok-str">"order_updates"</span>: <span class="tok-kw">false</span>, <span class="tok-str">"promotions"</span>: <span class="tok-kw">false</span>, <span class="tok-str">"security_alerts"</span>: <span class="tok-kw">true</span> },
+  <span class="tok-str">"push"</span>: { <span class="tok-str">"enabled"</span>: <span class="tok-kw">true</span>, <span class="tok-str">"order_updates"</span>: <span class="tok-kw">true</span>, <span class="tok-str">"promotions"</span>: <span class="tok-kw">true</span>, <span class="tok-str">"security_alerts"</span>: <span class="tok-kw">true</span> }
+}</code></pre>
+      </div>
+
+      <div class="panel-pick">
+        <button type="button" class="btn btn-secondary prefer-btn" data-option-id="by-channel">Prefer this</button>
+        <div class="reveal"><textarea class="reveal-box note-box" rows="2" placeholder="Notes for Claude (optional)"></textarea></div>
+      </div>
+    </div>
+
+    <div class="option-panel card" data-option="by-event" id="panel-b">
+      <h2>Option B — Grouped by event type</h2>
+
+      <div class="mock-ui">
+        <div class="mock-group">
+          <div class="mock-group-head"><strong>Order updates</strong></div>
+          <div class="mock-row"><label><input type="checkbox" checked disabled> Email</label></div>
+          <div class="mock-row"><label><input type="checkbox" disabled> SMS</label></div>
+          <div class="mock-row"><label><input type="checkbox" checked disabled> Push notifications</label></div>
+        </div>
+        <div class="mock-group">
+          <div class="mock-group-head"><strong>Promotions &amp; offers</strong></div>
+          <div class="mock-row"><label><input type="checkbox" disabled> Email</label></div>
+          <div class="mock-row"><label><input type="checkbox" disabled> SMS</label></div>
+          <div class="mock-row"><label><input type="checkbox" checked disabled> Push notifications</label></div>
+        </div>
+        <div class="mock-group">
+          <div class="mock-group-head"><strong>Security alerts</strong></div>
+          <div class="mock-row"><label><input type="checkbox" checked disabled> Email</label></div>
+          <div class="mock-row"><label><input type="checkbox" checked disabled> SMS</label></div>
+          <div class="mock-row"><label><input type="checkbox" checked disabled> Push notifications</label></div>
+        </div>
+      </div>
+
+      <div class="whatdiffers">
+        <h4>What differs</h4>
+        <p><span class="pos">+</span> Security alerts render as one section with every channel visible together — a customer can't half-disable them without seeing what's still on.</p>
+        <p><span class="pos">+</span> Each event type reads as a single decision ("how do I want to hear about order updates?") instead of three separate channel decisions.</p>
+        <p><span class="neg">&minus;</span> The API response shape nests by event first, then channel — the opposite of what the mobile app currently parses, so mobile needs a rewrite before this can ship there.</p>
+        <p><span class="neg">&minus;</span> Without a mobile rewrite, this would need to launch web-only first, which splits the settings experience across platforms for a while.</p>
+      </div>
+
+      <div class="option-json">
+        <div class="step-label">API response shape — GET /account/notification-preferences</div>
+        <pre><code>{
+  <span class="tok-str">"order_updates"</span>: { <span class="tok-str">"email"</span>: <span class="tok-kw">true</span>, <span class="tok-str">"sms"</span>: <span class="tok-kw">false</span>, <span class="tok-str">"push"</span>: <span class="tok-kw">true</span> },
+  <span class="tok-str">"promotions"</span>: { <span class="tok-str">"email"</span>: <span class="tok-kw">false</span>, <span class="tok-str">"sms"</span>: <span class="tok-kw">false</span>, <span class="tok-str">"push"</span>: <span class="tok-kw">true</span> },
+  <span class="tok-str">"security_alerts"</span>: { <span class="tok-str">"email"</span>: <span class="tok-kw">true</span>, <span class="tok-str">"sms"</span>: <span class="tok-kw">true</span>, <span class="tok-str">"push"</span>: <span class="tok-kw">true</span> }
+}</code></pre>
+      </div>
+
+      <div class="panel-pick">
+        <button type="button" class="btn btn-secondary prefer-btn" data-option-id="by-event">Prefer this</button>
+        <div class="reveal"><textarea class="reveal-box note-box" rows="2" placeholder="Notes for Claude (optional)"></textarea></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="escape-hatch">
+  <button type="button" class="btn btn-secondary" id="other-btn">Other — neither</button>
+  <div class="reveal" id="other-reveal"><textarea class="reveal-box" id="other-box" rows="2" placeholder="Describe what should ship instead"></textarea></div>
+</div>
+
+</main>
+
+<script src="capture.js"></script>
+<script>
+window.CAPTURE_SUBMIT_URL = ""; /* static example page - feedback falls back to the clipboard */
+
+(function () {
+  'use strict';
+
+  var OPTION_IDS = ['by-channel', 'by-event', 'other'];
+
+  Capture.init({ view: 'compare-and-flip', total: 2 });
+  Capture.setMeta({ compareProposal: { agent: 'by-event', label: 'Option B — grouped by event type' } });
+
+  function currentPick() {
+    var items = Capture.payload().items;
+    for (var i = 0; i < items.length; i++) {
+      if (OPTION_IDS.indexOf(items[i].id) !== -1) { return items[i]; }
+    }
+    return null;
+  }
+
+  function pick(id, value, note) {
+    var prev = currentPick();
+    if (prev && prev.id === id) {
+      Capture.unmark(id);
+    } else {
+      if (prev) { Capture.unmark(prev.id); }
+      var opts = {};
+      if (note) { opts.note = note; }
+      Capture.mark(id, value, opts);
+    }
+  }
+
+  // ---- flip toggle: side by side <-> overlay (view mode only, not captured) ----
+  var surface = document.getElementById('compare-surface');
+  var flipBtns = document.querySelectorAll('.flip-btn');
+  for (var f = 0; f < flipBtns.length; f++) {
+    flipBtns[f].addEventListener('click', function (e) {
+      var mode = e.currentTarget.getAttribute('data-mode');
+      surface.classList.toggle('is-sidebyside', mode === 'sidebyside');
+      surface.classList.toggle('is-overlay', mode === 'overlay');
+      for (var i = 0; i < flipBtns.length; i++) {
+        var sel = flipBtns[i] === e.currentTarget;
+        flipBtns[i].classList.toggle('is-selected', sel);
+        flipBtns[i].setAttribute('aria-pressed', sel ? 'true' : 'false');
+      }
+    });
+  }
+
+  // ---- overlay-only A/B swap (view mode only, not captured) ----
+  var panelA = document.getElementById('panel-a');
+  var panelB = document.getElementById('panel-b');
+  var swapBtns = document.querySelectorAll('.swap-btn');
+  for (var s = 0; s < swapBtns.length; s++) {
+    swapBtns[s].addEventListener('click', function (e) {
+      var show = e.currentTarget.getAttribute('data-show');
+      panelA.classList.toggle('is-shown', show === 'a');
+      panelB.classList.toggle('is-shown', show === 'b');
+      for (var i = 0; i < swapBtns.length; i++) {
+        var sel = swapBtns[i] === e.currentTarget;
+        swapBtns[i].classList.toggle('is-selected', sel);
+        swapBtns[i].setAttribute('aria-pressed', sel ? 'true' : 'false');
+      }
+    });
+  }
+
+  // ---- Prefer this / Other — the one captured decision ----
+  var preferBtns = document.querySelectorAll('.prefer-btn');
+  for (var p = 0; p < preferBtns.length; p++) {
+    preferBtns[p].addEventListener('click', function (e) {
+      var id = e.currentTarget.getAttribute('data-option-id');
+      var panel = e.currentTarget.closest('.option-panel');
+      var noteBox = panel.querySelector('.note-box');
+      pick(id, 'prefer', noteBox ? noteBox.value : '');
+    });
+  }
+
+  document.getElementById('other-btn').addEventListener('click', function () {
+    var box = document.getElementById('other-box');
+    pick('other', 'other', box.value);
+  });
+
+  var noteBoxes = document.querySelectorAll('.note-box');
+  for (var n = 0; n < noteBoxes.length; n++) {
+    noteBoxes[n].addEventListener('input', function (e) {
+      var panel = e.currentTarget.closest('.option-panel');
+      var id = panel.getAttribute('data-option');
+      var cur = currentPick();
+      if (cur && cur.id === id) { Capture.mark(id, 'prefer', { note: e.currentTarget.value }); }
+    });
+  }
+
+  document.getElementById('other-box').addEventListener('input', function (e) {
+    var cur = currentPick();
+    if (cur && cur.id === 'other') { Capture.mark('other', 'other', { note: e.currentTarget.value }); }
+  });
+
+  function render() {
+    var cur = currentPick();
+
+    ['by-channel', 'by-event'].forEach(function (id) {
+      var panel = document.querySelector('.option-panel[data-option="' + id + '"]');
+      var btn = panel.querySelector('.prefer-btn');
+      var reveal = panel.querySelector('.reveal');
+      var selected = !!(cur && cur.id === id);
+      panel.classList.toggle('is-selected', selected);
+      btn.classList.toggle('is-selected', selected);
+      btn.classList.toggle('btn-primary', selected);
+      btn.classList.toggle('btn-secondary', !selected);
+      btn.textContent = selected ? '✓ Preferred' : 'Prefer this';
+      reveal.classList.toggle('is-open', selected);
+    });
+
+    var otherSelected = !!(cur && cur.id === 'other');
+    document.getElementById('other-btn').classList.toggle('is-selected', otherSelected);
+    document.getElementById('other-reveal').classList.toggle('is-open', otherSelected);
+
+    Capture.rollup(cur ? (cur.id === 'other' ? 'request_changes' : 'approve') : null);
+  }
+
+  Capture.onChange(render);
+  render();
+
+  Capture.setGate(function () {
+    var cur = currentPick();
+    if (!cur) { return { ok: false, reason: 'Pick an option or choose Neither.', focus: '#compare-surface' }; }
+    if (cur.id === 'other' && !(cur.note && cur.note.trim())) {
+      return { ok: false, reason: 'Describe what should ship instead.', focus: '#other-box' };
+    }
+    return { ok: true };
+  });
+})();
+</script>
+</body>
+</html>

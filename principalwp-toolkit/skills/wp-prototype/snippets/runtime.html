@@ -1,0 +1,104 @@
+<!-- Runtime behaviours that work in every shell, classic and wpds alike.
+     All opt-in: nothing here fires unless the data- attribute is present. -->
+
+
+<!-- ============ Value swapping ============
+     One control rewrites many bits of text in the same screen. Use for unit
+     systems, currencies, plan tiers, logged-in vs logged-out copy — anywhere
+     the reviewer's real question is "what does this look like for the other
+     kind of user?" and building a second screen would be overkill.
+
+     The control's value ("f", "c") becomes the attribute name (data-f, data-c),
+     so values must be lowercase letters/numbers with no spaces.
+
+     Scope is the enclosing <section data-screen>, so variants never cross-wire. -->
+
+<div class="components-toggle-group-control" data-swap-control="units" role="radiogroup" aria-label="Units">
+	<label><input type="radio" name="a-units" value="f" checked><span>°F</span></label>
+	<label><input type="radio" name="a-units" value="c"><span>°C</span></label>
+</div>
+
+<!-- …and anywhere in the same screen: -->
+<p>It is <span data-swap="units" data-f="54°F" data-c="12°C">54°F</span> right now,
+   wind <span data-swap="units" data-f="9 mph" data-c="14 km/h">9 mph</span>.</p>
+
+<!-- A <select> works the same way — the runtime reads its .value. -->
+<select class="components-select-control__input" data-swap-control="plan">
+	<option value="free">Free</option>
+	<option value="pro">Pro</option>
+</select>
+<span data-swap="plan" data-free="3 sites" data-pro="Unlimited sites">3 sites</span>
+
+
+<!-- ============ Control → canvas ============
+     Wire a control ONLY when the design question depends on watching it move —
+     a toggle that makes a row appear, a field whose length breaks a layout.
+     Everywhere else a fixed, realistic value is better: it is honest about
+     being a mockup, and simulating the rest is how a prototype quietly turns
+     into a half-built feature. If something needs real computation, don't.
+
+     Scoped to the enclosing screen, same as swapping. -->
+
+<!-- Text field echoing into the block -->
+<div class="components-base-control">
+	<label class="components-base-control__label" for="ctrl-head">Heading</label>
+	<input type="text" id="ctrl-head" class="components-text-control__input"
+	       data-mirror="heading" value="This week in Portland">
+</div>
+<h2 data-mirror-target="heading" data-mirror-empty="Untitled">This week in Portland</h2>
+
+<!-- Prefix/suffix live on the target, so one field can feed several places -->
+<span data-mirror-target="heading" data-mirror-prefix="“" data-mirror-suffix="”"></span>
+
+<!-- Toggle showing/hiding part of the block -->
+<label class="components-toggle-control">
+	<span class="components-form-toggle"><input type="checkbox" checked data-reveals="caption"><span class="components-form-toggle__track"></span><span class="components-form-toggle__thumb"></span></span>
+	<span class="components-toggle-control__label">Show captions</span>
+</label>
+<figcaption data-reveal="caption">Cannon Beach at low tide</figcaption>
+
+
+<!-- ============ Viewport preview ============
+     Narrows the page inside the canvas the way Gutenberg's View menu does, so a
+     layout that breaks at phone width breaks in front of the reviewer instead of
+     in production. Already wired into shells/block-editor.html.
+
+     It narrows .editor-canvas__paper by default; in a shell that has no paper,
+     put data-viewport-paper on whatever should shrink. -->
+
+<button class="components-button is-tertiary is-pressed" data-viewport="desktop">Desktop</button>
+<button class="components-button is-tertiary" data-viewport="tablet">Tablet</button>
+<button class="components-button is-tertiary" data-viewport="mobile">Mobile</button>
+
+
+<!-- ============ Charts ============
+     A small trend chart with no library. Colour follows the element's own
+     `color`, so it inherits whatever the surrounding block uses.
+
+       data-chart          required, comma-separated numbers (2+)
+       data-chart-type     area (default) | line | bars
+       data-chart-height   px, default 80
+       data-chart-labels   comma-separated x-axis labels
+       data-chart-values   present = print each value on the chart
+       data-chart-suffix   appended to printed values, e.g. "°"
+
+     Anything already inside the element is replaced. -->
+
+<div data-chart="48,49,50,52,53,54,56,57,58,58,57,56"
+     data-chart-type="area"
+     data-chart-height="90"
+     data-chart-values
+     data-chart-suffix="°"
+     data-chart-labels="6 AM,7,8,9,10,11,Noon,1 PM,2,3,4,5"
+     style="color:#3858e9"></div>
+
+<!-- Sparkline: no labels, no values, short. -->
+<div data-chart="12,19,14,22,28,24,31" data-chart-type="bars" data-chart-height="28"
+     style="color:#3858e9; width:80px"></div>
+
+<!-- A chart can also be a swap target — it redraws with the other unit's
+     numbers instead of having its text replaced. -->
+<div data-chart="48,50,53,56,58,57" data-chart-values data-chart-suffix="°"
+     data-swap="units"
+     data-f="48,50,53,56,58,57"
+     data-c="9,10,12,13,14,14"></div>

@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<!--
+  Example page built from invented data (a fictional Northwind checkout-api pull request) for the Principal WP htmlizer gallery.
+  No real commits, tickets, repositories, or people are represented. House style via base.css.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Code review — NW-420, idempotency keys on the order endpoint (c0d47f1)</title>
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzhDMzM0NCIvPjxwYXRoIGQ9Ik0zMCAyMiBINTggYTE4IDE4IDAgMCAxIDAgMzYgSDQyIFY3OCBIMzAgWiBNNDIgMzMgVjQ3IEg1NiBhNyA3IDAgMCAwIDAgLTE0IFoiIGZpbGw9IiNmZmYiLz48L3N2Zz4=">
+<link rel="stylesheet" href="base.css">
+<style>
+/* ---- page-specific layout on top of base.css (house style) ---- */
+
+/* plain meta line — now lives INSIDE .page-header (above its bottom rule) so the
+   rule separates the whole header (title + lede + meta) from the body. Mono, NOT pills. */
+.metaline{margin:16px 0 0;font-family:var(--font-mono);font-size:13px;color:var(--text-muted);display:flex;flex-wrap:wrap;gap:4px 18px}
+.metaline b{color:var(--ink);font-weight:600}
+
+/* top view switcher uses the base .tabs/.tab component verbatim (visible
+   bordered boxes; cranberry selected). Only POSITION it within the page
+   measure — no appearance overrides here. */
+.viewtabs{max-width:var(--maxw);margin:var(--space) auto 0;padding:0 24px}
+
+/* persistent cross-tab "required answers outstanding" line under the tabs */
+.outstanding{max-width:var(--maxw);margin:10px auto 0;padding:0 24px;font-family:var(--font-mono);font-size:13px;font-weight:600}
+.outstanding.neg{color:var(--error)}
+.outstanding .where{color:var(--text-muted);font-weight:400}
+
+main{max-width:var(--maxw);margin:0 auto;padding:var(--space) 24px var(--space-4)}
+.view[hidden]{display:none}
+.viewhead{margin-bottom:var(--space)}
+.viewhead h2{margin:0 0 6px}
+.viewhead p{margin:0;max-width:74ch;color:var(--text)}
+
+/* ---- View A: flowchart ---- */
+.flow-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:var(--space);align-items:start}
+@media(max-width:900px){.flow-grid{grid-template-columns:1fr}}
+.flow-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+.flow-toolbar{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--border);background:var(--surface-2)}
+.flow-toolbar .hint{font-size:14px;color:var(--text)}
+.flow-toolbar .hint b{color:var(--ink);font-weight:600}
+.flow-count{font-family:var(--font-mono);font-size:12.5px;color:var(--text-muted);padding:9px 16px;border-bottom:1px solid var(--border)}
+.mermaid-host{height:540px;overflow:hidden;background:var(--surface)}
+.mermaid-host svg{max-width:none}
+.node.node-hot>rect,.node.node-hot>polygon,.node.node-hot>path{stroke:var(--accent)!important;stroke-width:2.4px!important}
+.node.node-flag>rect,.node.node-flag>polygon,.node.node-flag>path{stroke:var(--accent)!important;stroke-width:2.4px!important;fill:var(--accent-wash)!important}
+/* hover affordance so unselected nodes visibly invite a click (reinforces the toolbar hint) */
+.mermaid-host .node{cursor:pointer}
+.mermaid-host .node:not(.node-hot):not(.node-flag):hover>rect,
+.mermaid-host .node:not(.node-hot):not(.node-flag):hover>polygon,
+.mermaid-host .node:not(.node-hot):not(.node-flag):hover>path{stroke:var(--border-strong)!important;stroke-width:2px!important}
+
+.detail{position:sticky;top:16px}
+.detail .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;min-height:420px}
+.detail .steplabel{font-family:var(--font-mono);font-size:12.5px;color:var(--text-muted)}
+.detail h3{margin:6px 0 4px}
+.detail .role{font-size:13.5px;color:var(--text-muted);margin:0 0 4px}
+.detail .guard{font-family:var(--font-mono);font-size:12px;color:var(--text-faint);margin:0 0 14px}
+.detail .body{font-size:var(--fs-body);color:var(--text)}
+.detail .body p{margin:0 0 12px}
+.detail .body strong{color:var(--ink);font-weight:600}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin:14px 0;font-size:13.5px}
+.kv dt{font-family:var(--font-mono);font-size:12.5px;color:var(--text-muted);white-space:nowrap}
+.kv dd{margin:0;color:var(--text)}
+/* the functions and tables a stage touches render as a plain mono comma-list,
+   NOT boxed chips (no pills) */
+.calls-line{font-family:var(--font-mono);font-size:12.5px;color:var(--text-muted);margin-top:6px;line-height:1.5}
+.calls-line .lab{color:var(--text-faint)}
+
+/* per-node feedback rendered as a LIVE callout (dynamic — reacts to selection) */
+.cap-block{margin-top:18px}
+.cap-block .callout-q{margin:0 0 12px}
+/* the per-node reason box uses the shared .reveal / .reveal-box (base.css) */
+
+/* ---- View B: PR diff ---- */
+.pr-grid{display:grid;grid-template-columns:1fr 320px;gap:var(--space);align-items:start}
+@media(max-width:900px){.pr-grid{grid-template-columns:1fr}}
+/* expand: diff takes the risk map's place (full width); the risk map (DOM-after the
+   diff card) reflows BELOW it. Toggle restores the two-column layout. */
+.pr-grid.expanded{grid-template-columns:1fr}
+
+/* Claude's lean — reference-only context at the top of this view (no decision
+   control here). The overall verdict is DERIVED from the per-item calls made
+   elsewhere on the page (open questions, per-hunk/per-node flags, the draft
+   PR-description call) — never a separate pick; see recomputeVerdict() below
+   and PRINCIPLES.md "No standalone overall verdict". */
+.claude-proposal{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px;margin-bottom:var(--space)}
+.claude-proposal .callout-q{font-weight:600;margin:0 0 8px}
+.claude-proposal p{font-size:var(--fs-body);margin:0 0 10px}
+.claude-proposal p:last-child{margin-bottom:0}
+.diff-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+/* file tabs reuse the base .tabs/.tab component, so every file renders as an
+   identical visible tab box (selected = solid cranberry). Scope only their
+   position inside the diff card. */
+.diff-card .tabs{margin:0;padding:var(--space-1) var(--space-1) 0}
+.diff-bar{display:flex;align-items:center;gap:14px;padding:9px 14px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:12.5px;color:var(--text-muted);flex-wrap:wrap}
+.diff-bar .path{color:var(--text)}
+.diff-bar .meter{margin-left:auto}
+.diff-bar label{display:inline-flex;align-items:center;gap:7px;font-family:var(--font-sans);font-size:13.5px;font-weight:400;color:var(--text);cursor:pointer;margin:0}
+.diff{font-family:var(--font-mono);font-size:12.5px;line-height:1.55;overflow-x:auto}
+/* Each row sizes to its own content (max-content last column + width:max-content) so the
+   colored background always extends to the full width of the line's text — it can never
+   stop short on horizontal scroll. min-width:100% keeps short rows full-bleed. */
+.drow{display:grid;grid-template-columns:44px 44px 18px max-content;white-space:pre;border-left:3px solid transparent;width:max-content;min-width:100%}
+.drow .ln{color:var(--text-faint);text-align:right;padding:1px 8px 1px 0;user-select:none;font-size:11px}
+.drow .gut{color:var(--text-faint);text-align:center;user-select:none}
+.drow .txt{padding-right:14px}
+.drow.add{background:#EAF4E0;border-left-color:#83B94F}
+.drow.add .gut{color:var(--success);font-weight:700}   /* unambiguous + addition */
+.drow.del{background:#FBE9E9;border-left-color:#DD8A8A}
+.drow.del .gut{color:var(--error);font-weight:700}   /* unambiguous - deletion (real negative) */
+.drow.hunk{background:var(--surface-2);color:var(--text-muted)}
+/* dim context lines via a muted color, not opacity (keeps text contrast legible) */
+.drow.ctx.dim .txt{color:var(--text-faint)}
+.tk-code{color:var(--text-muted)}
+.tk-bold{color:var(--ink);font-weight:600}
+
+/* Claude's inline review comment (verbatim, read-only). Rendered as a standalone
+   full-width block (NOT a .drow) so its prose wraps normally and never inflates the
+   diff's max-content scroll width. */
+/* sticky left:0 pins the full-width wash/control backgrounds to the viewport-left so
+   they always fill the visible area regardless of horizontal scroll position — they
+   never stop short on the right when a long diff line forces overflow-x scroll. */
+.inline-comment{display:block;position:sticky;left:0;white-space:normal;background:var(--accent-wash);border-left:3px solid var(--accent);padding:12px 16px;font-family:var(--font-sans);font-size:var(--fs-body);color:var(--text)}
+.inline-comment .who{font-weight:600;color:var(--ink)}
+.inline-comment .who .role{font-family:var(--font-mono);font-size:12px;color:var(--text-muted);font-weight:400;margin-left:8px}
+.inline-comment p{margin:6px 0 0;max-width:80ch}
+.inline-comment code{background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:1px 4px;font-size:12px}
+
+/* per-hunk control: single Accept/Flag + optional comment */
+.hctl{grid-column:1/-1;position:sticky;left:0;white-space:normal;display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:9px 14px;background:var(--surface);border-bottom:1px solid var(--border)}
+.hctl-lab{font-family:var(--font-mono);font-size:12px;color:var(--text-muted);margin-right:4px}
+/* per-hunk reason box: shared .reveal / .reveal-box (base.css) handles show/hide;
+   only the flex-row span is page-specific. */
+.hcmt{flex-basis:100%}
+
+/* side panel */
+.side{position:sticky;top:16px}
+.side .card{margin-bottom:18px}
+.side h3{margin:0 0 var(--space-2)}
+.risk-row{padding:11px 0;border-top:1px solid var(--border)}
+.risk-row:first-of-type{border-top:none}
+.risk-row .rf{font-family:var(--font-mono);font-size:12.5px;color:var(--ink);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.risk-row .rd{font-size:13.5px;color:var(--text);margin-top:4px}
+.risk-row .lc{font-family:var(--font-mono);font-size:11.5px;color:var(--text-faint);margin-top:3px}
+/* severity = plain valence-colored text, NOT a chip (no border/padding/radius) */
+.sev{font-family:var(--font-mono);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.warn{color:var(--warning);font-weight:600}
+.risk-note{font-size:12.5px;color:var(--text);margin:0 0 12px}
+/* risk-map filenames: clickable ONLY when the file is actually rendered in the diff;
+   non-openable files are plainly labelled so nothing looks clickable with nothing to open. */
+.risk-row .rf-open{font-family:var(--font-mono);font-size:12.5px;color:var(--accent);background:none;border:0;padding:0;margin:0;cursor:pointer;text-decoration:underline;text-underline-offset:2px;text-align:left}
+.risk-row .rf-open:hover{color:var(--accent-hover)}
+.risk-row .rf-name{font-family:var(--font-mono);font-size:12.5px;color:var(--ink)}
+/* "not in this diff" = plain muted text, not a boxed chip */
+.risk-row .rf-na{font-family:var(--font-mono);font-size:11.5px;color:var(--text-faint);white-space:nowrap}
+.vbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+/* "Request changes" reveals a "what to change" box on selection (escape-hatch, never a
+   dead-end negative control); hidden until request_changes is picked. Uses the shared
+   .reveal / .reveal-box (base.css). */
+
+/* ---- View C: writeup ---- */
+.wu-grid{display:grid;grid-template-columns:1fr 300px;gap:26px;align-items:start}
+@media(max-width:900px){.wu-grid{grid-template-columns:1fr}}
+/* lead-in paragraph: emphasis via WEIGHT only — base body size, no wrapper shrink. */
+.lead{color:var(--ink);font-weight:600;margin:0 0 14px}
+.tour{list-style:none;padding:0;margin:0}
+.tour li{padding:12px 0;border-top:1px solid var(--border);display:grid;grid-template-columns:1fr auto;gap:4px 14px}
+.tour li:first-child{border-top:none}
+.tour .tour-path{font-family:var(--font-mono);font-size:13px;color:var(--ink)}
+.tour .tour-path .tour-new{color:var(--success);font-weight:600}
+.tour .tour-desc{grid-column:1;font-size:var(--fs-body);color:var(--text)}
+.tour .tour-stat{font-family:var(--font-mono);font-size:12px;color:var(--text-faint);white-space:nowrap}
+/* Open questions: one pre-opened answer box per question. Each question is a
+   .callout (small label + big .callout-q); every box carries a required cue and
+   routes its answer through window.Capture. No collapse, no "flag section" blob. */
+.qlist{display:block}
+.qlist .qbox{margin:0 0 var(--space-2)}
+.qbox .callout-q{margin:0 0 8px}
+.qbox .qmeta{font-size:13.5px;color:var(--text);margin:0 0 6px}
+.qbox .qlean{font-family:var(--font-mono);font-size:12.5px;color:var(--text-muted);margin:0 0 12px}
+.qbox label{display:flex;align-items:baseline;gap:10px;justify-content:space-between}
+.qbox textarea{min-height:64px}
+.ba{border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;margin:6px 0 0}
+.ba-head{display:flex;border-bottom:1px solid var(--border)}
+.ba-head div{flex:1;padding:8px 16px;font-family:var(--font-mono);font-size:12px}
+.ba-head .b{color:var(--error);border-right:1px solid var(--border)}
+.ba-head .a{color:var(--success)}
+.ba-body{display:grid;grid-template-columns:1fr 1fr}
+@media(max-width:560px){.ba-body{grid-template-columns:1fr}}
+.ba-body pre{margin:0;border-radius:0;border:0;white-space:pre-wrap}
+.ba-body .before{border-right:1px solid var(--border)}
+
+/* The writeup IS the draft PR description: its only interaction is approve-as-PR-description
+   / request-changes (+ optional edit), not per-section annotation. */
+.prdesc-block{margin-top:var(--space-4)}
+/* the edit box is revealed only when "Request changes" is selected (escape-hatch:
+   a changes-request must offer a place to say what), not always-on. Uses the shared
+   .reveal / .reveal-box (base.css). */
+
+.glance dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:8px 14px;font-size:13.5px}
+.glance dt{font-family:var(--font-mono);font-size:12.5px;color:var(--text-muted)}
+.glance dd{margin:0;color:var(--ink)}
+.glance .follow{margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-family:var(--font-mono);font-size:12.5px;color:var(--text-muted)}
+
+/* toast uses the shared .toast / .toast.is-show (base.css) */
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <h1>A retried submit can no longer buy the cart twice</h1>
+  <p class="lede">Today <span class="mono">POST /checkout/orders</span> writes an order for every request that reaches it, so a double-click, a mobile network retry or the client's own auto-retry each buy the cart again. NW-420 puts a claim in front of the handler: the request carries an <span class="mono">Idempotency-Key</span>, a unique index picks exactly one caller to run the write, and everyone else is handed that caller's answer.</p>
+  <div class="metaline">
+    <span>commit <b>c0d47f1</b></span>
+    <span>ticket <b>NW-420</b></span>
+    <span><b>8</b> files</span>
+    <span><b class="pos">+548</b> / <b class="neg">&minus;46</b></span>
+    <span>tests <b>284/284</b></span>
+    <span>migration <b>0042</b></span>
+  </div>
+</header>
+
+<nav class="tabs viewtabs" role="tablist" aria-label="Review views">
+  <button class="tab" id="tab-questions" role="tab" aria-controls="view-questions" aria-selected="true">Open questions</button>
+  <button class="tab" id="tab-pr" role="tab" aria-controls="view-pr" aria-selected="false">PR diff</button>
+  <button class="tab" id="tab-flow" role="tab" aria-controls="view-flow" aria-selected="false">Annotated flow</button>
+  <button class="tab" id="tab-writeup" role="tab" aria-controls="view-writeup" aria-selected="false">Draft PR description</button>
+</nav>
+<p class="outstanding" id="outstanding-line" role="status" aria-live="polite"></p>
+
+<main>
+
+  <!-- ============ VIEW 1 (DEFAULT): OPEN QUESTIONS ============ -->
+  <!-- The most actionable content: the decisions the reviewer needs before NW-420 can close.
+       First tab, open by default. -->
+  <section class="view" id="view-questions" role="tabpanel" aria-labelledby="tab-questions">
+    <div class="viewhead">
+      <h2>Open questions &mdash; each needs your explicit answer</h2>
+      <p>Four decisions are still needed before the enforcement flag can be turned on for any client. Each one needs an answer recorded &mdash; type it in its box. Claude's lean is only a starting point, not the answer.</p>
+    </div>
+    <div class="qlist" id="open-questions" aria-label="Open design questions"><!-- answer boxes injected by JS --></div>
+  </section>
+
+  <!-- ============ VIEW A: FLOWCHART ============ -->
+  <section class="view" id="view-flow" role="tabpanel" aria-labelledby="tab-flow" hidden>
+    <div class="viewhead">
+      <h2>What a submit does now, branch by branch</h2>
+      <p>Seventeen stages, from the header check at intake to a 201, a replay, a 409, a 422 or a plain 5xx. The claim in the middle is a single insert; every branch downstream of it is a consequence of whether that insert landed. Click a stage to read what runs there and flag it for discussion.</p>
+    </div>
+    <div class="flow-grid">
+      <div class="flow-card">
+        <div class="flow-toolbar">
+          <span class="hint"><b>Click</b> any node for detail &middot; drag to pan &middot; scroll to zoom</span>
+          <span style="flex:1"></span>
+          <button class="btn btn-secondary btn-sm" id="flow-reset" type="button">Reset view</button>
+        </div>
+        <div class="flow-count" id="flow-count">0 stages flagged (optional)</div>
+        <div class="mermaid-host" id="mermaid-host" aria-label="Order submit flow, from the idempotency header check to a created order, a replay, a conflict, a rejection or an error"></div>
+      </div>
+      <div class="detail">
+        <div class="panel" id="detail-panel"><!-- filled by JS --></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ VIEW B: PR DIFF + REVIEW ============ -->
+  <section class="view" id="view-pr" role="tabpanel" aria-labelledby="tab-pr" hidden>
+    <div class="viewhead">
+      <h2>What changed, line by line</h2>
+      <p>The two modules the whole change turns on, both shown in full &mdash; six hunks between them &mdash; with a risk map and Claude's inline review comments anchored to the lines they question. Switch files; for each hunk, accept it or flag it and add an optional comment.</p>
+    </div>
+
+    <!-- Claude's lean: reference-only context, immediately under the lede. No
+         decision control here — the overall verdict is DERIVED from the itemized
+         calls elsewhere on the page, never a separate pick. No eyebrow labels. -->
+    <div class="claude-proposal">
+      <p class="reco">Claude leans: <strong>approve</strong>, with one condition <span class="why" tabindex="0">(why)<span class="why-pop">The claim itself cannot be raced — a unique index is doing the arbitration, not application code — and a thrown handler deletes its own row. The uncovered case is a process that dies mid-handler and leaves the key stranded.</span></span></p>
+      <p>Condition before the enforcement flag is turned on for any client &mdash; a killed pod leaves its key <span class="mono">in_flight</span> with nothing left alive to release it, and that customer's honest retries all get a 409 until the 24-hour sweep clears the row. Land the lease from NW-421 first, or keep enforcement off while this ships.</p>
+    </div>
+
+    <div class="pr-grid" id="pr-grid">
+      <div class="diff-card">
+        <div class="tabs" id="file-tabs" role="tablist"></div>
+        <div class="diff-bar">
+          <span class="path mono" id="diff-path"></span>
+          <label><input type="checkbox" id="dim-ctx" checked> dim context</label>
+          <span class="meter" id="pr-meter"></span>
+          <button type="button" class="btn btn-secondary btn-sm" id="diff-expand" aria-pressed="false" title="Expand the diff to full width">&#10530; Expand</button>
+        </div>
+        <div class="diff" id="diff-body"></div>
+      </div>
+      <aside class="side">
+        <div class="card">
+          <h3>Risk map</h3>
+          <p class="risk-note">The six files that carry risk, ordered by path. The other two &mdash; the session pass-through and the new test file &mdash; are left out. Files rendered in this diff are clickable; the rest are listed for blast-radius context only.</p>
+          <div id="risk-map"></div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============ VIEW C: WRITEUP ============ -->
+  <section class="view" id="view-writeup" role="tabpanel" aria-labelledby="tab-writeup" hidden>
+    <div class="viewhead">
+      <h2>Draft PR description</h2>
+      <p>This is the agent-drafted PR description that will go on the pull request &mdash; the argument for the change, the contract the endpoint now offers a client, and a file-by-file tour. Read it, then approve it as the PR description or request changes (with an optional edit). It is reference, not a place to annotate section by section.</p>
+    </div>
+    <div class="wu-grid">
+      <div>
+        <p class="lead">A double-click used to cost the customer twice. The endpoint wrote an order for every request that reached it, and the client could not tell a lost response from a failed submit &mdash; so it retried, and got a second order and a second capture. This change makes the second write unreachable.</p>
+
+        <h3>One insert decides who writes</h3>
+        <p>The whole scheme is a single statement. A request carrying an <span class="mono">Idempotency-Key</span> inserts a row into <span class="mono">idempotency_keys</span> with <span class="mono">ON CONFLICT (key, endpoint) DO NOTHING</span>, and the unique index picks the winner: a <span class="mono">rowCount</span> of 1 means this caller runs the handler, 0 means somebody else already is. Nothing reads the table first, on purpose &mdash; a read-then-write leaves a window that two simultaneous submits both walk straight through, and two simultaneous submits is precisely the case being defended against.</p>
+        <p>The loser is not made to queue. It reads the row that beat it and answers from what it finds: the stored response when the first request has finished, <span class="mono">409 request_in_flight</span> with a <span class="mono">Retry-After</span> when it has not, <span class="mono">422 idempotency_key_reused</span> when the fingerprint says this is a different request wearing the same key.</p>
+
+        <h3>What the fingerprint is for</h3>
+        <p>A key on its own would let a client reuse one key across two different carts and be handed the first cart's order both times. So the row also carries a SHA-256 of the <em>canonical</em> body &mdash; keys sorted, whitespace dropped &mdash; over the session id, the line items and the payment method id. Canonical rather than raw, because the web client and the mobile client serialise the same submit differently and both have to hash the same.</p>
+        <p>The fields left out of that hash are a deliberate and arguable choice. Shipping address and promo code are outside it, so a submit that changes only those hashes identically to the first one and is answered with the first one's order. Which fields belong in the fingerprint is one of the open questions.</p>
+
+        <h3>What happens when the handler fails</h3>
+        <p><span class="mono">createOrder</span> throwing is not a duplicate &mdash; nothing was written &mdash; so the key row is deleted and the original error goes back untouched. The customer's next attempt claims the key fresh and runs for real, which is the behaviour anyone would expect from a failed checkout.</p>
+        <p>That release only runs while the process is alive to run it. A pod killed between the claim and the response leaves its row <span class="mono">in_flight</span>, and the only thing that clears it is the 24-hour sweep; until then every retry from that customer gets a 409. NW-421 adds a short lease so a stale <span class="mono">in_flight</span> row can be re-claimed. Whether that lease has to land before enforcement is turned on is the review's one condition on this change.</p>
+
+        <h3>What the client sees now</h3>
+        <p>The response set is what an integrating client has to read, and it is the shortest statement of what this change costs them.</p>
+        <div class="ba">
+          <div class="ba-head"><div class="b">Before &middot; c0d47f1~1</div><div class="a">After &middot; c0d47f1</div></div>
+          <div class="ba-body">
+            <pre class="before">POST /checkout/orders
+
+  201  a new order
+  400  bad_request
+  404  session_not_found
+  5xx  the handler's own error
+
+The same submit sent twice:
+
+  201  a new order
+  201  a SECOND order</pre>
+            <pre class="after">POST /checkout/orders
+  Idempotency-Key: &lt;uuid&gt;
+
+  201  a new order
+  201  the same order, replayed,
+       with Idempotency-Replayed
+  409  request_in_flight,
+       plus Retry-After
+  422  idempotency_key_reused
+  400  idempotency_key_required
+       (only once the flag is on)</pre>
+          </div>
+        </div>
+        <p>A replay returns the stored status, which is <span class="mono">201</span>, plus an <span class="mono">Idempotency-Replayed: true</span> header. Whether a replay should answer <span class="mono">200</span> instead is a review note on the diff, not something this description settles.</p>
+
+        <h3>File tour</h3>
+        <ul class="tour">
+          <li><span class="tour-path"><span class="tour-new">+</span> migrations/0042_idempotency_keys.sql</span><span class="tour-stat">+47</span><span class="tour-desc">New table: key, endpoint, fingerprint, state, response, created_at, completed_at. The unique index on <span class="mono">(key, endpoint)</span> is the change; the rest is bookkeeping. Built concurrently.</span></li>
+          <li><span class="tour-path">src/checkout/idempotency.ts</span><span class="tour-stat">+59 / &minus;10</span><span class="tour-desc">Was an in-process LRU that deduped webhook deliveries inside one worker's lifetime. Now a durable claim table, with four exported steps: fingerprint, claim, record, release.</span></li>
+          <li><span class="tour-path">src/checkout/orders.ts</span><span class="tour-stat">+59 / &minus;7</span><span class="tour-desc">The endpoint. Fingerprint, claim, and four ways out of the branch: run the handler, replay the stored response, 409, or 422.</span></li>
+          <li><span class="tour-path">src/checkout/session.ts</span><span class="tour-stat">+18 / &minus;4</span><span class="tour-desc">Threads the key through to the order writer so a stored response can name the session it belongs to. No behaviour change.</span></li>
+          <li><span class="tour-path">src/http/errors.ts</span><span class="tour-stat">+34 / &minus;6</span><span class="tour-desc">Two new error shapes &mdash; 409 with a <span class="mono">Retry-After</span>, 422 with a detail string &mdash; plus the 400 the enforcement flag can raise.</span></li>
+          <li><span class="tour-path"><span class="tour-new">+</span> src/jobs/idempotency_sweep.ts</span><span class="tour-stat">+88</span><span class="tour-desc">Scheduled delete of rows past <span class="mono">KEY_TTL_HOURS</span>. Batches of 5000 with a pause between them, so a backlog cannot hold a lock on the table the claim path writes to.</span></li>
+          <li><span class="tour-path">src/webhooks/receiver.ts</span><span class="tour-stat">+22 / &minus;19</span><span class="tour-desc">Gives up its LRU and claims against the same table. Roughly six deliveries per order, each retried on failure, so this is what actually sets the table's write volume.</span></li>
+          <li><span class="tour-path"><span class="tour-new">+</span> tests/checkout/idempotency.test.ts</span><span class="tour-stat">+221</span><span class="tour-desc">31 cases: two concurrent claims on one key, byte-for-byte replay, fingerprint mismatch, a throwing handler, and a key re-claimed after the sweep has deleted it.</span></li>
+        </ul>
+
+        <div class="callout is-live prdesc-block" id="prdesc-block">
+          <p class="callout-q"><strong>Question:</strong> Use this as the pull request description?</p>
+          <p style="color:var(--text);font-size:14px;margin:0 0 10px">Approve it as-is, or request changes and (optionally) describe the edits you want. Open design questions live in the <b>Open questions</b> tab; this decision is only about the description text.</p>
+          <div class="vbtns" id="prdesc-verdict" role="group" aria-label="Draft PR description decision">
+            <button type="button" class="btn btn-secondary pv" data-v="approve" aria-pressed="false">&#10003; Approve as PR description</button>
+            <button type="button" class="btn btn-secondary pv" data-v="request_changes" aria-pressed="false">&#10007; Request changes</button>
+          </div>
+          <textarea class="reveal reveal-box" id="prdesc-edit" rows="3" placeholder="What needs to change in the PR description? (paste an edited version, or describe the change)"></textarea>
+        </div>
+      </div>
+
+      <aside class="side">
+        <div class="card glance">
+          <h3>At a glance</h3>
+          <dl>
+            <dt>Repo</dt><dd><a class="file" href="https://git.example.com/northwind/checkout-api">northwind/checkout-api</a></dd>
+            <dt>Commit</dt><dd>c0d47f1</dd>
+            <dt>Ticket</dt><dd>NW-420</dd>
+            <dt>Endpoint</dt><dd>POST /checkout/orders</dd>
+            <dt>Files</dt><dd>8 changed</dd>
+            <dt>Lines</dt><dd><span class="pos">+548</span> / <span class="neg">&minus;46</span></dd>
+            <dt>Tests</dt><dd>284 / 284 pass</dd>
+          </dl>
+          <div class="follow">follow-up: 9b21ffa — key-only tombstones past the sweep window, and a 60-second in_flight lease (NW-421)</div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- Shared capture action bar (capture.js injects its own fixed bar; base.css re-themes it light).
+     One prominent "Submit to Claude" + "Copy as prompt" fallback for the whole page. -->
+<script src="capture.js"></script>
+<script src="vendor/svg-pan-zoom.min.js"></script>
+<script src="vendor/mermaid.min.js"></script>
+
+<script>
+"use strict";
+window.CAPTURE_SUBMIT_URL = ""; /* static example page - feedback falls back to the clipboard */
+
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+var toastTimer = null;
+function toast(msg){
+  var t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("is-show");
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.classList.remove("is-show"); }, 1800);
+}
+
+/* ============================================================
+   Shared data — Northwind checkout-api example (invented)
+   ============================================================ */
+var FLOW_KEYS = ['request','hdrcheck','nokey','rejected','fingerprint','claim','handler','persist','created','release','errorout','loadrec','fpcheck','mismatch','inflight','replay','sweep'];
+
+var NODES = {
+  request: {
+    stage:"Intake", title:"Submit arrives", owner:"checkout-api router",
+    guard:"nothing is read or written yet",
+    body:"<p>A customer presses <strong>Place order</strong>. The request carries a <strong>session id</strong>, the <strong>line items</strong>, a <strong>payment method id</strong> and &mdash; on a client that has shipped this change &mdash; an <strong>Idempotency-Key</strong> header holding a UUID the client generated once and reuses for every retry of that same submit.</p><p>The key is the client's promise that these two requests are the same submit. Everything on this page is about what the server does with that promise.</p>",
+    kv:{Carries:"sessionId, lines, paymentMethodId", Header:"<code class=\"file\">Idempotency-Key</code> (UUID v4)"},
+    calls:[]
+  },
+  hdrcheck: {
+    stage:"Intake &mdash; guard", title:"Is there a key?", owner:"checkout-api router",
+    guard:"one header lookup, before the body is parsed",
+    body:"<p>A single header read, ahead of everything else. A key that is present but is not a UUID is treated as <em>absent</em> rather than refused: a malformed key is a client bug nobody here can fix, and failing a live checkout over its shape helps no one.</p><p>Which branch a keyless request takes is a runtime flag, not a constant. That is deliberate &mdash; the web client and the mobile client ship on different schedules.</p>",
+    kv:{Reads:"the Idempotency-Key header", Branches:"present / absent"},
+    calls:[]
+  },
+  nokey: {
+    stage:"Intake &mdash; no key", title:"Keyless request", owner:"checkout-api router",
+    guard:"the flag decides, and it is read per request",
+    body:"<p><code>checkout.idempotency.enforce</code> decides. Turned on, the request is refused before a session is even loaded. Turned off, it falls through to the old path: one order per request, no protection, exactly the behaviour that is live today.</p><p>The flag is read per request rather than at boot, so turning enforcement on does not need a deploy &mdash; and neither does rolling it back at two in the morning.</p>",
+    kv:{Flag:"<code class=\"file\">checkout.idempotency.enforce</code>", Default:"off"},
+    calls:[]
+  },
+  rejected: {
+    stage:"Terminal", title:"400 &mdash; key required", owner:"http error layer",
+    guard:"nothing was read, so there is nothing to unwind",
+    body:"<p>The request is refused with <code>idempotency_key_required</code> and a pointer to the client guide. No session is loaded, no order row is touched, no money moves.</p><p>This is the only new way an existing client can be broken by this change, which is the whole reason it sits behind a flag rather than shipping on.</p>",
+    kv:{Status:"400 idempotency_key_required", Wrote:"nothing"},
+    calls:[]
+  },
+  fingerprint: {
+    stage:"Claim &mdash; inputs", title:"Fingerprint the request", owner:"idempotency module &middot; read-only",
+    guard:"canonical form, never the raw bytes",
+    body:"<p>The body is canonicalised &mdash; keys sorted, whitespace dropped &mdash; and hashed with SHA-256 over three fields: session id, line items, payment method id. Canonical because a browser retry and a mobile retry of the same submit serialise their JSON differently and still have to hash the same.</p><p>The fields left <em>out</em> are the interesting part. A submit differing only in shipping address or promo code hashes identically to the first, and will be answered with the first one's order. Whether that is right is an open question.</p>",
+    kv:{Covers:"sessionId, lines, paymentMethodId", Digest:"SHA-256 of the canonical JSON"},
+    calls:["canonical-json","sha256"]
+  },
+  claim: {
+    stage:"Claim", title:"Claim the key", owner:"idempotency module &middot; sole writer of key rows",
+    guard:"one statement; no read-then-write window",
+    body:"<p>A single <code>INSERT</code> into <code>idempotency_keys</code> with <code>ON CONFLICT (key, endpoint) DO NOTHING</code>. The <strong>unique index decides the winner</strong>: a rowCount of 1 means this request owns the key and is the one that runs the handler, 0 means somebody got there first.</p><p>No <code>SELECT</code> precedes it, and that is the entire design. Checking first and inserting second leaves a gap two concurrent submits can both walk through &mdash; and a double-click is exactly two concurrent submits.</p>",
+    kv:{Writes:"one row, state in_flight", "Decided by":"the unique index on (key, endpoint)"},
+    calls:["idempotency_keys insert"]
+  },
+  handler: {
+    stage:"Write", title:"Create the order", owner:"order writer",
+    guard:"reachable at most once per key",
+    body:"<p>The unchanged order-creation path: read the priced session, write the order rows, capture against the session's authorization. None of this code moved in this commit, and none of it knows a key exists.</p><p>Everything upstream is there to make sure this function runs once. Everything downstream is there to make sure its answer can be handed out again.</p>",
+    kv:{Unchanged:"createOrder(session, lines)", Budget:"8-second handler timeout"},
+    calls:["create-order","payment-capture"]
+  },
+  persist: {
+    stage:"Write &mdash; record", title:"Record the response", owner:"idempotency module",
+    guard:"in_flight to completed, one direction only",
+    body:"<p>The serialized 201 is written onto the key row and the state moves to <code>completed</code>. The update is guarded on <code>state = 'in_flight'</code>, so a row somebody else has already resolved cannot be overwritten by a straggler.</p><p>It runs <em>after</em> the order commits, as a separate statement rather than inside the order's transaction. The review flags that gap, because the code comment above it claims otherwise.</p>",
+    kv:{Sets:"state = completed, response, completed_at", Guard:"WHERE state = 'in_flight'"},
+    calls:["idempotency_keys update"]
+  },
+  created: {
+    stage:"Terminal", title:"201 Created", owner:"checkout-api router",
+    guard:"written exactly once per key",
+    body:"<p>The order id and total go back to the client, and the same bytes are now sitting on the key row for whoever asks again with that key.</p><p>This is the only path on the diagram that produces an order. Every other terminal either describes one that already exists or reports that none was made.</p>",
+    kv:{Status:"201 Created", Also:"a stored copy of this exact response"},
+    calls:[]
+  },
+  release: {
+    stage:"Write &mdash; failure", title:"Release the key", owner:"idempotency module",
+    guard:"fires only on a caught throw",
+    body:"<p>The handler threw &mdash; a declined capture, a database error, a timeout. The <code>in_flight</code> row is deleted so the key is free again, and the original error is re-thrown unchanged.</p><p>This runs only while the process is alive to run it. A pod killed mid-handler leaves the row <code>in_flight</code> and nothing deletes it until the sweep, a day later. That hole is one of the open questions.</p>",
+    kv:{Deletes:"the in_flight row", "Does not cover":"a killed process"},
+    calls:["idempotency_keys delete"]
+  },
+  errorout: {
+    stage:"Terminal", title:"5xx, and the key is free", owner:"http error layer",
+    guard:"no order, and no stored response",
+    body:"<p>The handler's own error reaches the client untouched. Because the key row has been deleted, a retry carrying the same key claims it fresh and runs the handler again.</p><p>Which is correct: nothing was written the first time, so this is not a duplicate submit &mdash; it is a first submit that has not succeeded yet.</p>",
+    kv:{Status:"whatever the handler raised", Key:"claimable again immediately"},
+    calls:[]
+  },
+  loadrec: {
+    stage:"Replay", title:"Load the stored record", owner:"idempotency module &middot; read-only",
+    guard:"one read by primary key; writes nothing",
+    body:"<p>The claim lost, so a row for this key already exists. Read it: the fingerprint the first request carried, its current state, and its stored response if it has one yet.</p><p>Nothing is written on this path, and nothing waits on the first request. The duplicate gets an answer from the row as it stands right now.</p>",
+    kv:{Reads:"idempotency_keys by (key, endpoint)", Writes:"nothing"},
+    calls:["idempotency_keys select"]
+  },
+  fpcheck: {
+    stage:"Replay &mdash; branch", title:"Same request, and how far did it get?", owner:"idempotency module",
+    guard:"fingerprint first, state second",
+    body:"<p>The fingerprint is compared <em>before</em> the state, deliberately. A key reused for a different body is a client bug and has to be told so whether or not the first request has finished; answering it with a stale state would hide the bug behind a retry message.</p><p>Once the fingerprint matches, the state picks the answer: still running, finished, or failed and already released.</p>",
+    kv:{First:"fingerprint equality", Then:"state in_flight / completed / failed"},
+    calls:[]
+  },
+  mismatch: {
+    stage:"Terminal", title:"422 &mdash; key reused", owner:"http error layer",
+    guard:"never replays a body nobody asked for",
+    body:"<p>The key has been seen, but for a different request. Handing back the stored order would give the customer an order they did not just ask for and call it success.</p><p><code>422 idempotency_key_reused</code> says what actually happened. It is the one error in this change a client cannot fix by waiting &mdash; the fix is a fresh key.</p>",
+    kv:{Status:"422 idempotency_key_reused", Retryable:"not with this key"},
+    calls:[]
+  },
+  inflight: {
+    stage:"Terminal", title:"409 &mdash; first attempt still running", owner:"http error layer",
+    guard:"the first request keeps the key",
+    body:"<p>The first request is still inside the handler. Rather than queue behind it or start a second one, the duplicate is refused with <code>409 request_in_flight</code> and <code>Retry-After: 2</code>.</p><p>Two seconds is a guess at the handler's usual latency, not its eight-second timeout. A client that honours <code>Retry-After</code> can therefore collect a second 409 before it gets a real answer.</p>",
+    kv:{Status:"409 request_in_flight", "Retry-After":"2 seconds"},
+    calls:[]
+  },
+  replay: {
+    stage:"Terminal", title:"Stored response replayed", owner:"idempotency module",
+    guard:"byte-identical body",
+    body:"<p>The stored body goes back exactly as it was, with one header added: <code>Idempotency-Replayed: true</code>. The client sees the order it already created, and no second order exists to see.</p><p>The status is replayed too &mdash; which means this answers <code>201 Created</code> for an order this request did not create. The review argues it should be <code>200</code>.</p>",
+    kv:{Body:"byte-identical to the first response", Header:"Idempotency-Replayed: true"},
+    calls:[]
+  },
+  sweep: {
+    stage:"Housekeeping", title:"24-hour expiry sweep", owner:"expiry job &middot; scheduled",
+    guard:"deletes key rows, never orders",
+    body:"<p>A scheduled job deletes key rows older than <code>KEY_TTL_HOURS</code>, in batches of 5000 with a pause between them so a backlog cannot hold a lock on the table the claim path is writing to. Without it the table grows by every checkout and every webhook forever, and the stored response bodies are most of the bulk.</p><p>Once a row is swept the key means nothing again. A client retrying a day-old key claims it fresh and gets a second order &mdash; the exact outcome this change exists to prevent, just outside the window.</p>",
+    kv:{Deletes:"rows older than 24 hours", Batch:"5000, with a pause between"},
+    calls:["idempotency-sweep"]
+  }
+};
+
+var FILES = [
+  {
+    id:"orders", path:"src/checkout/orders.ts",
+    add:59, del:7,
+    rows:[
+      ["meta",null,null,"@@ -1,12 +1,25 @@"],
+      ["ctx",1,1,"/**"],
+      ["ctx",2,2," * POST /checkout/orders"],
+      ["ctx",3,3," *"],
+      ["del",4,null," * Creates one order from a priced checkout session. Not safe to retry: a"],
+      ["del",5,null," * client that resubmits after a network timeout gets a second order and"],
+      ["del",6,null," * a second capture against the same authorization."],
+      ["add",null,4," * Creates one order from a priced checkout session. Safe to retry: the"],
+      ["add",null,5," * request must carry an Idempotency-Key, and the first request to claim"],
+      ["add",null,6," * that key is the only one that runs the handler. Every later request"],
+      ["add",null,7," * carrying it replays the stored response instead of writing a second"],
+      ["add",null,8," * order."],
+      ["add",null,9," *"],
+      ["add",null,10," * A key reused with a different body is a client bug, not a retry, and"],
+      ["add",null,11," * is answered 422 -- never a silent replay of the wrong order."],
+      ["ctx",7,12," */"],
+      ["ctx",8,13,'import { createOrder } from "./create_order";'],
+      ["ctx",9,14,'import { loadSession } from "./session";'],
+      ["add",null,15,"import {"],
+      ["add",null,16,"  fingerprintRequest, claimKey, loadKeyRecord,"],
+      ["add",null,17,"  recordResponse, releaseKey"],
+      ["add",null,18,'} from "./idempotency";'],
+      ["ctx",10,19,'import { HttpError } from "../http/errors";'],
+      ["ctx",11,20,""],
+      ["add",null,21,"// The claim is scoped per endpoint: the same key on another route is a"],
+      ["add",null,22,"// different claim, so two endpoints can never collide on one key."],
+      ["add",null,23,'const ENDPOINT = "POST /checkout/orders";'],
+      ["add",null,24,""],
+      ["ctx",12,25,"export async function postOrder(req: OrderRequest): Promise<OrderResponse> {"],
+
+      ["meta",null,null,"@@ -22,10 +35,38 @@ export async function postOrder(req: OrderRequest) {"],
+      ["ctx",22,35,"  const session = await loadSession(req.sessionId);"],
+      ["ctx",23,36,'  if (!session) throw new HttpError(404, "session_not_found");'],
+      ["ctx",24,37,""],
+      ["del",25,null,"  // Nothing here is retry-safe: every call that reaches this line writes"],
+      ["del",26,null,"  // an order and captures against the session's authorization."],
+      ["del",27,null,"  const order = await createOrder(session, req.lines);"],
+      ["del",28,null,"  return { status: 201, body: serialize(order) };"],
+      ["add",null,38,"  // Fingerprint the canonical body, not the raw bytes, so a client that"],
+      ["add",null,39,"  // reorders JSON keys on retry still counts as the same request."],
+      ["add",null,40,"  const fingerprint = fingerprintRequest(req);"],
+      ["add",null,41,""],
+      ["add",null,42,"  // One statement decides who runs the handler: the insert either lands"],
+      ["add",null,43,"  // or loses to the unique index. There is no read-then-write window."],
+      ["add",null,44,"  const claim = await claimKey(req.idempotencyKey, ENDPOINT, fingerprint);"],
+      ["add",null,45,""],
+      ["add",null,46,"  if (!claim.won) {"],
+      ["add",null,47,"    const rec = await loadKeyRecord(req.idempotencyKey, ENDPOINT);"],
+      ["add",null,48,"    if (rec.fingerprint !== fingerprint) {"],
+      ["add",null,49,'      throw new HttpError(422, "idempotency_key_reused", {'],
+      ["add",null,50,'        detail: "This key was already used for a different request body."'],
+      ["add",null,51,"      });"],
+      ["add",null,52,"    }"],
+      ["add",null,53,'    if (rec.state === "in_flight") {'],
+      ["add",null,54,'      throw new HttpError(409, "request_in_flight", { retryAfter: 2 });'],
+      ["add",null,55,"    }"],
+      ["add",null,56,"    return replayStored(rec);"],
+      ["add",null,57,"  }"],
+      ["add",null,58,""],
+      ["add",null,59,"  let order: Order;"],
+      ["add",null,60,"  try {"],
+      ["add",null,61,"    order = await createOrder(session, req.lines);"],
+      ["add",null,62,"  } catch (err) {"],
+      ["add",null,63,"    await releaseKey(req.idempotencyKey, ENDPOINT);"],
+      ["add",null,64,"    throw err;"],
+      ["add",null,65,"  }"],
+      ["add",null,66,""],
+      ["add",null,67,"  const response = { status: 201, body: serialize(order) };"],
+      ["add",null,68,"  await recordResponse(req.idempotencyKey, ENDPOINT, response);"],
+      ["add",null,69,"  return response;"],
+      ["ctx",29,70,"}"],
+      ["ctx",30,71,""],
+      ["ctx",31,72,"const ORDER_TIMEOUT_MS = 8000;"],
+      ["cmt-fp-scope"],
+
+      ["meta",null,null,"@@ -55,7 +96,18 @@"],
+      ["ctx",55,96,"function serialize(order: Order): OrderBody {"],
+      ["ctx",56,97,"  return { id: order.id, total: order.total, lines: order.lines };"],
+      ["ctx",57,98,"}"],
+      ["ctx",58,99,""],
+      ["add",null,100,"// The replayed body is byte-identical to the one the first request got."],
+      ["add",null,101,"// The only difference is the marker header, so a client can tell a replay"],
+      ["add",null,102,"// from a first write without diffing anything."],
+      ["add",null,103,"function replayStored(rec: KeyRecord): OrderResponse {"],
+      ["add",null,104,"  return {"],
+      ["add",null,105,"    status: rec.response.status,"],
+      ["add",null,106,"    body: rec.response.body,"],
+      ["add",null,107,'    headers: { "Idempotency-Replayed": "true" }'],
+      ["add",null,108,"  };"],
+      ["add",null,109,"}"],
+      ["add",null,110,""],
+      ["ctx",59,111,"export const routes = ["],
+      ["ctx",60,112,'  { method: "POST", path: "/checkout/orders", handler: postOrder }'],
+      ["ctx",61,113,"];"],
+      ["cmt-replay-status"]
+    ]
+  },
+  {
+    id:"idem", path:"src/checkout/idempotency.ts",
+    add:59, del:10,
+    rows:[
+      ["meta",null,null,"@@ -1,12 +1,19 @@"],
+      ["ctx",1,1,"/**"],
+      ["ctx",2,2," * Idempotency keys."],
+      ["ctx",3,3," *"],
+      ["del",4,null," * Keeps the last 5000 webhook delivery ids in an in-process Map, so a"],
+      ["del",5,null," * redelivery inside the same worker lifetime is dropped. Not durable: a"],
+      ["del",6,null," * deploy, a crash or a second worker loses the whole set."],
+      ["add",null,4," * A claim table, not a cache. A key is claimed by inserting a row, and"],
+      ["add",null,5," * the unique index on (key, endpoint) picks the winner -- so exactly one"],
+      ["add",null,6," * caller runs the handler however many arrive at once."],
+      ["add",null,7," *"],
+      ["add",null,8," * Durable across deploys, crashes and workers, which the in-process Map"],
+      ["add",null,9," * it replaces never was. The webhook receiver now shares this table."],
+      ["ctx",7,10," */"],
+      ["del",8,null,'import { LRU } from "../util/lru";'],
+      ["add",null,11,'import { db } from "../db";'],
+      ["add",null,12,'import { canonicalJson } from "../util/canonical_json";'],
+      ["add",null,13,'import { sha256 } from "../util/hash";'],
+      ["ctx",9,14,""],
+      ["del",10,null,"const SEEN = new LRU<string, true>(5000);"],
+      ["add",null,15,"// 24 hours: long enough to cover a client's whole retry budget, short"],
+      ["add",null,16,"// enough to keep the table small. jobs/idempotency_sweep.ts enforces it."],
+      ["add",null,17,"export const KEY_TTL_HOURS = 24;"],
+      ["ctx",11,18,""],
+      ["ctx",12,19,'export type KeyState = "in_flight" | "completed" | "failed";'],
+
+      ["meta",null,null,"@@ -20,9 +27,28 @@"],
+      ["ctx",20,27,"}"],
+      ["ctx",21,28,""],
+      ["del",22,null,"export function seen(deliveryId: string): boolean {"],
+      ["del",23,null,"  if (SEEN.has(deliveryId)) return true;"],
+      ["del",24,null,"  SEEN.set(deliveryId, true);"],
+      ["del",25,null,"  return false;"],
+      ["del",26,null,"}"],
+      ["add",null,29,"// Canonical JSON, not the raw bytes: key order and whitespace differ"],
+      ["add",null,30,"// between a browser retry and a mobile retry of the same submit."],
+      ["add",null,31,"export function fingerprintRequest(req: OrderRequest): string {"],
+      ["add",null,32,"  return sha256(canonicalJson({"],
+      ["add",null,33,"    sessionId: req.sessionId,"],
+      ["add",null,34,"    lines: req.lines,"],
+      ["add",null,35,"    paymentMethodId: req.paymentMethodId"],
+      ["add",null,36,"  }));"],
+      ["add",null,37,"}"],
+      ["add",null,38,""],
+      ["add",null,39,"// The whole race lives in this one statement. ON CONFLICT DO NOTHING makes"],
+      ["add",null,40,"// the insert the arbiter: rowCount 1 means this caller owns the key, 0"],
+      ["add",null,41,"// means somebody claimed it first. There is no SELECT-then-INSERT window."],
+      ["add",null,42,"export async function claimKey("],
+      ["add",null,43,"  key: string, endpoint: string, fingerprint: string"],
+      ["add",null,44,"): Promise<{ won: boolean }> {"],
+      ["add",null,45,"  const res = await db.query("],
+      ["add",null,46,"    `INSERT INTO idempotency_keys (key, endpoint, fingerprint, state, created_at)"],
+      ["add",null,47,"     VALUES ($1, $2, $3, 'in_flight', now())"],
+      ["add",null,48,"     ON CONFLICT (key, endpoint) DO NOTHING`,"],
+      ["add",null,49,"    [key, endpoint, fingerprint]"],
+      ["add",null,50,"  );"],
+      ["add",null,51,"  return { won: res.rowCount === 1 };"],
+      ["add",null,52,"}"],
+      ["ctx",27,53,""],
+      ["ctx",28,54,"export async function loadKeyRecord(key: string, endpoint: string) {"],
+      ["cmt-inflight-lease"],
+
+      ["meta",null,null,"@@ -34,7 +60,30 @@"],
+      ["ctx",34,60,"    [key, endpoint]"],
+      ["ctx",35,61,"  );"],
+      ["ctx",36,62,"  return rows[0] ?? null;"],
+      ["ctx",37,63,"}"],
+      ["ctx",38,64,""],
+      ["add",null,65,"// Written in the same transaction that commits the order. If the process"],
+      ["add",null,66,"// dies between the two, the row stays in_flight and the sweep releases it"],
+      ["add",null,67,"// at the TTL -- it never reaches 'completed' with no order behind it."],
+      ["add",null,68,"export async function recordResponse("],
+      ["add",null,69,"  key: string, endpoint: string, response: StoredResponse"],
+      ["add",null,70,"): Promise<void> {"],
+      ["add",null,71,"  await db.query("],
+      ["add",null,72,"    `UPDATE idempotency_keys"],
+      ["add",null,73,"        SET state = 'completed', response = $3, completed_at = now()"],
+      ["add",null,74,"      WHERE key = $1 AND endpoint = $2 AND state = 'in_flight'`,"],
+      ["add",null,75,"    [key, endpoint, response]"],
+      ["add",null,76,"  );"],
+      ["add",null,77,"}"],
+      ["add",null,78,""],
+      ["add",null,79,"// A failed handler frees the key immediately, so an honest retry is not"],
+      ["add",null,80,"// made to wait out the TTL for an order that was never written."],
+      ["add",null,81,"export async function releaseKey(key: string, endpoint: string): Promise<void> {"],
+      ["add",null,82,"  await db.query("],
+      ["add",null,83,"    `DELETE FROM idempotency_keys"],
+      ["add",null,84,"       WHERE key = $1 AND endpoint = $2 AND state = 'in_flight'`,"],
+      ["add",null,85,"    [key, endpoint]"],
+      ["add",null,86,"  );"],
+      ["add",null,87,"}"],
+      ["ctx",39,88,""],
+      ["ctx",40,89,"export type StoredResponse = { status: number; body: unknown };"],
+      ["cmt-tx-boundary"]
+    ]
+  }
+];
+
+// Inline review comments are EXCEPTION-ONLY: each flags a change/risk/follow-up the
+// human must act on. No affirmations or "what's good" (a comment that only validates a
+// choice — e.g. a note praising the unique-index claim — is cut, not shown).
+var COMMENTS = {
+  "cmt-fp-scope": {who:"checkout review", role:"correctness", text:'The fingerprint covers <code>sessionId</code>, <code>lines</code> and <code>paymentMethodId</code>, so two submits differing only in shipping address or promo code hash the same. The second one is handed the first one&rsquo;s order &mdash; a 201 for an address the customer just changed. Either widen the hash to the whole canonical body, or write down here which fields are deliberately outside it and why.'},
+  "cmt-replay-status": {who:"api contract review", role:"client compatibility", text:'The replay returns <code>rec.response.status</code>, which is always <code>201</code>. So a request that created nothing answers &ldquo;Created&rdquo;, and every client counting 201s &mdash; the mobile funnel does &mdash; double-counts a retried checkout. The <code>Idempotency-Replayed</code> header is the right instinct, but nothing on those code paths reads headers. Return <code>200</code> on a replay.'},
+  "cmt-inflight-lease": {who:"reliability review", role:"on-call", text:'Nothing here bounds how long a row may sit <code>in_flight</code>. <code>releaseKey</code> runs only on a caught throw, so a pod killed between the claim and the response strands the key until the sweep &mdash; and that customer gets a 409 on every retry for the next 24 hours. Add a lease column and let a stale <code>in_flight</code> row be re-claimed, or turning the enforcement flag on turns one crashed pod into a day of failed checkouts.'},
+  "cmt-tx-boundary": {who:"data review", role:"correctness", text:'This comment says &ldquo;the same transaction that commits the order&rdquo;, but in <code>orders.ts</code> the <code>createOrder</code> await and the <code>recordResponse</code> await are two separate statements with no transaction around them. The behaviour described is the behaviour we want; the code does not have it yet. Fix one or the other before somebody starts trusting the comment.'}
+};
+
+// 5th field = id of the FILES entry this row opens to, or null when the file is not
+// rendered in this diff (only `orders` and `idem` are). Reconciles the risk map
+// (whole-commit blast radius) with what is actually viewable here.
+var RISK = [
+  ["migrations/0042_idempotency_keys.sql","high","Adds the unique index the whole scheme rests on, plus a JSONB response column on a table every checkout write now touches. Built concurrently — a create that fails part-way leaves an invalid index, and every claim then succeeds.","+47",null],
+  ["src/checkout/idempotency.ts","high","Owns the fingerprint, the claim and the release. The unique-index insert is the only thing standing between a double submit and a second order.","+59 / -10","idem"],
+  ["src/checkout/orders.ts","high","Every order now passes through the claim before createOrder runs. A wrong branch here either blocks real checkouts or lets duplicates through.","+59 / -7","orders"],
+  ["src/http/errors.ts","med","Adds 409 and 422 to a response set clients already parse. An older client that treats any 4xx as fatal will surface a retryable 409 as a failed checkout.","+34 / -6",null],
+  ["src/jobs/idempotency_sweep.ts","med","Deletes key rows past the 24-hour TTL. Batched at 5000, but one long outage backlog and the delete is competing with the claim path for the same table.","+88",null],
+  ["src/webhooks/receiver.ts","med","Gives up its in-process LRU and shares the claim table. Roughly six deliveries per order, each retried, so the table's write volume is set by this caller and not by checkout.","+22 / -19",null]
+];
+
+/* Open DESIGN QUESTIONS — each rendered as a prominent .callout and each needing
+   an explicit answer routed through window.Capture (no single "flag section"). */
+var QUESTIONS = [
+  {
+    id:"oq_missing_key",
+    q:'Refuse a request with no <span class="mono">Idempotency-Key</span>, or let it through until every client sends one?',
+    ctx:"The web client sends the header today. The iOS build that sends it is two releases out, and its release date is not ours to set.",
+    lean:"ship the flag off, flip it per client",
+    why:"Refusing today breaks live checkouts on a client whose ship date we do not control. A flag defaulted off costs one branch and turns the enforcement date into a decision somebody makes rather than a deploy somebody has to time."
+  },
+  {
+    id:"oq_inflight_lease",
+    q:'How long may a record sit <span class="mono">in_flight</span> before another request is allowed to take the key?',
+    ctx:"releaseKey only runs on a caught throw. A killed process leaves its row in_flight, and nothing clears it until the 24-hour sweep.",
+    lean:"a 60-second lease, then the key is re-claimable",
+    why:"The handler's own timeout is 8 seconds, so 60 is seven times the worst honest case and still a wait a customer will sit through. The alternative — making them wait out the 24-hour TTL — turns one crashed pod into a full day of 409s for that one customer."
+  },
+  {
+    id:"oq_after_sweep",
+    q:'After the sweep deletes a key, a retry carrying it claims fresh and writes a second order. Keep a tombstone, or accept the window?',
+    ctx:"The sweep deletes rows past KEY_TTL_HOURS to keep the table small. The stored response bodies are most of that bulk.",
+    lean:"keep a key-only tombstone for 30 days",
+    why:"A row with the fingerprint but no stored body is a few dozen bytes, and it turns the one outcome this change exists to prevent — a duplicate order — back into a 422 instead of a second charge. Dropping the body at 24 hours is what keeps the table small; dropping the row is not."
+  },
+  {
+    id:"oq_fingerprint_fields",
+    q:'Which fields belong in the request fingerprint?',
+    ctx:"It covers sessionId, lines and paymentMethodId today. Shipping address and promo code are outside it, so a submit that changes only those replays the first order.",
+    lean:null
+  }
+];
+
+/* ============================================================
+   Tabs
+   ============================================================ */
+(function(){
+  // Order = reviewing priority: open questions (default) -> PR diff -> annotated flow
+  // -> draft PR description (lowest).
+  var tabs = [
+    { tab: document.getElementById("tab-questions"), view: document.getElementById("view-questions"), id: "questions" },
+    { tab: document.getElementById("tab-pr"), view: document.getElementById("view-pr"), id: "pr" },
+    { tab: document.getElementById("tab-flow"), view: document.getElementById("view-flow"), id: "flow" },
+    { tab: document.getElementById("tab-writeup"), view: document.getElementById("view-writeup"), id: "writeup" }
+  ];
+  function select(i){
+    tabs.forEach(function(o, j){
+      var on = i === j;
+      o.tab.setAttribute("aria-selected", on ? "true" : "false");
+      o.view.hidden = !on;
+    });
+    if (tabs[i].id === "flow" && window.__flowFit) window.__flowFit();
+  }
+  tabs.forEach(function(o, i){ o.tab.addEventListener("click", function(){ select(i); }); });
+  // let other modules (e.g. risk-map links) switch the active view by id
+  window.__selectTab = function(id){
+    for (var i = 0; i < tabs.length; i++){ if (tabs[i].id === id){ select(i); return; } }
+  };
+})();
+
+/* ============================================================
+   View A — flowchart detail + per-node feedback (single flag + comment)
+   ============================================================ */
+window.FLOW = { nodes: {} };          // mermaid module fills .nodes
+var fNode = {};                       // key -> { flag:bool, note:str }
+
+function nodeEngaged(key){
+  var r = fNode[key];
+  return !!(r && (r.flag || (r.note && r.note.trim())));
+}
+function paintNode(key){
+  var el = window.FLOW.nodes[key];
+  if (el) el.classList.toggle("node-flag", nodeEngaged(key));
+}
+function markNode(key){
+  var r = fNode[key];
+  if (nodeEngaged(key)) {
+    Capture.mark("node_" + key, r.flag ? "flag" : "comment",
+      { anchor: "flow-node", note: (r.note && r.note.trim()) ? r.note : undefined });
+  } else {
+    Capture.unmark("node_" + key);
+  }
+  paintNode(key);
+  updateFlowCount();
+}
+function updateFlowCount(){
+  var el = document.getElementById("flow-count"); if (!el) return;
+  var n = 0;
+  FLOW_KEYS.forEach(function(k){ if (nodeEngaged(k)) n++; });
+  el.textContent = n + " stage" + (n === 1 ? "" : "s") + " flagged (optional)";
+}
+
+window.renderDetail = function(key, nodeEl){
+  var n = NODES[key]; if (!n) return;
+  var host = document.getElementById("detail-panel");
+  var kv = "";
+  for (var k in n.kv){ if (Object.prototype.hasOwnProperty.call(n.kv, k)) kv += "<dt>" + k + "</dt><dd>" + n.kv[k] + "</dd>"; }
+  var sp = "";
+  if (n.calls && n.calls.length){
+    var names = [];
+    for (var i = 0; i < n.calls.length; i++){ names.push(esc(n.calls[i])); }
+    sp = '<div class="calls-line"><span class="lab">touches: </span>' + names.join(", ") + "</div>";
+  }
+  host.innerHTML =
+    '<div class="steplabel">' + n.stage + "</div>" +
+    "<h3>" + esc(n.title) + "</h3>" +
+    '<p class="role">' + n.owner + "</p>" +
+    '<p class="guard">guard &middot; ' + esc(n.guard) + "</p>" +
+    '<div class="body">' + n.body + "</div>" +
+    '<dl class="kv">' + kv + "</dl>" + sp +
+    '<div class="cap-block callout is-live">' +
+      '<p class="callout-q"><strong>Question:</strong> Does this stage need changes?</p>' +
+      '<button type="button" class="btn btn-secondary btn-sm" id="node-flag" aria-pressed="false">&#9873; Flag this stage</button>' +
+      '<textarea class="reveal reveal-box" id="node-note" placeholder="What is wrong with this stage? (optional)"></textarea>' +
+    "</div>";
+
+  // highlight the open node
+  var prev = document.querySelector("#mermaid-host .node.node-hot");
+  if (prev) prev.classList.remove("node-hot");
+  if (nodeEl) {
+    var node = (nodeEl.classList && nodeEl.classList.contains("node")) ? nodeEl : nodeEl.closest(".node");
+    if (node) node.classList.add("node-hot");
+  }
+
+  // wire feedback controls to current state
+  var rec = fNode[key] || { flag: false, note: "" };
+  var flagBtn = document.getElementById("node-flag");
+  var note = document.getElementById("node-note");
+  flagBtn.setAttribute("aria-pressed", rec.flag ? "true" : "false");
+  note.value = rec.note || "";
+  if (rec.flag || (rec.note && rec.note.trim())) note.classList.add("is-open");
+
+  flagBtn.addEventListener("click", function(){
+    rec = fNode[key] = fNode[key] || { flag: false, note: "" };
+    rec.flag = !rec.flag;
+    flagBtn.setAttribute("aria-pressed", rec.flag ? "true" : "false");
+    note.classList.toggle("is-open", rec.flag || (rec.note && rec.note.trim()));
+    markNode(key);
+  });
+  note.addEventListener("input", function(){
+    rec = fNode[key] = fNode[key] || { flag: false, note: "" };
+    rec.note = note.value;
+    markNode(key);
+  });
+};
+
+/* ============================================================
+   View B — diff renderer + per-hunk feedback (single Accept/Flag + comment)
+   ============================================================ */
+(function(){
+  var ftabs = document.getElementById("file-tabs");
+  var pathEl = document.getElementById("diff-path");
+  var body = document.getElementById("diff-body");
+  var dim = document.getElementById("dim-ctx");
+  var meter = document.getElementById("pr-meter");
+  var SHA = "c0d47f1";
+  var current = FILES[0].id;
+  var prHunk = {};   // hunkId -> { verdict, comment }
+
+  function currentFile(){ var f = FILES[0]; FILES.forEach(function(x){ if (x.id === current) f = x; }); return f; }
+  function totalHunks(){ var n = 0; FILES.forEach(function(f){ f.rows.forEach(function(r){ if (r[0] === "meta") n++; }); }); return n; }
+  window.__totalHunks = totalHunks;
+
+  function hl(s){
+    s = s.replace(/`([^`]+)`/g, '<span class="tk-code">`$1`</span>');
+    s = s.replace(/\*\*([^*]+)\*\*/g, '<span class="tk-bold">**$1**</span>');
+    return s;
+  }
+  function renderTabs(){
+    ftabs.innerHTML = "";
+    FILES.forEach(function(f){
+      var b = document.createElement("button");
+      b.className = "tab"; b.setAttribute("role", "tab");
+      b.setAttribute("aria-selected", f.id === current ? "true" : "false");
+      var name = f.path.split("/").pop();
+      b.innerHTML = esc(name) + ' <span class="count">+' + f.add + " -" + f.del + "</span>";
+      b.addEventListener("click", function(){ current = f.id; renderTabs(); renderDiff(); });
+      ftabs.appendChild(b);
+    });
+  }
+  function hunkControl(hid){
+    var rec = prHunk[hid] || {};
+    var acc = rec.verdict === "accept", flg = rec.verdict === "flag";
+    var showC = flg || (rec.comment && rec.comment.trim());
+    return '<div class="hctl" data-h="' + hid + '">' +
+      '<span class="hctl-lab">This hunk</span>' +
+      '<button type="button" class="btn btn-secondary btn-sm hbtn" data-hv="' + hid + '" data-v="accept" aria-pressed="' + (acc ? "true" : "false") + '">Accept</button>' +
+      '<button type="button" class="btn btn-secondary btn-sm hbtn" data-hv="' + hid + '" data-v="flag" aria-pressed="' + (flg ? "true" : "false") + '">Flag</button>' +
+      '<textarea class="hcmt reveal reveal-box' + (showC ? " is-open" : "") + '" data-hc="' + hid + '" placeholder="What needs to change in this hunk? (reason for the flag)">' + (rec.comment ? esc(rec.comment) : "") + "</textarea>" +
+      "</div>";
+  }
+  function markHunk(hid){
+    var rec = prHunk[hid];
+    var has = rec && (rec.verdict || (rec.comment && rec.comment.trim()));
+    if (has) {
+      Capture.mark(hid, rec.verdict || "comment",
+        { reason: (rec.comment && rec.comment.trim()) ? rec.comment : undefined,
+          anchor: { file: current, hunk: hid, sha: SHA } });
+    } else {
+      if (rec) delete prHunk[hid];
+      Capture.unmark(hid);
+    }
+    updateMeter();
+  }
+  function renderDiff(){
+    var f = currentFile();
+    pathEl.textContent = f.path;
+    var html = "", hidx = 0, curHunk = "";
+    f.rows.forEach(function(r){
+      var t = r[0];
+      if (t.indexOf("cmt-") === 0){
+        var c = COMMENTS[t]; if (!c) return;
+        html += '<div class="inline-comment"><span class="who">' + esc(c.who) +
+          '<span class="role">' + esc(c.role) + "</span></span><p>" + c.text + "</p></div>";
+        return;
+      }
+      var oldNo = r[1] == null ? "" : r[1];
+      var newNo = r[2] == null ? "" : r[2];
+      var txt = r[3];
+      var gut = t === "add" ? "+" : (t === "del" ? "-" : " ");
+      var cls = "drow " + (t === "ctx" ? "ctx" : t);
+      if (t === "meta"){ cls = "drow hunk"; hidx++; curHunk = f.path + "@H" + hidx; }
+      var content = hl(esc(txt));
+      html += '<div class="' + cls + '"><span class="ln">' + oldNo + '</span><span class="ln">' + newNo +
+        '</span><span class="gut">' + gut + '</span><span class="txt">' + content + "</span></div>";
+      if (t === "meta") html += hunkControl(curHunk);
+    });
+    body.innerHTML = html;
+    wireDiff();
+    applyDim();
+    updateMeter();
+  }
+  function wireDiff(){
+    body.querySelectorAll(".hbtn").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var hid = btn.getAttribute("data-hv"), v = btn.getAttribute("data-v");
+        var rec = prHunk[hid] || {};
+        rec.verdict = (rec.verdict === v) ? undefined : v;
+        prHunk[hid] = rec;
+        markHunk(hid);
+        renderDiff();
+      });
+    });
+    body.querySelectorAll(".hcmt").forEach(function(ta){
+      ta.addEventListener("input", function(){
+        var hid = ta.getAttribute("data-hc");
+        var rec = prHunk[hid] || {};
+        rec.comment = ta.value;
+        prHunk[hid] = rec;
+        markHunk(hid);
+      });
+    });
+  }
+  function applyDim(){
+    var rows = body.querySelectorAll(".drow.ctx");
+    for (var i = 0; i < rows.length; i++){ rows[i].classList.toggle("dim", dim.checked); }
+  }
+  function updateMeter(){
+    var adjud = 0;
+    if (window.Capture){
+      Capture.payload().items.forEach(function(it){ if (/@H\d+$/.test(it.id)) adjud++; });
+    }
+    if (meter) meter.textContent = adjud + " hunks adjudicated of " + totalHunks() + " (optional)";
+  }
+  window.__prMeterSync = updateMeter;
+
+  dim.addEventListener("change", applyDim);
+
+  // open a file's diff from elsewhere (risk-map link): switch to the PR view, select
+  // its file tab, render it, and scroll the diff into view.
+  function fileExists(id){ return FILES.some(function(f){ return f.id === id; }); }
+  window.__openFile = function(id){
+    if (!fileExists(id)) return;
+    if (window.__selectTab) window.__selectTab("pr");
+    current = id; renderTabs(); renderDiff();
+    var card = document.querySelector(".diff-card");
+    if (card && card.scrollIntoView) card.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  // risk map — only rows whose file is actually rendered in this diff are clickable;
+  // the rest are plainly labelled "not in this diff" so nothing looks openable that isn't.
+  var rm = document.getElementById("risk-map");
+  RISK.forEach(function(r){
+    var openId = r[4];
+    var openable = openId && fileExists(openId);
+    var nameHtml = openable
+      ? '<button type="button" class="rf-open" data-open="' + esc(openId) + '">' + esc(r[0]) + "</button>"
+      : '<span class="rf-name">' + esc(r[0]) + '</span><span class="rf-na">not in this diff</span>';
+    var SEVCLS = { high:"neg", med:"warn", low:"pos" };
+    var d = document.createElement("div"); d.className = "risk-row";
+    d.innerHTML = '<div class="rf"><span class="sev ' + (SEVCLS[r[1]] || "neutral") + '">' + r[1] + "</span>" + nameHtml + "</div>" +
+      '<div class="rd">' + esc(r[2]) + '</div><div class="lc">' + esc(r[3]) + "</div>";
+    rm.appendChild(d);
+  });
+  rm.querySelectorAll(".rf-open").forEach(function(b){
+    b.addEventListener("click", function(){ window.__openFile(b.getAttribute("data-open")); });
+  });
+
+  // expand toggle: diff card grows to full width (taking the risk map's place); the
+  // risk map (DOM-after the card) reflows below. Toggle restores two columns.
+  var expandBtn = document.getElementById("diff-expand");
+  var prGrid = document.getElementById("pr-grid");
+  if (expandBtn && prGrid){
+    expandBtn.addEventListener("click", function(){
+      var on = prGrid.classList.toggle("expanded");
+      expandBtn.setAttribute("aria-pressed", on ? "true" : "false");
+      expandBtn.innerHTML = on ? "&#10529; Collapse" : "&#10530; Expand";
+    });
+  }
+
+  renderTabs();
+  renderDiff();
+})();
+
+/* ============================================================
+   Draft PR description — the writeup's ONLY interaction: approve it as the PR
+   description, or request changes (+ optional edit). Routed through window.Capture
+   under a single id; informational (not part of the required-answers count).
+   ============================================================ */
+(function(){
+  var blk = document.getElementById("prdesc-verdict");
+  if (!blk) return;
+  var chips = blk.querySelectorAll(".pv");
+  var edit = document.getElementById("prdesc-edit");
+  var current = null;
+
+  function sync(){
+    // "Request changes" reveals the edit box on selection (progressive disclosure,
+    // not always-on); Approve / unset hide it. The edit text rides along as the note.
+    var changing = current === "request_changes";
+    if (edit) edit.classList.toggle("is-open", changing);
+    var note = (changing && edit && edit.value.trim()) ? edit.value.trim() : undefined;
+    if (current){
+      if (window.Capture) Capture.mark("pr_description", current, { anchor: "pr-description", note: note });
+    } else {
+      if (window.Capture) Capture.unmark("pr_description");
+    }
+  }
+  chips.forEach(function(b){
+    b.addEventListener("click", function(){
+      var v = b.getAttribute("data-v");
+      current = (current === v) ? null : v;
+      chips.forEach(function(x){ x.setAttribute("aria-pressed", x.getAttribute("data-v") === current ? "true" : "false"); });
+      sync();
+    });
+  });
+  if (edit) edit.addEventListener("input", function(){ if (current) sync(); });
+})();
+
+/* ============================================================
+   View C — Open design questions: one PRE-OPENED answer box per
+   question, each marked as REQUIRED, each routing its answer to Capture.
+   ============================================================ */
+(function(){
+  var host = document.getElementById("open-questions");
+  if (!host) return;
+
+  QUESTIONS.forEach(function(q, i){
+    var card = document.createElement("div");
+    card.className = "callout is-live qbox";
+    card.innerHTML =
+      '<p class="callout-q"><strong>Question:</strong> ' + q.q + "</p>" +
+      '<p class="qmeta">' + esc(q.ctx) + "</p>" +
+      (q.lean
+        ? '<p class="reco">Claude leans: <strong>' + esc(q.lean) + "</strong>" +
+          (q.why ? ' <span class="why" tabindex="0">(why)<span class="why-pop">' + esc(q.why) + '</span></span>' : "") + "</p>"
+        : '<p class="qlean">No lean &mdash; your call.</p>') +
+      '<label for="' + q.id + '">Your answer</label>' +
+      '<textarea id="' + q.id + '" rows="2" placeholder="Type your decision (e.g. accept Claude\'s lean, or describe what you want instead)"></textarea>';
+    host.appendChild(card);
+
+    var ta = card.querySelector("textarea");
+    ta.addEventListener("input", function(){
+      var v = ta.value.trim();
+      if (v){
+        if (window.Capture) Capture.mark(q.id, "answer", { anchor: "open-question", note: v });
+      } else {
+        if (window.Capture) Capture.unmark(q.id);
+      }
+    });
+  });
+})();
+
+/* ============================================================
+   Cross-tab "required work outstanding" indicator
+   Surfaces the REQUIRED, still-unanswered work (the 4 design questions in the
+   Open questions tab) at the tab level and in a persistent line under the tabs —
+   so a reviewer landing on any tab can see, without opening another, that
+   mandatory answers are still outstanding. Per-hunk/per-node flags and the draft
+   PR-description decision are informational only (not counted here); they still
+   feed the DERIVED overall verdict — see recomputeVerdict() below.
+   ============================================================ */
+function updateRequired(){
+  var host = document.getElementById("open-questions");
+  var qTotal = 0, qAns = 0;
+  if (host){
+    host.querySelectorAll("textarea").forEach(function(t){ qTotal++; if (t.value.trim()) qAns++; });
+  }
+  var qOut = qTotal - qAns;
+
+  // persistent line under the tabs — the single sanctioned aggregate outstanding count
+  var line = document.getElementById("outstanding-line");
+  if (line){
+    if (qOut > 0){
+      line.className = "outstanding neg";
+      line.innerHTML = "&#10007; " + qOut + " required answer" + (qOut === 1 ? "" : "s") +
+        " outstanding <span class=\"where\">&mdash; " + qOut + " design question" + (qOut === 1 ? "" : "s") + " in Open questions</span>";
+    } else {
+      line.textContent = "";
+      line.className = "outstanding";
+    }
+  }
+}
+
+/* ============================================================
+   Overall verdict — DERIVED, never a separate control (PRINCIPLES.md "No
+   standalone overall verdict"). It has exactly TWO values: approve and
+   request_changes. Every decision on this page is already an explicit
+   itemized call (the 4 open questions, per-hunk accept/flag, per-stage flag,
+   the draft-description approve/request-changes) and the write-up here
+   proposes nothing beyond those calls, so there is no extra "apply the rest"
+   catch-all to add (see PRINCIPLES' own final sentence). The verdict is instead
+   computed from that state:
+     - the 4 open questions unanswered -> verdict UNSET (gate holds Submit)
+     - all answered, draft-description = "Request changes"    -> request_changes
+       (the one explicit blocking gesture on this page — the closest analog to
+       PRINCIPLES' "apply the rest = No")
+     - all answered, draft-description not "Request changes"  -> approve
+       (a flagged hunk or flow stage is FEEDBACK — it rides along in the
+       payload items and never changes the verdict)
+   Recomputed on every Capture change (onChange below); set only via
+   Capture.rollup(...), never a button click.
+   ============================================================ */
+function recomputeVerdict(){
+  if (!window.Capture) return;
+  var host = document.getElementById("open-questions");
+  var tas = host ? host.querySelectorAll("textarea") : [];
+  for (var i = 0; i < tas.length; i++){
+    if (!tas[i].value.trim()){ Capture.rollup(null); return; }   // required calls unanswered
+  }
+  var blocking = false;
+  Capture.payload().items.forEach(function(it){
+    if (it.id === "pr_description" && it.value === "request_changes") blocking = true;
+  });
+  Capture.rollup(blocking ? "request_changes" : "approve");
+}
+
+/* ============================================================
+   Capture init — one shared submit for the whole page
+   ============================================================ */
+if (window.Capture){
+  var CAP_TOTAL = FLOW_KEYS.length + (window.__totalHunks ? window.__totalHunks() : 0) + QUESTIONS.length;
+  Capture.init({ view: "review-combined (open-questions + code-review-pr-diff + annotated-flowchart + pr-writeup)", total: CAP_TOTAL });
+
+  // Coverage = the bounded primary units: flow stages + hunks + the required open questions.
+  Capture.setCoverage(function(id){
+    return /^node_/.test(id) || /@H\d+$/.test(id) || /^oq_/.test(id);
+  });
+
+  // Delta-vs-proposal sink: what Claude proposed, so the human result is diffable.
+  Capture.setMeta({ proposals: { pr_overall_verdict: "approve" } });
+
+  // Submit gate: the 4 required design-question answers (Open questions tab) are
+  // the only blocking requirement on this page. The overall verdict is DERIVED
+  // from state gated by this same check (see recomputeVerdict above), so once
+  // every question is answered the verdict always resolves — there is no separate
+  // verdict field to gate on. capture.js scrolls to + flashes the first unmet
+  // field; the focus function switches to the Open questions tab so it's visible.
+  Capture.setGate(function(){
+    var host = document.getElementById("open-questions");
+    if (host){
+      var tas = host.querySelectorAll("textarea");
+      for (var i = 0; i < tas.length; i++){
+        if (!tas[i].value.trim()){
+          var ta = tas[i];
+          return {
+            ok: false,
+            reason: "Answer every design question to submit.",
+            focus: function(){ if (window.__selectTab) window.__selectTab("questions"); return ta; }
+          };
+        }
+      }
+    }
+    return { ok: true };
+  });
+
+  // Bind page-level meters to the canonical store, and recompute the derived
+  // verdict on every change (open questions, hunk/node flags, draft-description).
+  Capture.onChange(function(){
+    updateFlowCount();
+    if (window.__prMeterSync) window.__prMeterSync();
+    updateRequired();
+    recomputeVerdict();
+  });
+
+  updateRequired();     // initial paint so outstanding work shows on first load
+  recomputeVerdict();   // initial paint: nothing answered yet -> verdict stays unset
+}
+</script>
+
+<script type="module">
+const mermaid = window.mermaid;   /* vendored UMD build, loaded via <script src="vendor/mermaid.min.js"> above */
+
+var GRAPH = [
+  'flowchart TD',
+  '  request["POST /checkout/orders<br/>submit arrives"]',
+  '  hdrcheck{"Idempotency-Key<br/>on the request?"}',
+  '  nokey{{"Keyless request<br/>the enforcement flag decides"}}',
+  '  rejected(["400 idempotency_key_required"])',
+  '  fingerprint[/"Fingerprint the body<br/>canonical JSON, SHA-256"/]',
+  '  claim{"Claim the key<br/>insert, or lose to the unique index"}',
+  '  handler["Create the order<br/>the only writing path"]',
+  '  persist["Record the response<br/>state becomes completed"]',
+  '  created(["201 Created"])',
+  '  release{{"Handler threw<br/>delete the in_flight row"}}',
+  '  errorout(["5xx, and the key is free again"])',
+  '  loadrec["Claim lost<br/>load the stored record"]',
+  '  fpcheck{"Same fingerprint?<br/>and how far did it get?"}',
+  '  mismatch(["422 idempotency_key_reused"])',
+  '  inflight(["409 request_in_flight<br/>Retry-After 2s"])',
+  '  replay(["Stored response replayed<br/>Idempotency-Replayed true"])',
+  '  sweep[["24-hour expiry sweep<br/>the row is deleted"]]',
+  '  request --> hdrcheck',
+  '  hdrcheck -->|header absent| nokey',
+  '  hdrcheck -->|header present| fingerprint',
+  '  nokey -->|enforcement on| rejected',
+  '  nokey -.->|enforcement off, legacy clients| handler',
+  '  fingerprint --> claim',
+  '  claim -->|row inserted| handler',
+  '  claim -->|unique index says no| loadrec',
+  '  handler -->|order committed| persist',
+  '  handler -->|threw| release',
+  '  persist --> created',
+  '  release --> errorout',
+  '  errorout -.->|client retries the same key| claim',
+  '  loadrec --> fpcheck',
+  '  fpcheck -->|hash differs| mismatch',
+  '  fpcheck -->|match, still in_flight| inflight',
+  '  fpcheck -->|match, completed| replay',
+  '  fpcheck -->|match, failed| claim',
+  '  inflight -.->|retry after 2s| loadrec',
+  '  persist -.->|24 hours later| sweep',
+  '  sweep -.->|key claimable again| claim'
+].join('\n');
+
+mermaid.initialize({
+  startOnLoad:false,
+  securityLevel:'loose',
+  theme:'base',
+  flowchart:{ htmlLabels:true, curve:'basis', nodeSpacing:46, rankSpacing:42 },
+  themeVariables:{
+    fontFamily:"'IBM Plex Sans', system-ui, sans-serif",
+    primaryColor:'#FFFFFF', primaryBorderColor:'#1B2A4A', primaryTextColor:'#1B2A4A',
+    lineColor:'#5A6678', tertiaryColor:'#F4F6FA',
+    fontSize:'13px'
+  }
+});
+
+var host = document.getElementById('mermaid-host');
+(async function(){
+  try{
+    var out = await mermaid.render('idemsvg', GRAPH);
+    host.innerHTML = out.svg;
+
+    var svg = host.querySelector('svg');
+    svg.removeAttribute('height');
+    svg.style.width = '100%';
+    svg.style.height = '100%';
+
+    var keys = window.FLOW_KEYS;   /* the one list, declared in the page script above */
+    var nodes = host.querySelectorAll('.node');
+    nodes.forEach(function(node){
+      var nid = node.id || '', matched = null;
+      keys.forEach(function(k){ if (nid.indexOf('-' + k + '-') !== -1 || nid === 'flowchart-' + k) matched = k; });
+      if (!matched) return;
+      if (window.FLOW) window.FLOW.nodes[matched] = node;
+      node.style.cursor = 'pointer';
+      node.addEventListener('click', function(){ if (window.renderDetail) window.renderDetail(matched, node); });
+    });
+
+    if (window.svgPanZoom){
+      var pz = svgPanZoom(svg, { zoomEnabled:true, controlIconsEnabled:false, fit:true, center:true, minZoom:0.5, maxZoom:6, zoomScaleSensitivity:0.35 });
+      window.__flowFit = function(){ pz.resize(); pz.fit(); pz.center(); };
+      var resetBtn = document.getElementById('flow-reset');
+      if (resetBtn) resetBtn.addEventListener('click', function(){ pz.resize(); pz.fit(); pz.center(); });
+    }
+  }catch(e){
+    host.innerHTML = '<div style="padding:24px;font-family:var(--font-mono);font-size:13px;color:var(--accent)">Flowchart failed to render: ' + (e && e.message ? e.message : e) + '</div>';
+  }
+  // seed the detail panel
+  if (window.renderDetail) window.renderDetail('request', null);
+})();
+</script>
+
+</body>
+</html>

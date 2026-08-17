@@ -1,0 +1,5 @@
+{
+  "name": "principalwp-toolkit",
+  "description": "Three Principal WP tools in one install: htmlizer (interactive local HTML review pages with feedback back into the session), wp-prototype (clickable single-file WordPress admin mockups), and the WordPress Starter Pipeline (one component change to a reviewed, tested PR through gated agent phases).",
+  "author": { "name": "Principal WP", "url": "https://principalwp.com" }
+}

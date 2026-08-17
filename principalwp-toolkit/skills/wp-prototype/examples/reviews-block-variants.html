@@ -1,0 +1,443 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Product Reviews block — display prototypes</title>
+<style>
+/*@inline wpds-tokens.css*/
+</style>
+<style>
+/*@inline wpds-components.css*/
+</style>
+<style>
+/*@inline dashicons.min.css*/
+</style>
+<style>
+/*@inline wpp-runtime.css*/
+</style>
+<style>
+.editor-header .components-button.has-icon { width: 36px; }
+.editor-header .editor-header__inserter { width: 32px; height: 32px; min-width: 32px; margin-right: 8px; }
+.editor-header .dashicons { font-size: 20px; width: 20px; height: 20px; }
+
+/* ---- The block's front-end appearance (Product Reviews) ---- */
+.pr { font-size: 15px; }
+.pr .stars { color: #dba617; white-space: nowrap; }
+.pr .stars .dashicons { font-size: 18px; width: 18px; height: 18px; }
+.pr .verified { color: #007017; font-size: 12px; font-weight: 600; }
+.pr .rev-meta { font-size: 12px; color: #757575; }
+
+/* Variant A: summary + highlights */
+.pr-summary { display: flex; gap: 32px; align-items: flex-start; border: 1px solid #e0e0e0; border-radius: 8px; padding: 24px; }
+.pr-summary .avg { text-align: center; }
+.pr-summary .avg .num { font-size: 44px; font-weight: 700; line-height: 1; }
+.pr-summary .avg .of { font-size: 12px; color: #757575; }
+.pr-hist { flex: 1; display: grid; gap: 6px; align-self: center; }
+.pr-hist .row { display: grid; grid-template-columns: 34px 1fr 44px; gap: 8px; align-items: center; font-size: 12px; color: #757575; }
+.pr-hist .bar { height: 8px; background: #f0f0f0; border-radius: 4px; overflow: hidden; }
+.pr-hist .bar i { display: block; height: 100%; background: #dba617; }
+.pr-quotes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px; }
+.pr-quote { border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; }
+.pr-quote blockquote { margin: 8px 0; font-size: 14px; line-height: 1.5; }
+.pr-readall { margin-top: 16px; font-weight: 600; }
+.pr-readall a { color: #3858e9; text-decoration: none; }
+
+/* Variant B: filterable grid */
+.pr-toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+.pr-chip { border: 1px solid #ccc; border-radius: 16px; padding: 4px 14px; font-size: 13px; background: #fff; cursor: pointer; }
+.pr-chip.on { background: #1e1e1e; border-color: #1e1e1e; color: #fff; }
+.pr-toolbar select { width: auto; height: 32px; margin-left: auto; font-size: 13px; padding: 4px 28px 4px 10px; border: 1px solid #ccc; border-radius: 4px; }
+.pr-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.pr-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; }
+.pr-card p { margin: 8px 0; font-size: 13px; line-height: 1.5; }
+.pr-pagination { display: flex; gap: 6px; justify-content: center; margin-top: 20px; font-size: 13px; }
+.pr-pagination a, .pr-pagination span { padding: 6px 11px; border-radius: 4px; text-decoration: none; color: #1e1e1e; }
+.pr-pagination .cur { background: #1e1e1e; color: #fff; }
+
+/* Variant C: carousel */
+.pr-carousel { position: relative; border: 1px solid #e0e0e0; border-radius: 8px; padding: 40px 72px; text-align: center; }
+.pr-carousel blockquote { font-size: 20px; line-height: 1.5; margin: 16px 0 8px; font-weight: 500; }
+.pr-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border-radius: 50%; border: 1px solid #ccc; background: #fff; cursor: pointer; }
+.pr-arrow.prev { left: 16px; } .pr-arrow.next { right: 16px; }
+.pr-dots { display: flex; gap: 6px; justify-content: center; margin-top: 20px; }
+.pr-dots i { width: 8px; height: 8px; border-radius: 50%; background: #ddd; }
+.pr-dots i.on { background: #1e1e1e; }
+</style>
+</head>
+<body class="wpds-root">
+
+<!-- ====================== Screen 1: setup / empty state ====================== -->
+<section data-screen="setup" data-title="Setup state">
+	<div class="interface-interface-skeleton">
+		<div class="editor-header">
+			<button class="components-button is-primary has-icon editor-header__inserter" aria-label="Block inserter"><span class="dashicons dashicons-plus-alt2"></span></button>
+			<button class="components-button has-icon" aria-label="Undo"><span class="dashicons dashicons-undo"></span></button>
+			<button class="components-button has-icon" aria-label="Redo"><span class="dashicons dashicons-redo"></span></button>
+			<div class="editor-header__center"><strong>AeroPress Go — product page</strong> · Draft</div>
+			<div class="editor-header__end">
+				<button class="components-button is-tertiary">Save draft</button>
+				<button class="components-button is-primary">Publish</button>
+				<button class="components-button has-icon" aria-label="Settings"><span class="dashicons dashicons-admin-generic"></span></button>
+			</div>
+		</div>
+		<div class="interface-interface-skeleton__body">
+			<div class="interface-interface-skeleton__content">
+				<div class="editor-canvas__paper">
+					<h1>AeroPress Go Travel Coffee Press</h1>
+					<p>Brews smooth, rich coffee anywhere — the full press kit packs into its own mug.</p>
+
+					<div class="is-selected-block" style="position: relative; margin: 32px 0;">
+						<div class="components-placeholder" data-note="First-run state lives in the canvas, not a settings page — editors never leave the post">
+							<div class="components-placeholder__label"><span class="dashicons dashicons-star-filled"></span> Product Reviews</div>
+							<p class="components-placeholder__instructions">Connect a review source to pull in customer reviews for this product. Reviews sync in the background and are cached locally.</p>
+							<div class="components-placeholder__fieldset">
+								<button class="components-button is-primary">Connect Judge.me</button>
+								<button class="components-button is-secondary">Connect Yotpo</button>
+								<button class="components-button is-secondary">Connect Google Reviews</button>
+								<button class="components-button is-tertiary">Use WooCommerce reviews</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="interface-interface-skeleton__sidebar">
+				<div class="block-editor-block-card">
+					<span class="block-editor-block-card__icon"><span class="dashicons dashicons-star-filled"></span></span>
+					<div>
+						<h2 class="block-editor-block-card__title">Product Reviews</h2>
+						<p class="block-editor-block-card__description">Displays third-party product reviews, synced and cached.</p>
+					</div>
+				</div>
+				<div class="components-panel">
+					<div class="components-panel__body is-opened">
+						<button class="components-panel__body-title">Data source</button>
+						<div class="components-panel__body-content">
+							<div class="components-notice is-warning"><span>No source connected yet. Connect one in the canvas to configure display options.</span></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<!-- ====================== Screen 2: Variant A — summary + highlights ====================== -->
+<section data-screen="summary" data-title="A — Summary + highlights">
+	<div class="interface-interface-skeleton">
+		<div class="editor-header">
+			<button class="components-button is-primary has-icon editor-header__inserter" aria-label="Block inserter"><span class="dashicons dashicons-plus-alt2"></span></button>
+			<button class="components-button has-icon" aria-label="Undo"><span class="dashicons dashicons-undo"></span></button>
+			<button class="components-button has-icon" aria-label="Redo"><span class="dashicons dashicons-redo"></span></button>
+			<div class="editor-header__center"><strong>AeroPress Go — product page</strong> · Draft</div>
+			<div class="editor-header__end">
+				<button class="components-button is-tertiary">Save draft</button>
+				<button class="components-button is-primary">Publish</button>
+				<button class="components-button has-icon" aria-label="Settings"><span class="dashicons dashicons-admin-generic"></span></button>
+			</div>
+		</div>
+		<div class="interface-interface-skeleton__body">
+			<div class="interface-interface-skeleton__content">
+				<div class="editor-canvas__paper">
+					<h1>AeroPress Go Travel Coffee Press</h1>
+					<p>Brews smooth, rich coffee anywhere — the full press kit packs into its own mug.</p>
+
+					<div class="is-selected-block pr" style="position: relative; margin: 32px 0; padding: 8px;">
+						<div class="pr-summary">
+							<div class="avg">
+								<div class="num">4.6</div>
+								<span class="stars"><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-half"></span></span>
+								<div class="of">862 reviews</div>
+							</div>
+							<div class="pr-hist" data-note="Aggregate answers “is it good?” without scrolling 862 reviews — strongest at the top of a product page">
+								<div class="row"><span>5 ★</span><div class="bar"><i style="width:71%"></i></div><span>612</span></div>
+								<div class="row"><span>4 ★</span><div class="bar"><i style="width:17%"></i></div><span>148</span></div>
+								<div class="row"><span>3 ★</span><div class="bar"><i style="width:6%"></i></div><span>52</span></div>
+								<div class="row"><span>2 ★</span><div class="bar"><i style="width:3%"></i></div><span>27</span></div>
+								<div class="row"><span>1 ★</span><div class="bar"><i style="width:3%"></i></div><span>23</span></div>
+							</div>
+						</div>
+						<div class="pr-quotes">
+							<div class="pr-quote">
+								<span class="stars"><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span></span>
+								<blockquote>“Replaced my whole travel kit. Coffee tastes like my $3k café setup at home.”</blockquote>
+								<div class="rev-meta">Dana K. · Mar 2026 · <span class="verified">✓ Verified</span></div>
+							</div>
+							<div class="pr-quote">
+								<span class="stars"><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span></span>
+								<blockquote>“Survived six months of backpacking. The mug lid doubles as a measuring scoop.”</blockquote>
+								<div class="rev-meta">Miguel A. · Jun 2026 · <span class="verified">✓ Verified</span></div>
+							</div>
+							<div class="pr-quote">
+								<span class="stars"><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span></span>
+								<blockquote>“Smaller cup than the original — fine for travel, but know what you're buying.”</blockquote>
+								<div class="rev-meta">Priya S. · May 2026 · <span class="verified">✓ Verified</span></div>
+							</div>
+						</div>
+						<p class="pr-readall"><a href="#">Read all 862 reviews →</a></p>
+					</div>
+				</div>
+			</div>
+			<div class="interface-interface-skeleton__sidebar">
+				<div class="block-editor-block-card">
+					<span class="block-editor-block-card__icon"><span class="dashicons dashicons-star-filled"></span></span>
+					<div>
+						<h2 class="block-editor-block-card__title">Product Reviews</h2>
+						<p class="block-editor-block-card__description">Displays third-party product reviews, synced and cached.</p>
+					</div>
+				</div>
+				<div class="components-panel">
+					<div class="components-panel__body is-opened">
+						<button class="components-panel__body-title">Data source</button>
+						<div class="components-panel__body-content">
+							<div class="components-panel__row"><span>Judge.me</span><span class="wpds-badge is-success">Connected</span></div>
+							<div class="components-base-control">
+								<label class="components-base-control__label">Product</label>
+								<select><option>AeroPress Go Travel Coffee Press</option><option>AeroPress Original</option><option>Flow Control Filter Cap</option></select>
+							</div>
+							<div class="components-panel__row">
+								<span class="components-base-control__help" style="margin:0">862 reviews · synced 12 min ago</span>
+								<button class="components-button is-tertiary">Sync now</button>
+							</div>
+							<label class="components-toggle-control">
+								<span class="components-form-toggle"><input type="checkbox" checked><span class="components-form-toggle__track"></span><span class="components-form-toggle__thumb"></span></span>
+								<span class="components-toggle-control__label">Auto-sync hourly</span>
+							</label>
+							<div class="components-base-control">
+								<label class="components-base-control__label">Minimum rating shown</label>
+								<div class="components-range-control">
+									<input type="range" min="1" max="5" value="1">
+									<input type="number" class="components-range-control__number" value="1">
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="components-panel__body is-opened">
+						<button class="components-panel__body-title">Display</button>
+						<div class="components-panel__body-content">
+							<label class="components-toggle-control">
+								<span class="components-form-toggle"><input type="checkbox" checked><span class="components-form-toggle__track"></span><span class="components-form-toggle__thumb"></span></span>
+								<span class="components-toggle-control__label">Show rating histogram</span>
+							</label>
+							<div class="components-base-control">
+								<label class="components-base-control__label">Highlighted quotes</label>
+								<div class="components-range-control">
+									<input type="range" min="0" max="6" value="3">
+									<input type="number" class="components-range-control__number" value="3">
+								</div>
+							</div>
+							<div class="components-base-control" data-note="The AI angle: quote selection is a model call over the cached reviews, re-run on each sync">
+								<label class="components-base-control__label">Quote selection</label>
+								<select><option>AI — most representative</option><option>Highest rated</option><option>Most recent</option><option>Most helpful votes</option></select>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<!-- ====================== Screen 3: Variant B — filterable grid ====================== -->
+<section data-screen="grid" data-title="B — Filterable grid">
+	<div class="interface-interface-skeleton">
+		<div class="editor-header">
+			<button class="components-button is-primary has-icon editor-header__inserter" aria-label="Block inserter"><span class="dashicons dashicons-plus-alt2"></span></button>
+			<button class="components-button has-icon" aria-label="Undo"><span class="dashicons dashicons-undo"></span></button>
+			<button class="components-button has-icon" aria-label="Redo"><span class="dashicons dashicons-redo"></span></button>
+			<div class="editor-header__center"><strong>AeroPress Go — product page</strong> · Draft</div>
+			<div class="editor-header__end">
+				<button class="components-button is-tertiary">Save draft</button>
+				<button class="components-button is-primary">Publish</button>
+				<button class="components-button has-icon" aria-label="Settings"><span class="dashicons dashicons-admin-generic"></span></button>
+			</div>
+		</div>
+		<div class="interface-interface-skeleton__body">
+			<div class="interface-interface-skeleton__content">
+				<div class="editor-canvas__paper">
+					<h1>AeroPress Go Travel Coffee Press</h1>
+					<p>Brews smooth, rich coffee anywhere — the full press kit packs into its own mug.</p>
+
+					<div class="is-selected-block pr" style="position: relative; margin: 32px 0; padding: 8px;">
+						<div class="pr-toolbar" data-note="Filters run client-side on the cached sync — no API call per click, works with 862 or 8,000 reviews">
+							<button class="pr-chip on">All (862)</button>
+							<button class="pr-chip">5★ (612)</button>
+							<button class="pr-chip">4★ (148)</button>
+							<button class="pr-chip">≤3★ (102)</button>
+							<button class="pr-chip">✓ Verified only</button>
+							<select><option>Most helpful</option><option>Newest first</option><option>Highest rated</option><option>Lowest rated</option></select>
+						</div>
+						<div class="pr-grid">
+							<div class="pr-card">
+								<span class="stars"><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span></span>
+								<p>“Replaced my whole travel kit. Coffee tastes like my café setup at home.”</p>
+								<div class="rev-meta">Dana K. · Mar 2026 · <span class="verified">✓ Verified</span></div>
+							</div>
+							<div class="pr-card">
+								<span class="stars"><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span></span>
+								<p>“Survived six months of backpacking. The lid doubles as a scoop.”</p>
+								<div class="rev-meta">Miguel A. · Jun 2026 · <span class="verified">✓ Verified</span></div>
+							</div>
+							<div class="pr-card">
+								<span class="stars"><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span></span>
+								<p>“Smaller cup than the original — fine for travel, know what you're buying.”</p>
+								<div class="rev-meta">Priya S. · May 2026 · <span class="verified">✓ Verified</span></div>
+							</div>
+							<div class="pr-card">
+								<span class="stars"><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span></span>
+								<p>“Bought three as gifts. Everyone converted from pod machines.”</p>
+								<div class="rev-meta">Tom W. · Jul 2026</div>
+							</div>
+							<div class="pr-card">
+								<span class="stars"><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span></span>
+								<p>“Good coffee but the paddle feels flimsy compared to everything else.”</p>
+								<div class="rev-meta">Sarah L. · Apr 2026 · <span class="verified">✓ Verified</span></div>
+							</div>
+							<div class="pr-card">
+								<span class="stars"><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span></span>
+								<p>“Office kitchen upgrade of the year. We run a queue at 9am.”</p>
+								<div class="rev-meta">Jae P. · Feb 2026 · <span class="verified">✓ Verified</span></div>
+							</div>
+						</div>
+						<div class="pr-pagination">
+							<span class="cur">1</span><a href="#">2</a><a href="#">3</a><span>…</span><a href="#">144</a><a href="#">›</a>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="interface-interface-skeleton__sidebar">
+				<div class="block-editor-block-card">
+					<span class="block-editor-block-card__icon"><span class="dashicons dashicons-star-filled"></span></span>
+					<div>
+						<h2 class="block-editor-block-card__title">Product Reviews</h2>
+						<p class="block-editor-block-card__description">Displays third-party product reviews, synced and cached.</p>
+					</div>
+				</div>
+				<div class="components-panel">
+					<div class="components-panel__body is-opened">
+						<button class="components-panel__body-title">Data source</button>
+						<div class="components-panel__body-content">
+							<div class="components-panel__row"><span>Judge.me</span><span class="wpds-badge is-success">Connected</span></div>
+							<div class="components-panel__row">
+								<span class="components-base-control__help" style="margin:0">862 reviews · synced 12 min ago</span>
+								<button class="components-button is-tertiary">Sync now</button>
+							</div>
+						</div>
+					</div>
+					<div class="components-panel__body is-opened">
+						<button class="components-panel__body-title">Display</button>
+						<div class="components-panel__body-content">
+							<div class="components-base-control">
+								<label class="components-base-control__label">Reviews per page</label>
+								<div class="components-range-control">
+									<input type="range" min="3" max="24" value="6">
+									<input type="number" class="components-range-control__number" value="6">
+								</div>
+							</div>
+							<div class="components-base-control">
+								<label class="components-base-control__label">Columns</label>
+								<div class="components-toggle-group-control" role="radiogroup" aria-label="Columns">
+									<label><input type="radio" name="grid-cols"><span>2</span></label>
+									<label><input type="radio" name="grid-cols" checked><span>3</span></label>
+								</div>
+							</div>
+							<label class="components-toggle-control">
+								<span class="components-form-toggle"><input type="checkbox" checked><span class="components-form-toggle__track"></span><span class="components-form-toggle__thumb"></span></span>
+								<span class="components-toggle-control__label">Star filter bar</span>
+							</label>
+							<label class="components-toggle-control">
+								<span class="components-form-toggle"><input type="checkbox" checked><span class="components-form-toggle__track"></span><span class="components-form-toggle__thumb"></span></span>
+								<span class="components-toggle-control__label">Sort dropdown</span>
+							</label>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<!-- ====================== Screen 4: Variant C — carousel ====================== -->
+<section data-screen="carousel" data-title="C — Carousel">
+	<div class="interface-interface-skeleton">
+		<div class="editor-header">
+			<button class="components-button is-primary has-icon editor-header__inserter" aria-label="Block inserter"><span class="dashicons dashicons-plus-alt2"></span></button>
+			<button class="components-button has-icon" aria-label="Undo"><span class="dashicons dashicons-undo"></span></button>
+			<button class="components-button has-icon" aria-label="Redo"><span class="dashicons dashicons-redo"></span></button>
+			<div class="editor-header__center"><strong>AeroPress Go — product page</strong> · Draft</div>
+			<div class="editor-header__end">
+				<button class="components-button is-tertiary">Save draft</button>
+				<button class="components-button is-primary">Publish</button>
+				<button class="components-button has-icon" aria-label="Settings"><span class="dashicons dashicons-admin-generic"></span></button>
+			</div>
+		</div>
+		<div class="interface-interface-skeleton__body">
+			<div class="interface-interface-skeleton__content">
+				<div class="editor-canvas__paper">
+					<h1>AeroPress Go Travel Coffee Press</h1>
+					<p>Brews smooth, rich coffee anywhere — the full press kit packs into its own mug.</p>
+
+					<div class="is-selected-block pr" style="position: relative; margin: 32px 0; padding: 8px;">
+						<div class="pr-carousel">
+							<button class="pr-arrow prev" aria-label="Previous review">‹</button>
+							<span class="stars"><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span></span>
+							<blockquote>“Replaced my whole travel kit. Coffee tastes like my café setup at home.”</blockquote>
+							<div class="rev-meta">Dana K. · Mar 2026 · <span class="verified">✓ Verified</span> · review 1 of 862</div>
+							<button class="pr-arrow next" aria-label="Next review">›</button>
+							<div class="pr-dots" data-note="One-at-a-time keeps the page short but hides volume — and unrendered reviews are invisible to search engines"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+						</div>
+					</div>
+
+					<p>The pattern repeats: compact, quotable, but only one voice at a time.</p>
+				</div>
+			</div>
+			<div class="interface-interface-skeleton__sidebar">
+				<div class="block-editor-block-card">
+					<span class="block-editor-block-card__icon"><span class="dashicons dashicons-star-filled"></span></span>
+					<div>
+						<h2 class="block-editor-block-card__title">Product Reviews</h2>
+						<p class="block-editor-block-card__description">Displays third-party product reviews, synced and cached.</p>
+					</div>
+				</div>
+				<div class="components-panel">
+					<div class="components-panel__body is-opened">
+						<button class="components-panel__body-title">Data source</button>
+						<div class="components-panel__body-content">
+							<div class="components-panel__row"><span>Judge.me</span><span class="wpds-badge is-success">Connected</span></div>
+							<div class="components-panel__row">
+								<span class="components-base-control__help" style="margin:0">862 reviews · synced 12 min ago</span>
+								<button class="components-button is-tertiary">Sync now</button>
+							</div>
+						</div>
+					</div>
+					<div class="components-panel__body is-opened">
+						<button class="components-panel__body-title">Display</button>
+						<div class="components-panel__body-content">
+							<label class="components-toggle-control">
+								<span class="components-form-toggle"><input type="checkbox"><span class="components-form-toggle__track"></span><span class="components-form-toggle__thumb"></span></span>
+								<span class="components-toggle-control__label">Autoplay</span>
+							</label>
+							<div class="components-base-control">
+								<label class="components-base-control__label">Interval (seconds)</label>
+								<div class="components-range-control">
+									<input type="range" min="2" max="15" value="6">
+									<input type="number" class="components-range-control__number" value="6">
+								</div>
+							</div>
+							<label class="components-toggle-control">
+								<span class="components-form-toggle"><input type="checkbox" checked><span class="components-form-toggle__track"></span><span class="components-form-toggle__thumb"></span></span>
+								<span class="components-toggle-control__label">Show progress dots</span>
+							</label>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<script>
+/*@inline wpp-runtime.js*/
+</script>
+</body>
+</html>

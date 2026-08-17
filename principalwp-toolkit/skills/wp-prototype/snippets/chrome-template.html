@@ -1,0 +1,51 @@
+<!-- Shared chrome, for prototypes with three or more screens.
+
+     Duplicating the whole editor shell per screen is fine at two screens and
+     becomes most of the document at five. Move it into a <template> once, and
+     each screen supplies only the parts that differ.
+
+     The template lives at top level, outside every [data-screen]. -->
+
+<template data-chrome="editor">
+	<div class="interface-interface-skeleton">
+		<div class="editor-header">
+			<button class="components-button is-primary has-icon editor-header__inserter" aria-label="Block inserter"><span class="dashicons dashicons-plus-alt2"></span></button>
+			<button class="components-button has-icon" aria-label="Undo"><span class="dashicons dashicons-undo"></span></button>
+			<button class="components-button has-icon" aria-label="Redo"><span class="dashicons dashicons-redo"></span></button>
+			<div class="editor-header__center"><strong>Sample post</strong> · Draft</div>
+			<div class="editor-header__end">
+				<button class="components-button is-tertiary">Save draft</button>
+				<button class="components-button is-tertiary is-pressed" data-viewport="desktop">Desktop</button>
+				<button class="components-button is-tertiary" data-viewport="tablet">Tablet</button>
+				<button class="components-button is-tertiary" data-viewport="mobile">Mobile</button>
+				<button class="components-button is-primary">Publish</button>
+				<button class="components-button has-icon" aria-label="Settings"><span class="dashicons dashicons-admin-generic"></span></button>
+			</div>
+		</div>
+		<div class="interface-interface-skeleton__body">
+			<div class="interface-interface-skeleton__content">
+				<div class="editor-canvas__paper" data-slot="canvas"></div>
+			</div>
+			<div class="interface-interface-skeleton__sidebar" data-slot="inspector"></div>
+		</div>
+	</div>
+</template>
+
+
+<!-- Each screen then carries only its own canvas and inspector. The runtime
+     moves the [data-fill] contents into the matching [data-slot] before
+     anything else runs, so notes, charts and tabs all still work. -->
+
+<section data-screen="a" data-title="A — Grid" data-chrome="editor"
+         data-subtitle="One honest sentence on the trade-off this direction makes.">
+	<div data-fill="canvas">
+		<h1>Sample post</h1>
+		<p>Surrounding content so the block sits in a realistic page.</p>
+		<div class="is-selected-block" style="position:relative; margin:48px 0 32px;">
+			<!-- block toolbar + the block itself -->
+		</div>
+	</div>
+	<div data-fill="inspector">
+		<!-- block card + panels -->
+	</div>
+</section>

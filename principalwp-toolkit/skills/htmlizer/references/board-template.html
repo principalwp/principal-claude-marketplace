@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Feedback round · Principal WP</title>
+<!-- Principal "P" mark as the tab favicon. Inlined as a data: URI rather than
+     linked to /assets/p-mark-cranberry.svg on purpose: asset refs are now
+     root-absolute under /assets/, so page depth no longer matters, but the
+     img/*.svg copy step is still conditional — a linked favicon would
+     silently 404 if that step didn't run. This never does. -->
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzhDMzM0NCIvPjxwYXRoIGQ9Ik0zMCAyMiBINTggYTE4IDE4IDAgMCAxIDAgMzYgSDQyIFY3OCBIMzAgWiBNNDIgMzMgVjQ3IEg1NiBhNyA3IDAgMCAwIDAgLTE0IFoiIGZpbGw9IiNmZmYiLz48L3N2Zz4=">
+<style>
+/* ---- Principal WP brand fonts (served from same origin) ---- */
+@font-face{font-family:'IBM Plex Sans';src:url('/assets/fonts/IBMPlexSans-Variable.woff2') format('woff2');font-weight:100 700;font-style:normal;font-display:swap}
+@font-face{font-family:'IBM Plex Sans';src:url('/assets/fonts/IBMPlexSans-VariableItalic.woff2') format('woff2');font-weight:100 700;font-style:italic;font-display:swap}
+@font-face{font-family:'IBM Plex Mono';src:url('/assets/fonts/IBMPlexMono-Regular.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'IBM Plex Mono';src:url('/assets/fonts/IBMPlexMono-Medium.woff2') format('woff2');font-weight:500;font-style:normal;font-display:swap}
+@font-face{font-family:'Instrument Serif';src:url('/assets/fonts/InstrumentSerif-Regular.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Instrument Serif';src:url('/assets/fonts/InstrumentSerif-Italic.woff2') format('woff2');font-weight:400;font-style:italic;font-display:swap}
+:root{
+  --navy:#1B2A4A; --navy-90:#313F5C; --steel-blue:#A8C0CF; --cranberry:#8C3344;
+  --cranberry-hover:#6D2735; --cranberry-active:#5B212C; --off-white:#F4F6FA; --warm-wash:#F3EBF0; --white:#fff;
+  --navy-06:#F1F2F4; --navy-10:#E8E9EC; --navy-15:#DCDFE3; --navy-40:#A3A9B6; --navy-60:#767F92; --navy-80:#48546E; --navy-85:#3D4965;
+  --success:#4F7A12; --error:#C0392B;
+  --font-display:'Instrument Serif',Georgia,serif; --font-body:'IBM Plex Sans',system-ui,sans-serif; --font-mono:'IBM Plex Mono','Courier New',monospace;
+  --r-sm:4px; --r-md:6px; --r-lg:8px;
+  --s2:.5rem; --s3:.75rem; --s4:1rem; --s5:1.5rem; --s6:2rem;
+}
+*{box-sizing:border-box;user-select:text}
+html{font-size:16px}
+/* padding-bottom clears the fixed submit bar, which grows to ~174px once its contents wrap
+   on a 280px-wide phone — so it never covers the comment box at any width */
+body{margin:0;font-family:var(--font-body);font-size:1rem;line-height:1.6;color:var(--navy-90);background:var(--off-white);-webkit-font-smoothing:antialiased;padding-bottom:186px}
+/* header — light page header (matches base.css .page-header): bottom rule, NO band, NO eyebrow */
+header.hero{background:var(--off-white);color:var(--navy-90);padding:46px 28px 24px;border-bottom:1px solid var(--navy-10)}
+.hero-in{max-width:1140px;margin:0 auto;display:flex;gap:18px;align-items:flex-start}
+.hero img{width:38px;height:38px;flex:none;margin-top:6px}
+.hero h1{font-family:var(--font-display);font-weight:400;font-size:2.4rem;line-height:1.12;letter-spacing:0;color:var(--navy);margin:.1rem 0 .4rem}
+.hero h1 em{font-style:italic}
+.hero p{margin:0;max-width:760px;color:var(--navy-90);font-weight:600}
+.banner{margin:14px 0 0;padding:11px 15px;border-left:2px solid var(--cranberry);background:var(--warm-wash);color:var(--navy-90);font-size:.9rem;display:none}
+.banner.show{display:block}
+.wrap{max-width:1140px;margin:0 auto;padding:0 28px}
+/* min(340px,100%) so the column floor collapses on a narrow phone instead of forcing the page wider */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(340px,100%),1fr));gap:18px;margin-top:22px}
+/* group heading — spans the whole grid row. Sentence case, no letter-spacing: a heading, not an eyebrow. */
+.group{grid-column:1/-1;font-family:var(--font-body);font-size:1.375rem;font-weight:600;color:var(--navy);margin:20px 0 0;padding-bottom:8px;border-bottom:1px solid var(--navy-10)}
+.grid .group:first-child{margin-top:0}
+/* card */
+.card{position:relative;background:var(--white);border:1px solid var(--navy-10);border-radius:var(--r-lg);padding:22px 22px 18px;display:flex;flex-direction:column;text-align:left;align-items:flex-start;transition:border-color 120ms ease}
+.card:hover{border-color:var(--navy-15)}
+/* Dim the card's text when Skip is chosen, but NOT the footer or the reason box: dimming those
+   also dims the selected Skip button's label and the note you are typing, below the contrast floor. */
+.card.rated-skip > :not(.cardfoot):not(.note){opacity:.5}
+.card.st-ready{border-color:var(--cranberry)}
+/* Re-review state shows through the cranberry border, the sort-to-top, the top banner, and a
+   "Re-review" entry in the plain-text .meta line — never a marker above the heading.
+   review-design.md bans state ribbons outright, casing notwithstanding. */
+.card h3{font-family:var(--font-body);font-size:1.0625rem;font-weight:600;line-height:1.3;color:var(--navy);margin:0 0 6px}
+/* plain-text meta — NOT a pill. Mono, muted-but-readable, no fill, no border-radius. */
+.meta{font-family:var(--font-mono);font-size:.8125rem;color:var(--navy-85);font-weight:500;margin:0 0 10px}
+.meta b{color:var(--navy);font-weight:600}
+.summary{font-size:1rem;color:var(--navy-90);margin:0 0 10px}
+/* revealed detail reads at full body color (--navy-90), never dimmer than the summary above it */
+/* overflow-wrap:anywhere — a long unbroken path would otherwise set the card's min-content width
+   and push the whole page sideways on a phone. Applies to the card body too, not just .file. */
+.detail{font-size:1rem;color:var(--navy-90);margin:8px 0 0;text-align:left;display:none;overflow-wrap:anywhere}
+.detail.open{display:block}
+.detail > *:first-child{margin-top:0}
+.detail h4{font-family:var(--font-body);font-size:1rem;font-weight:600;color:var(--navy);margin:12px 0 4px}
+.detail ul{margin:4px 0 8px;padding-left:1.2em}
+.detail li{margin:2px 0}
+.detail .pos{color:var(--success);font-weight:600}
+.detail .neg{color:var(--error);font-weight:600}
+.detail code{font-family:var(--font-mono);font-size:.85em;background:var(--navy-06);padding:1px 5px;border-radius:var(--r-sm);color:var(--navy)}
+.detail a{color:var(--cranberry);text-decoration:underline;text-underline-offset:2px}
+.detail .file{font-family:var(--font-mono);font-size:.85em;text-decoration:none;border-bottom:1px dotted var(--navy-40)}
+.detail a.file{border-bottom-color:var(--cranberry)}
+.detail a.file::after{content:" \2197";font-size:.85em}
+.reco{font-weight:600;margin:10px 0 2px}
+.why{position:relative;color:var(--cranberry);cursor:help;font-weight:400}
+.why-pop{display:none;position:absolute;left:0;bottom:calc(100% + 6px);width:min(420px,78vw);background:var(--white);color:var(--navy-90);border:1px solid var(--navy-15);border-radius:var(--r-md);padding:10px 12px;font-weight:400;font-size:.875rem;line-height:1.5;box-shadow:0 4px 14px rgba(27,42,74,.14);z-index:20}
+.why:hover .why-pop,.why:focus-within .why-pop{display:block}
+.more{display:block;text-align:left;font-family:var(--font-body);font-size:.8rem;font-weight:500;color:var(--navy);text-decoration:underline;text-underline-offset:3px;background:none;border:0;padding:6px 0 0;cursor:pointer}
+.more:hover{color:var(--cranberry)}
+.links{margin:9px 0 0;display:flex;gap:14px;flex-wrap:wrap}
+.links a{font-family:var(--font-body);font-size:.85rem;font-weight:500;color:var(--navy);text-decoration:underline;text-underline-offset:4px;cursor:pointer}
+.links a::after{content:" \2192";font-family:var(--font-mono)}
+.links a:hover{color:var(--cranberry)}
+.cardfoot{margin-top:auto;padding-top:14px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+/* flex-wrap so the three buttons can drop to a second line rather than set the card's
+   min-content width and push a narrow phone sideways */
+.rate{display:flex;gap:6px;flex-wrap:wrap}
+.rate button{font-family:var(--font-body);font-size:.9375rem;font-weight:500;padding:9px 14px;border-radius:var(--r-md);border:1px solid var(--navy-10);background:var(--white);color:var(--navy-80);cursor:pointer;transition:all 120ms ease}
+.rate button:hover{border-color:var(--navy-15)}
+.rate button.on[data-r="good"]{background:var(--cranberry);border-color:var(--cranberry);color:#fff}
+.rate button.on[data-r="maybe"]{background:var(--navy);border-color:var(--navy);color:#fff}
+.rate button.on[data-r="skip"]{background:var(--navy-80);border-color:var(--navy-80);color:#fff}
+.note{width:100%;margin-top:10px;font-family:var(--font-body);font-size:.9rem;color:var(--navy);background:var(--white);border:1px solid var(--navy-10);border-radius:var(--r-sm);padding:8px 10px;resize:vertical;min-height:36px;outline:none;display:none;transition:border-color 120ms ease}
+.note:focus{border-color:var(--cranberry)}
+.note.show{display:block}
+/* general comments — free-text field for anything not tied to a single card; last block before the bar */
+.comments{margin:26px 0 0}
+.comments-label{display:block;font-size:.8125rem;font-weight:600;color:var(--navy);margin:0 0 6px}
+.comments-hint{font-weight:400;color:var(--navy-60)}
+.comments-box{width:100%;min-height:72px;font-family:var(--font-body);font-size:.9rem;color:var(--navy);background:var(--white);border:1px solid var(--navy-10);border-radius:var(--r-sm);padding:9px 11px;resize:vertical;outline:none;transition:border-color 120ms ease}
+.comments-box:focus{border-color:var(--cranberry)}
+/* bottom action bar */
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--white);border-top:1px solid var(--navy-10)}
+.bar-in{max-width:1140px;margin:0 auto;padding:13px 28px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.tally{font-family:var(--font-mono);font-size:.8rem;color:var(--navy-60)}
+.tally b{color:var(--navy)}
+/* attribution — plain muted text link, leftmost in the bar (bottom-left of the fixed
+   bar); no pill/badge. This template doesn't load capture.js, so it carries its own copy. */
+.attribution{font-family:var(--font-body);font-size:.75rem;color:var(--navy-60);text-decoration:none;white-space:nowrap}
+.attribution:hover,.attribution:focus-visible{color:var(--cranberry);text-decoration:underline}
+.bar-actions{margin-left:auto;display:flex;gap:16px;align-items:center}
+.btn-link{font-family:var(--font-body);font-size:.85rem;font-weight:500;color:var(--navy);text-decoration:underline;text-underline-offset:4px;background:none;border:0;padding:0;cursor:pointer}
+.btn-link:hover{color:var(--cranberry)}
+.btn{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-body);font-size:.875rem;font-weight:500;padding:.65rem 1.1rem;border-radius:var(--r-md);border:1px solid transparent;cursor:pointer;transition:background 120ms ease}
+.btn-cranberry{background:var(--cranberry);color:#fff}
+.btn-cranberry:hover{background:var(--cranberry-hover)}
+.btn-cranberry::after{content:"\2192";font-family:var(--font-mono)}
+.btn-cranberry.copied{background:var(--navy)}
+.btn-cranberry.copied::after{content:""}
+.btn-cranberry.submitted{background:var(--navy)}
+.substate{display:none;align-items:center;gap:7px;font-family:var(--font-body);font-size:.82rem;font-weight:500;color:var(--navy)}
+.substate.show{display:inline-flex}
+.substate::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--cranberry);flex:none}
+.toast{position:fixed;bottom:74px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;font-size:.875rem;padding:9px 16px;border-radius:var(--r-md);opacity:0;pointer-events:none;transition:opacity .2s;z-index:50}
+.toast.show{opacity:1}
+dialog{background:var(--white);color:var(--navy-90);border:1px solid var(--navy-10);border-radius:var(--r-lg);max-width:760px;width:92%;padding:0}
+dialog::backdrop{background:rgba(27,42,74,.4)}
+.dlg-head{padding:15px 18px;border-bottom:1px solid var(--navy-10);display:flex;align-items:center}
+.dlg-head h4{margin:0;font-family:var(--font-body);font-size:1rem;font-weight:600;color:var(--navy)}
+.dlg-head button{margin-left:auto;background:none;border:0;color:var(--navy-60);font-size:20px;cursor:pointer;line-height:1}
+pre.out{margin:0;padding:16px 18px;white-space:pre-wrap;word-break:break-word;font-family:var(--font-mono);font-size:.78rem;line-height:1.55;max-height:60vh;overflow:auto;color:var(--navy-90)}
+.dlg-foot{padding:12px 18px;border-top:1px solid var(--navy-10);display:flex;gap:14px;justify-content:flex-end;align-items:center}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="hero-in">
+    <img id="pmark" src="/assets/p-mark.svg" alt="" onerror="this.style.display='none'">
+    <div>
+      <h1 id="title">Your feedback, in <em>one pass</em>.</h1>
+      <p id="lede">Rate each item, add a note, then Submit. Your response goes straight back to Claude, no copy-paste.</p>
+      <div class="banner" id="banner"></div>
+    </div>
+  </div>
+</header>
+<div class="wrap">
+  <div class="grid" id="grid"></div>
+  <section class="comments">
+    <label class="comments-label" for="comments">General comments <span class="comments-hint">— anything not tied to a specific card above</span></label>
+    <textarea id="comments" class="comments-box" placeholder="Optional — overall thoughts, missing context, or a general note for Claude."></textarea>
+  </section>
+</div>
+<div class="bar"><div class="bar-in">
+  <a class="attribution" href="https://principalwp.com" target="_blank" rel="noopener">htmlizer is a product of PrincipalWP.com</a>
+  <div class="tally" id="tally">Rate items to build your feedback</div>
+  <div class="bar-actions">
+    <span class="substate" id="subState">Submitted</span>
+    <button class="btn-link" id="btnPrompt">Copy prompt</button>
+    <button class="btn btn-cranberry" id="btnSubmit">Submit to Claude</button>
+  </div>
+</div></div>
+<div class="toast" id="toast"></div>
+<dialog id="dlg">
+  <div class="dlg-head"><h4 id="dlgTitle">Paste this back to Claude</h4><button id="dlgX">&times;</button></div>
+  <pre class="out" id="dlgOut"></pre>
+  <div class="dlg-foot"><button class="btn-link" id="dlgClose">Close</button><button class="btn btn-cranberry" id="dlgCopy">Copy</button></div>
+</dialog>
+
+<script>
+/* ===== injected by the skill — replace the four markers ===== */
+const ROUND = /*__ROUND__*/ 1;
+const TITLE = /*__TITLE__*/ "";
+const DATA  = /*__ITEMS__*/ [];
+const SUBMIT_URL = /*__SUBMIT_URL__*/ "";   // e.g. "/?t=<nonce>"; "" => copy-paste fallback
+const CHANNEL = /*__CHANNEL__*/ "";         // generating thread's per-page random channel, never the session id; Monitor greps the shared log for it (see htmlizer SKILL.md step 4)
+/* DATA item: { id, title, status:""|"ready", group (optional section heading), badges:[], summary,
+   detail (RICH HTML — rendered at body color under the Details toggle; default to dense,
+   dynamically-chosen sections per PRINCIPLES "Depth"), open:true? (default-expand detail),
+   links:[{label,href}] } */
+/* =========================================================== */
+
+if (TITLE) document.getElementById('title').textContent = TITLE;
+const readyN = DATA.filter(d => d.status === 'ready').length;
+if (readyN) { const b = document.getElementById('banner'); b.classList.add('show');
+  b.textContent = readyN + (readyN > 1 ? ' items' : ' item') + ' addressed since your last pass, outlined in red and sorted to top. Re-review and re-rate.'; }
+if (!SUBMIT_URL) document.getElementById('btnSubmit').textContent = 'Copy prompt';
+
+const state = {};
+// Group first (in the order each group first appears in DATA), ready-to-top within a group.
+// Sorting by status alone would scatter one group's items across the page and make render()
+// emit that group's heading more than once. Ungrouped items sort last, together, and render()
+// closes the open heading when it reaches them so they don't file under someone else's section.
+function groupIndex(it){ return it.group ? DATA.findIndex(d=>d.group===it.group) : Number.MAX_SAFE_INTEGER; }
+function ordered(){ return DATA.slice().sort((a,b)=>groupIndex(a)-groupIndex(b)||(b.status==='ready')-(a.status==='ready')); }
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function render(){
+  const grid=document.getElementById('grid'); grid.innerHTML='';
+  let group=null;
+  ordered().forEach(it=>{
+    // optional it.group: emits a full-width heading each time the value changes,
+    // so a long board reads as labelled sections instead of one undifferentiated wall.
+    if(it.group!==group){
+      group=it.group||null;
+      if(group){
+        const h=document.createElement('h2'); h.className='group'; h.textContent=group;
+        grid.appendChild(h);
+      }
+    }
+    grid.appendChild(card(it));
+  });
+}
+function card(it){
+  const st=state[it.id]||{rate:'',note:''};
+  const el=document.createElement('div');
+  el.className='card'+(st.rate?(' rated-'+st.rate):'')+(it.status==='ready'?' st-ready':'');
+  const badges=(it.badges||[]).map(b=>esc(b)).join(' · ');
+  const links=(it.links||[]).map(l=>'<a href="'+esc(l.href)+'" target="_blank" rel="noopener">'+esc(l.label)+'</a>').join('');
+  el.innerHTML=
+    '<h3>'+esc(it.title)+'</h3>'+
+    (badges?'<div class="meta">'+badges+'</div>':'')+
+    (it.summary?'<p class="summary">'+esc(it.summary)+'</p>':'')+
+    // it.detail is injected as RAW HTML (not esc()'d) on purpose so authors can use
+    // inline <code>, <h4>, <ul>, <span class="pos/neg"> etc. TRUST ASSUMPTION: detail must
+    // be skill-author-generated, never untrusted user input — it is an XSS sink otherwise.
+    // it.open === true renders the detail expanded on load (use for dense option boards).
+    (it.detail?'<button class="more">'+(it.open?'Hide details':'Details')+'</button><div class="detail'+(it.open?' open':'')+'">'+it.detail+'</div>':'')+
+    (links?'<div class="links">'+links+'</div>':'')+
+    '<div class="cardfoot"><div class="rate">'+
+      '<button data-r="good">Yes</button>'+
+      '<button data-r="maybe">Maybe</button>'+
+      '<button data-r="skip">Skip</button>'+
+    '</div></div>'+
+    '<textarea class="note" placeholder="note for Claude"></textarea>';
+  if(it.detail){ const m=el.querySelector('.more'),d=el.querySelector('.detail');
+    m.onclick=()=>{ d.classList.toggle('open'); m.textContent=d.classList.contains('open')?'Hide details':'Details'; }; }
+  const note=el.querySelector('.note');
+  if(st.note){ note.value=st.note; note.classList.add('show'); }
+  el.querySelectorAll('.rate button').forEach(b=>{
+    if(st.rate===b.dataset.r) b.classList.add('on');
+    b.onclick=()=>{ const cur=state[it.id]||{rate:'',note:note.value};
+      cur.rate=cur.rate===b.dataset.r?'':b.dataset.r;
+      state[it.id]={...cur,id:it.id,title:it.title};
+      note.classList.toggle('show',!!cur.rate);
+      el.className='card'+(cur.rate?(' rated-'+cur.rate):'')+(it.status==='ready'?' st-ready':'');
+      el.querySelectorAll('.rate button').forEach(x=>x.classList.toggle('on',x.dataset.r===cur.rate&&!!cur.rate));
+      tally(); };
+  });
+  note.oninput=()=>{ const cur=state[it.id]||{rate:'',id:it.id,title:it.title}; cur.note=note.value; state[it.id]={...cur,id:it.id,title:it.title}; tally(); };
+  return el;
+}
+function picks(){ return Object.values(state).filter(s=>s.rate||(s.note&&s.note.trim())); }
+function commentText(){ const c=document.getElementById('comments'); return c&&c.value.trim()?c.value.trim():null; }
+function tally(){
+  const p=picks(),el=document.getElementById('tally');
+  if(!p.length){ el.textContent='Rate items to build your feedback'; return; }
+  const g=p.filter(x=>x.rate==='good').length,m=p.filter(x=>x.rate==='maybe').length,s=p.filter(x=>x.rate==='skip').length;
+  el.innerHTML='<b>'+g+'</b> yes · <b>'+m+'</b> maybe · <b>'+s+'</b> skip · '+p.length+' noted';
+}
+function payload(){ return { skill:'htmlizer', kind:'board', version:1, channel:CHANNEL||null, data:{ round:ROUND, title:TITLE, comments:commentText(), picks:picks().map(x=>({id:x.id,title:x.title,rate:x.rate||null,note:(x.note||'').trim()||null})) } }; }
+function buildPrompt(){
+  const p=picks(), c=commentText();
+  if(!p.length && !c) return 'I opened the feedback board (pass '+ROUND+') but did not mark anything yet.';
+  const lab={good:'YES',maybe:'MAYBE',skip:'SKIP'}; let out='Feedback on the board (pass '+ROUND+(TITLE?': "'+TITLE+'"':'')+').\n\n';
+  ['good','maybe','skip'].forEach(r=>{ const g=p.filter(x=>x.rate===r);
+    if(g.length){ out+='## '+lab[r]+'\n'; g.forEach(x=>{ out+='- '+x.title+' [id:'+x.id+']'+(x.note&&x.note.trim()?' :: '+x.note.trim():'')+'\n'; }); out+='\n'; } });
+  const n=p.filter(x=>!x.rate&&x.note&&x.note.trim());
+  if(n.length){ out+='## NOTES\n'; n.forEach(x=>out+='- '+x.title+' [id:'+x.id+']: '+x.note.trim()+'\n'); out+='\n'; }
+  if(c){ out+='## GENERAL COMMENTS\n'+c+'\n\n'; }
+  out+=p.length
+    ? 'Please work each item I gave feedback on (one sub-agent per item, concurrently), then show me the next pass with addressed items marked for re-review.'
+    : 'Please address my general comments above, then show me the next pass.';
+  return out;
+}
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1700); }
+function legacyCopy(text){
+  const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px';
+  document.body.appendChild(ta); ta.select();
+  let ok=false; try{ok=document.execCommand('copy');}catch(e){ok=false;} document.body.removeChild(ta);
+  // Reject on failure so copy()'s .catch(showDlg) engages the dialog fallback
+  // instead of flashing a false "Copied" toast.
+  return ok?Promise.resolve():Promise.reject(new Error('copy command failed'));
+}
+function writeClipboard(text){
+  // On a non-secure http:// origin the async API can be present but REJECT; chain to
+  // the execCommand path on reject (not just on absence) before any dialog fallback.
+  if(navigator.clipboard&&navigator.clipboard.writeText) return navigator.clipboard.writeText(text).then(()=>true).catch(()=>legacyCopy(text));
+  return legacyCopy(text);
+}
+function copy(text){ writeClipboard(text).then(()=>toast('Copied to clipboard')).catch(()=>showDlg(text)); }
+function showDlg(text){ const d=document.getElementById('dlg'); document.getElementById('dlgOut').textContent=text; if(d.showModal)d.showModal(); else d.setAttribute('open',''); }
+
+let submitCount=0;
+function markSubmitted(){
+  submitCount++;
+  const btn=document.getElementById('btnSubmit'); btn.textContent='Resubmit'; btn.classList.add('submitted');
+  const s=document.getElementById('subState'); s.classList.add('show');
+  s.textContent='Submitted'+(submitCount>1?' · '+submitCount+'×':'');
+}
+async function submitToClaude(){
+  const p=picks();
+  if(!p.length && !commentText()){ toast('Rate an item or add a comment first'); return; }
+  const btn=document.getElementById('btnSubmit');
+  if(!SUBMIT_URL){ copy(buildPrompt()); markSubmitted(); return; }
+  const prev=btn.textContent; btn.disabled=true; btn.textContent='Sending';
+  try{
+    const r=await fetch(SUBMIT_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload())});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    btn.disabled=false; markSubmitted();
+    toast(submitCount>1?'Resubmitted to Claude':'Sent to Claude. You can keep reviewing or resubmit.');
+  }catch(e){ btn.disabled=false; btn.textContent=prev; copy(buildPrompt()); toast('Could not reach Claude; copied the prompt instead'); }
+}
+
+
+document.getElementById('btnPrompt').onclick=()=>copy(buildPrompt());
+document.getElementById('btnSubmit').onclick=submitToClaude;
+document.getElementById('dlgX').onclick=()=>document.getElementById('dlg').close();
+document.getElementById('dlgClose').onclick=()=>document.getElementById('dlg').close();
+document.getElementById('dlgCopy').onclick=()=>writeClipboard(document.getElementById('dlgOut').textContent).then(()=>toast('Copied'));
+
+render(); tally();
+</script>
+</body>
+</html>

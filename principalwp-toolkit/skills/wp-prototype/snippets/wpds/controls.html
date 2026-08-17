@@ -1,0 +1,60 @@
+<!-- WPDS/Gutenberg-style controls (paste inside .components-panel__body-content,
+     which provides the grid + 16px gaps). All are native inputs — interactive
+     without JS. -->
+
+<!-- ToggleControl -->
+<label class="components-toggle-control">
+	<span class="components-form-toggle"><input type="checkbox" checked><span class="components-form-toggle__track"></span><span class="components-form-toggle__thumb"></span></span>
+	<span class="components-toggle-control__label">Toggle label</span>
+</label>
+
+<!-- TextControl -->
+<div class="components-base-control">
+	<label class="components-base-control__label" for="ctrl-text">Text label</label>
+	<input type="text" id="ctrl-text" class="components-text-control__input">
+	<p class="components-base-control__help">Optional help text.</p>
+</div>
+
+<!-- SelectControl -->
+<div class="components-base-control">
+	<label class="components-base-control__label" for="ctrl-select">Select label</label>
+	<select id="ctrl-select" class="components-select-control__input">
+		<option>Option one</option>
+		<option>Option two</option>
+	</select>
+</div>
+
+<!-- ToggleGroupControl (segmented) -->
+<div class="components-base-control">
+	<label class="components-base-control__label">Segmented label</label>
+	<div class="components-toggle-group-control" role="radiogroup" aria-label="Segmented label">
+		<label><input type="radio" name="ctrl-seg" checked><span>One</span></label>
+		<label><input type="radio" name="ctrl-seg"><span>Two</span></label>
+		<label><input type="radio" name="ctrl-seg"><span>Three</span></label>
+	</div>
+</div>
+
+<!-- RangeControl -->
+<div class="components-base-control">
+	<label class="components-base-control__label">Range label</label>
+	<div class="components-range-control">
+		<input type="range" min="0" max="100" value="50">
+		<input type="number" class="components-range-control__number" value="50">
+	</div>
+</div>
+
+<!-- RadioControl -->
+<div class="components-radio-control">
+	<span class="components-base-control__label">Radio label</span>
+	<label class="components-radio-control__option"><input type="radio" name="ctrl-radio" checked> First choice</label>
+	<label class="components-radio-control__option"><input type="radio" name="ctrl-radio"> Second choice</label>
+</div>
+
+<!-- CheckboxControl -->
+<label class="components-checkbox-control"><input type="checkbox" checked> Checkbox label</label>
+
+<!-- Color rows (PanelColorSettings style) -->
+<div>
+	<div class="components-color-list-picker__row"><span class="components-color-indicator" style="background:#1e1e1e"></span> Text</div>
+	<div class="components-color-list-picker__row"><span class="components-color-indicator" style="background:#3858e9"></span> Accent</div>
+</div>

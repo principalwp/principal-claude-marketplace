@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<!--
+  Gallery example for the htmlizer data-chart-review view: a weekly signups-vs-target
+  check with a self-contained inline SVG chart plus the backing table. Invented content
+  built for the gallery — no real company, product, or dashboard is represented. Chart is
+  hand-built SVG (no chart library, no CDN). House style via base.css.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weekly signups vs. target — 8 weeks (data-chart-review example)</title>
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzhDMzM0NCIvPjxwYXRoIGQ9Ik0zMCAyMiBINTggYTE4IDE4IDAgMCAxIDAgMzYgSDQyIFY3OCBIMzAgWiBNNDIgMzMgVjQ3IEg1NiBhNyA3IDAgMCAwIDAgLTE0IFoiIGZpbGw9IiNmZmYiLz48L3N2Zz4=">
+<link rel="stylesheet" href="base.css">
+<style>
+/* ---- page-specific layout on top of base.css (house style) ---- */
+.intro{max-width:74ch;margin:0 0 var(--space-4)}
+
+.chart-card{margin-bottom:var(--space-4)}
+.chart-card h2{margin:0 0 6px}
+.chart-note{max-width:74ch;margin:0 0 var(--space);color:var(--text)}
+
+.chart-svg{width:100%;height:auto;display:block}
+.gridline{stroke:var(--border);stroke-width:1}
+.axis-baseline{stroke:var(--border-strong);stroke-width:1}
+.axis-label{font-family:var(--font-mono);font-size:11px;fill:var(--text-muted)}
+
+.line-target{fill:none;stroke:var(--border-strong);stroke-width:2;stroke-dasharray:6 5;transition:stroke .12s ease}
+.line-target.is-flagged{stroke:var(--accent)}
+.line-actual{fill:none;stroke:var(--ink);stroke-width:2.5;transition:stroke .12s ease}
+.line-actual.is-flagged{stroke:var(--accent)}
+
+.pt{cursor:pointer}
+.pt-hit{fill:transparent}
+.pt-dot{fill:var(--ink);stroke:var(--surface);stroke-width:1.5;transition:fill .12s ease,stroke .12s ease}
+.pt.is-marked .pt-dot{fill:var(--accent);stroke:var(--accent)}
+.pt-q{font-family:var(--font-mono);font-size:13px;font-weight:600;fill:var(--accent);opacity:0;transition:opacity .12s ease}
+.pt:hover .pt-q,.pt:focus .pt-q,.pt:focus-visible .pt-q{opacity:1}
+.pt:focus{outline:none}
+.pt:focus-visible .pt-dot{stroke:var(--accent);stroke-width:2.5}
+
+.chart-legend{display:flex;flex-wrap:wrap;gap:20px 28px;margin-top:14px}
+.legend-item{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.legend-swatch{width:22px;height:3px;border-radius:2px;display:inline-block}
+.swatch-actual{background:var(--ink)}
+.swatch-target{background:var(--border-strong)}
+.legend-name{font-size:14.5px;color:var(--text)}
+.legend-reveal{flex-basis:100%}
+.legend-reveal label{display:block;font-size:14px;font-weight:600;color:var(--ink);margin-bottom:6px}
+
+.point-note{margin-top:16px}
+.point-note .pn-label{font-family:var(--font-mono);font-size:13px;color:var(--text-muted);margin:0 0 8px}
+.point-note label{display:block;font-size:14px;font-weight:600;color:var(--ink);margin-bottom:6px}
+
+.tablewrap{overflow-x:auto;border:1px solid var(--border-strong);border-radius:var(--r-lg)}
+table.data-table{width:100%;border-collapse:collapse;font-size:14.5px;min-width:760px}
+table.data-table caption{text-align:left;padding:16px 18px 0;font-weight:600;color:var(--ink)}
+table.data-table th,table.data-table td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+table.data-table thead th{font-family:var(--font-mono);font-size:12.5px;font-weight:600;color:var(--text-muted);background:var(--surface-2);border-bottom:1px solid var(--border-strong)}
+table.data-table tbody tr:last-child td{border-bottom:none}
+table.data-table tbody tr.is-flagged{background:color-mix(in srgb, var(--warning) 8%, transparent)}
+table.data-table tbody tr.is-flagged td:first-child{border-left:4px solid var(--warning)}
+table.data-table td.num{font-family:var(--font-mono)}
+table.data-table td.review-cell{white-space:normal;min-width:220px}
+
+.qcell{position:relative;white-space:normal}
+.qcell .qval{font-family:var(--font-mono)}
+.qmark{margin-left:6px;min-width:20px;min-height:20px;width:20px;height:20px;padding:0;
+  border:1px solid var(--border-strong);border-radius:var(--r-sm);background:var(--surface);
+  color:var(--text-muted);font-family:var(--font-mono);font-size:12px;line-height:1;
+  cursor:pointer;opacity:0;transition:opacity .12s ease,border-color .12s ease,color .12s ease;
+  vertical-align:middle}
+.qcell:hover .qmark,.qmark:focus-visible,.qcell:focus-within .qmark{opacity:1}
+.qmark:hover,.qmark:focus-visible{border-color:var(--accent);color:var(--accent)}
+.qcell .reveal{margin-top:8px;min-width:220px}
+.qcell .reveal label{display:block;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px}
+
+.row-flag-cell .reveal label,.row-flag-cell label{display:block;font-size:13px;font-weight:600;color:var(--ink);margin:8px 0 6px}
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <h1>Weekly signups vs. target — 8 weeks</h1>
+  <p class="lede">Check the chart and the table below it; flag a row or a series that looks wrong, or question any single number that doesn't add up.</p>
+</header>
+
+<main class="wrap">
+
+  <p class="intro">This is the weekly signups check for the eight weeks ending Sunday, Aug 2 — new signups against the target set at the start of the quarter, and how many of each week's signups activated (used the product) within seven days. The numbers below are the raw weekly export, not smoothed or adjusted. Flag a row or a series with the <b>Make changes</b> button if something looks wrong, or click the <b>?</b> next to a number or a point to question it specifically — both go back to Claude as one batch when you submit.</p>
+
+  <section class="chart-card card">
+    <h2>Signups vs. target</h2>
+    <p class="chart-note">The week of Jul 26 drops well below every other week and below target, while the surrounding weeks trend up — worth a look before anyone reads it as a real trend.</p>
+
+    <svg viewBox="0 0 800 320" role="img" aria-label="Weekly signups, actual versus target, eight weeks ending Aug 2. Actual signups: Jun 14 412, Jun 21 448, Jun 28 401, Jul 5 397, Jul 12 466, Jul 19 511, Jul 26 288, Aug 2 533. Target for the same weeks: 380, 400, 420, 440, 460, 480, 500, 520." class="chart-svg">
+      <line x1="60" y1="237" x2="760" y2="237" class="gridline"></line>
+      <text x="52" y="241" class="axis-label" text-anchor="end">300</text>
+      <line x1="60" y1="150" x2="760" y2="150" class="gridline"></line>
+      <text x="52" y="154" class="axis-label" text-anchor="end">400</text>
+      <line x1="60" y1="63" x2="760" y2="63" class="gridline"></line>
+      <text x="52" y="67" class="axis-label" text-anchor="end">500</text>
+
+      <line x1="60" y1="280" x2="760" y2="280" class="axis-baseline"></line>
+
+      <polyline data-series-line="target" class="line-target" points="60,167 160,150 260,133 360,115 460,98 560,81 660,63 760,46"></polyline>
+      <polyline data-series-line="actual" class="line-actual" points="60,140 160,108 260,149 360,153 460,93 560,54 660,247 760,35"></polyline>
+
+      <text x="60" y="300" class="axis-label" text-anchor="middle">Jun 14</text>
+      <text x="160" y="300" class="axis-label" text-anchor="middle">Jun 21</text>
+      <text x="260" y="300" class="axis-label" text-anchor="middle">Jun 28</text>
+      <text x="360" y="300" class="axis-label" text-anchor="middle">Jul 5</text>
+      <text x="460" y="300" class="axis-label" text-anchor="middle">Jul 12</text>
+      <text x="560" y="300" class="axis-label" text-anchor="middle">Jul 19</text>
+      <text x="660" y="300" class="axis-label" text-anchor="middle">Jul 26</text>
+      <text x="760" y="300" class="axis-label" text-anchor="middle">Aug 2</text>
+
+      <g class="pt" tabindex="0" role="button" data-cap-id="chart-signups:series-actual:x-jun14" data-label="Jun 14 &#8212; actual signups: 412" aria-label="Question the Jun 14 actual signups number, 412">
+        <circle cx="60" cy="140" r="12" class="pt-hit"></circle>
+        <circle cx="60" cy="140" r="4.5" class="pt-dot"></circle>
+        <text x="60" y="126" class="pt-q" text-anchor="middle">?</text>
+      </g>
+      <g class="pt" tabindex="0" role="button" data-cap-id="chart-signups:series-actual:x-jun21" data-label="Jun 21 &#8212; actual signups: 448" aria-label="Question the Jun 21 actual signups number, 448">
+        <circle cx="160" cy="108" r="12" class="pt-hit"></circle>
+        <circle cx="160" cy="108" r="4.5" class="pt-dot"></circle>
+        <text x="160" y="94" class="pt-q" text-anchor="middle">?</text>
+      </g>
+      <g class="pt" tabindex="0" role="button" data-cap-id="chart-signups:series-actual:x-jun28" data-label="Jun 28 &#8212; actual signups: 401" aria-label="Question the Jun 28 actual signups number, 401">
+        <circle cx="260" cy="149" r="12" class="pt-hit"></circle>
+        <circle cx="260" cy="149" r="4.5" class="pt-dot"></circle>
+        <text x="260" y="135" class="pt-q" text-anchor="middle">?</text>
+      </g>
+      <g class="pt" tabindex="0" role="button" data-cap-id="chart-signups:series-actual:x-jul05" data-label="Jul 5 &#8212; actual signups: 397" aria-label="Question the Jul 5 actual signups number, 397">
+        <circle cx="360" cy="153" r="12" class="pt-hit"></circle>
+        <circle cx="360" cy="153" r="4.5" class="pt-dot"></circle>
+        <text x="360" y="139" class="pt-q" text-anchor="middle">?</text>
+      </g>
+      <g class="pt" tabindex="0" role="button" data-cap-id="chart-signups:series-actual:x-jul12" data-label="Jul 12 &#8212; actual signups: 466" aria-label="Question the Jul 12 actual signups number, 466">
+        <circle cx="460" cy="93" r="12" class="pt-hit"></circle>
+        <circle cx="460" cy="93" r="4.5" class="pt-dot"></circle>
+        <text x="460" y="79" class="pt-q" text-anchor="middle">?</text>
+      </g>
+      <g class="pt" tabindex="0" role="button" data-cap-id="chart-signups:series-actual:x-jul19" data-label="Jul 19 &#8212; actual signups: 511" aria-label="Question the Jul 19 actual signups number, 511">
+        <circle cx="560" cy="54" r="12" class="pt-hit"></circle>
+        <circle cx="560" cy="54" r="4.5" class="pt-dot"></circle>
+        <text x="560" y="40" class="pt-q" text-anchor="middle">?</text>
+      </g>
+      <g class="pt" tabindex="0" role="button" data-cap-id="chart-signups:series-actual:x-jul26" data-label="Jul 26 &#8212; actual signups: 288" aria-label="Question the Jul 26 actual signups number, 288">
+        <circle cx="660" cy="247" r="12" class="pt-hit"></circle>
+        <circle cx="660" cy="247" r="4.5" class="pt-dot"></circle>
+        <text x="660" y="233" class="pt-q" text-anchor="middle">?</text>
+      </g>
+      <g class="pt" tabindex="0" role="button" data-cap-id="chart-signups:series-actual:x-aug02" data-label="Aug 2 &#8212; actual signups: 533" aria-label="Question the Aug 2 actual signups number, 533">
+        <circle cx="760" cy="35" r="12" class="pt-hit"></circle>
+        <circle cx="760" cy="35" r="4.5" class="pt-dot"></circle>
+        <text x="760" y="21" class="pt-q" text-anchor="middle">?</text>
+      </g>
+    </svg>
+
+    <div class="chart-legend">
+      <div class="legend-item">
+        <span class="legend-swatch swatch-actual"></span>
+        <span class="legend-name">Actual signups</span>
+        <button class="btn btn-secondary btn-sm series-flag" type="button" aria-pressed="false" data-series="actual" data-cap-id="chart-signups:series-actual">Make changes</button>
+      </div>
+      <div class="legend-item">
+        <span class="legend-swatch swatch-target"></span>
+        <span class="legend-name">Target</span>
+        <button class="btn btn-secondary btn-sm series-flag" type="button" aria-pressed="false" data-series="target" data-cap-id="chart-signups:series-target">Make changes</button>
+      </div>
+      <div class="legend-reveal reveal" id="reveal-series-actual">
+        <label for="reason-series-actual">What's wrong with the Actual series</label>
+        <textarea class="reveal-box" id="reason-series-actual" placeholder="e.g. the whole line looks off — check the export job for the last 8 weeks"></textarea>
+      </div>
+      <div class="legend-reveal reveal" id="reveal-series-target">
+        <label for="reason-series-target">What's wrong with the Target series</label>
+        <textarea class="reveal-box" id="reason-series-target" placeholder="e.g. the target ramp looks steeper than what Sales agreed to"></textarea>
+      </div>
+    </div>
+
+    <div class="reveal point-note" id="point-note-box">
+      <p class="pn-label" id="point-note-label"></p>
+      <label for="point-note-text">What looks off about this number</label>
+      <textarea class="reveal-box" id="point-note-text" placeholder="e.g. this looks too low given the weeks around it"></textarea>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Weekly detail</h2>
+    <div class="tablewrap">
+      <table class="data-table" id="weekly-signups">
+        <thead>
+          <tr>
+            <th>Week of</th><th>Signups</th><th>Target</th><th>vs. target</th><th>Activated (7-day)</th><th>Activation rate</th><th>Review</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr id="row-jun14">
+            <td>Jun 14</td>
+            <td class="num qcell">
+              <span class="qval">412</span><button class="qmark" type="button" data-week="jun14" data-cap-id="weekly-signups:jun14:signups" aria-label="Question the Jun 14 signups number, 412">?</button>
+              <div class="reveal" id="reveal-q-jun14"><label for="note-jun14">What looks off about this number</label><textarea class="reveal-box" id="note-jun14" placeholder="e.g. this looks too low"></textarea></div>
+            </td>
+            <td class="num">380</td>
+            <td class="num pos">+32 (+8%)</td>
+            <td class="num">178</td>
+            <td class="num">43%</td>
+            <td class="review-cell row-flag-cell">
+              <button class="btn btn-secondary btn-sm row-flag" type="button" aria-pressed="false" data-week="jun14" data-cap-id="weekly-signups:row-jun14">Make changes</button>
+              <div class="reveal" id="reveal-row-jun14"><label for="reason-row-jun14">What's wrong with this row</label><textarea class="reveal-box" id="reason-row-jun14" placeholder="e.g. the activation count looks miscounted"></textarea></div>
+            </td>
+          </tr>
+          <tr id="row-jun21">
+            <td>Jun 21</td>
+            <td class="num qcell">
+              <span class="qval">448</span><button class="qmark" type="button" data-week="jun21" data-cap-id="weekly-signups:jun21:signups" aria-label="Question the Jun 21 signups number, 448">?</button>
+              <div class="reveal" id="reveal-q-jun21"><label for="note-jun21">What looks off about this number</label><textarea class="reveal-box" id="note-jun21" placeholder="e.g. this looks too low"></textarea></div>
+            </td>
+            <td class="num">400</td>
+            <td class="num pos">+48 (+12%)</td>
+            <td class="num">202</td>
+            <td class="num">45%</td>
+            <td class="review-cell row-flag-cell">
+              <button class="btn btn-secondary btn-sm row-flag" type="button" aria-pressed="false" data-week="jun21" data-cap-id="weekly-signups:row-jun21">Make changes</button>
+              <div class="reveal" id="reveal-row-jun21"><label for="reason-row-jun21">What's wrong with this row</label><textarea class="reveal-box" id="reason-row-jun21" placeholder="e.g. the activation count looks miscounted"></textarea></div>
+            </td>
+          </tr>
+          <tr id="row-jun28">
+            <td>Jun 28</td>
+            <td class="num qcell">
+              <span class="qval">401</span><button class="qmark" type="button" data-week="jun28" data-cap-id="weekly-signups:jun28:signups" aria-label="Question the Jun 28 signups number, 401">?</button>
+              <div class="reveal" id="reveal-q-jun28"><label for="note-jun28">What looks off about this number</label><textarea class="reveal-box" id="note-jun28" placeholder="e.g. this looks too low"></textarea></div>
+            </td>
+            <td class="num">420</td>
+            <td class="num neg">&minus;19 (&minus;5%)</td>
+            <td class="num">169</td>
+            <td class="num">42%</td>
+            <td class="review-cell row-flag-cell">
+              <button class="btn btn-secondary btn-sm row-flag" type="button" aria-pressed="false" data-week="jun28" data-cap-id="weekly-signups:row-jun28">Make changes</button>
+              <div class="reveal" id="reveal-row-jun28"><label for="reason-row-jun28">What's wrong with this row</label><textarea class="reveal-box" id="reason-row-jun28" placeholder="e.g. the activation count looks miscounted"></textarea></div>
+            </td>
+          </tr>
+          <tr id="row-jul05">
+            <td>Jul 5</td>
+            <td class="num qcell">
+              <span class="qval">397</span><button class="qmark" type="button" data-week="jul05" data-cap-id="weekly-signups:jul05:signups" aria-label="Question the Jul 5 signups number, 397">?</button>
+              <div class="reveal" id="reveal-q-jul05"><label for="note-jul05">What looks off about this number</label><textarea class="reveal-box" id="note-jul05" placeholder="e.g. this looks too low"></textarea></div>
+            </td>
+            <td class="num">440</td>
+            <td class="num neg">&minus;43 (&minus;10%)</td>
+            <td class="num">156</td>
+            <td class="num">39%</td>
+            <td class="review-cell row-flag-cell">
+              <button class="btn btn-secondary btn-sm row-flag" type="button" aria-pressed="false" data-week="jul05" data-cap-id="weekly-signups:row-jul05">Make changes</button>
+              <div class="reveal" id="reveal-row-jul05"><label for="reason-row-jul05">What's wrong with this row</label><textarea class="reveal-box" id="reason-row-jul05" placeholder="e.g. the activation count looks miscounted"></textarea></div>
+            </td>
+          </tr>
+          <tr id="row-jul12">
+            <td>Jul 12</td>
+            <td class="num qcell">
+              <span class="qval">466</span><button class="qmark" type="button" data-week="jul12" data-cap-id="weekly-signups:jul12:signups" aria-label="Question the Jul 12 signups number, 466">?</button>
+              <div class="reveal" id="reveal-q-jul12"><label for="note-jul12">What looks off about this number</label><textarea class="reveal-box" id="note-jul12" placeholder="e.g. this looks too low"></textarea></div>
+            </td>
+            <td class="num">460</td>
+            <td class="num pos">+6 (+1%)</td>
+            <td class="num">214</td>
+            <td class="num">46%</td>
+            <td class="review-cell row-flag-cell">
+              <button class="btn btn-secondary btn-sm row-flag" type="button" aria-pressed="false" data-week="jul12" data-cap-id="weekly-signups:row-jul12">Make changes</button>
+              <div class="reveal" id="reveal-row-jul12"><label for="reason-row-jul12">What's wrong with this row</label><textarea class="reveal-box" id="reason-row-jul12" placeholder="e.g. the activation count looks miscounted"></textarea></div>
+            </td>
+          </tr>
+          <tr id="row-jul19">
+            <td>Jul 19</td>
+            <td class="num qcell">
+              <span class="qval">511</span><button class="qmark" type="button" data-week="jul19" data-cap-id="weekly-signups:jul19:signups" aria-label="Question the Jul 19 signups number, 511">?</button>
+              <div class="reveal" id="reveal-q-jul19"><label for="note-jul19">What looks off about this number</label><textarea class="reveal-box" id="note-jul19" placeholder="e.g. this looks too low"></textarea></div>
+            </td>
+            <td class="num">480</td>
+            <td class="num pos">+31 (+6%)</td>
+            <td class="num">241</td>
+            <td class="num">47%</td>
+            <td class="review-cell row-flag-cell">
+              <button class="btn btn-secondary btn-sm row-flag" type="button" aria-pressed="false" data-week="jul19" data-cap-id="weekly-signups:row-jul19">Make changes</button>
+              <div class="reveal" id="reveal-row-jul19"><label for="reason-row-jul19">What's wrong with this row</label><textarea class="reveal-box" id="reason-row-jul19" placeholder="e.g. the activation count looks miscounted"></textarea></div>
+            </td>
+          </tr>
+          <tr id="row-jul26">
+            <td>Jul 26</td>
+            <td class="num qcell">
+              <span class="qval">288</span><button class="qmark" type="button" data-week="jul26" data-cap-id="weekly-signups:jul26:signups" aria-label="Question the Jul 26 signups number, 288">?</button>
+              <div class="reveal" id="reveal-q-jul26"><label for="note-jul26">What looks off about this number</label><textarea class="reveal-box" id="note-jul26" placeholder="e.g. this looks too low given the weeks around it"></textarea></div>
+            </td>
+            <td class="num">500</td>
+            <td class="num neg">&minus;212 (&minus;42%)</td>
+            <td class="num">71</td>
+            <td class="num">25%</td>
+            <td class="review-cell row-flag-cell">
+              <button class="btn btn-secondary btn-sm row-flag" type="button" aria-pressed="false" data-week="jul26" data-cap-id="weekly-signups:row-jul26">Make changes</button>
+              <div class="reveal" id="reveal-row-jul26"><label for="reason-row-jul26">What's wrong with this row</label><textarea class="reveal-box" id="reason-row-jul26" placeholder="e.g. the activation count looks miscounted"></textarea></div>
+            </td>
+          </tr>
+          <tr id="row-aug02">
+            <td>Aug 2</td>
+            <td class="num qcell">
+              <span class="qval">533</span><button class="qmark" type="button" data-week="aug02" data-cap-id="weekly-signups:aug02:signups" aria-label="Question the Aug 2 signups number, 533">?</button>
+              <div class="reveal" id="reveal-q-aug02"><label for="note-aug02">What looks off about this number</label><textarea class="reveal-box" id="note-aug02" placeholder="e.g. this looks too low"></textarea></div>
+            </td>
+            <td class="num">520</td>
+            <td class="num pos">+13 (+3%)</td>
+            <td class="num">259</td>
+            <td class="num">49%</td>
+            <td class="review-cell row-flag-cell">
+              <button class="btn btn-secondary btn-sm row-flag" type="button" aria-pressed="false" data-week="aug02" data-cap-id="weekly-signups:row-aug02">Make changes</button>
+              <div class="reveal" id="reveal-row-aug02"><label for="reason-row-aug02">What's wrong with this row</label><textarea class="reveal-box" id="reason-row-aug02" placeholder="e.g. the activation count looks miscounted"></textarea></div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<script src="capture.js"></script>
+<script>
+"use strict";
+window.CAPTURE_SUBMIT_URL = ""; /* static example page - feedback falls back to the clipboard */
+
+var WEEKS = ["jun14", "jun21", "jun28", "jul05", "jul12", "jul19", "jul26", "aug02"];
+var SERIES = ["actual", "target"];
+var TOTAL = WEEKS.length + SERIES.length;
+
+Capture.init({ view: "data-chart-review", total: TOTAL });
+Capture.setCoverage(function (id, rec) { return rec.value === "flag"; });
+
+/* ---------------- row flags ---------------- */
+function rowFlagBtn(wk) { return document.querySelector('.row-flag[data-week="' + wk + '"]'); }
+function rowReveal(wk) { return document.getElementById("reveal-row-" + wk); }
+function rowReason(wk) { return document.getElementById("reason-row-" + wk); }
+
+WEEKS.forEach(function (wk) {
+  var btn = rowFlagBtn(wk);
+  var box = rowReason(wk);
+  var capId = btn.dataset.capId;
+
+  btn.addEventListener("click", function () {
+    var next = btn.getAttribute("aria-pressed") !== "true";
+    btn.setAttribute("aria-pressed", String(next));
+    rowReveal(wk).classList.toggle("is-open", next);
+    document.getElementById("row-" + wk).classList.toggle("is-flagged", next);
+    if (next) {
+      Capture.mark(capId, "flag", { reason: box.value });
+      box.focus();
+    } else {
+      Capture.unmark(capId);
+    }
+  });
+
+  box.addEventListener("input", function () {
+    if (btn.getAttribute("aria-pressed") === "true") {
+      Capture.mark(capId, "flag", { reason: box.value });
+    }
+  });
+});
+
+/* ---------------- series flags ---------------- */
+document.querySelectorAll(".series-flag").forEach(function (btn) {
+  var series = btn.dataset.series;
+  var capId = btn.dataset.capId;
+  var reveal = document.getElementById("reveal-series-" + series);
+  var box = document.getElementById("reason-series-" + series);
+
+  btn.addEventListener("click", function () {
+    var next = btn.getAttribute("aria-pressed") !== "true";
+    btn.setAttribute("aria-pressed", String(next));
+    reveal.classList.toggle("is-open", next);
+    document.querySelectorAll('[data-series-line="' + series + '"]').forEach(function (el) {
+      el.classList.toggle("is-flagged", next);
+    });
+    if (next) {
+      Capture.mark(capId, "flag", { reason: box.value });
+      box.focus();
+    } else {
+      Capture.unmark(capId);
+    }
+  });
+
+  box.addEventListener("input", function () {
+    if (btn.getAttribute("aria-pressed") === "true") {
+      Capture.mark(capId, "flag", { reason: box.value });
+    }
+  });
+});
+
+/* ---------------- table cell questions ---------------- */
+WEEKS.forEach(function (wk) {
+  var mark = document.querySelector('.qmark[data-week="' + wk + '"]');
+  var capId = mark.dataset.capId;
+  var reveal = document.getElementById("reveal-q-" + wk);
+  var box = document.getElementById("note-" + wk);
+
+  mark.addEventListener("click", function () {
+    var open = !reveal.classList.contains("is-open");
+    reveal.classList.toggle("is-open", open);
+    if (open) {
+      Capture.mark(capId, "question", { note: box.value, anchor: { table: "weekly-signups", row: wk, col: "signups" } });
+      box.focus();
+    } else if (box.value.trim() === "") {
+      Capture.unmark(capId);
+    }
+  });
+
+  box.addEventListener("input", function () {
+    Capture.mark(capId, "question", { note: box.value, anchor: { table: "weekly-signups", row: wk, col: "signups" } });
+  });
+});
+
+/* ---------------- chart point questions (single shared box) ---------------- */
+var pointNotes = {};
+var activePoint = null;
+var pointBox = document.getElementById("point-note-box");
+var pointLabel = document.getElementById("point-note-label");
+var pointText = document.getElementById("point-note-text");
+
+function pointAnchor(id) {
+  var parts = id.split(":"); // ["chart-signups", "series-actual", "x-jul26"]
+  return { series: parts[1].replace("series-", ""), x: parts[2].replace("x-", "") };
+}
+
+function markPointEl(id, isMarked) {
+  var g = document.querySelector('.pt[data-cap-id="' + id + '"]');
+  if (g) g.classList.toggle("is-marked", isMarked);
+}
+
+function closePointIfEmpty(id) {
+  if (id && (!pointNotes[id] || pointNotes[id].trim() === "")) {
+    Capture.unmark(id);
+    markPointEl(id, false);
+  }
+}
+
+document.querySelectorAll(".pt").forEach(function (g) {
+  function activate() {
+    var id = g.dataset.capId;
+    var label = g.dataset.label;
+    if (activePoint === id && pointBox.classList.contains("is-open")) {
+      pointBox.classList.remove("is-open");
+      closePointIfEmpty(id);
+      activePoint = null;
+      return;
+    }
+    if (activePoint && activePoint !== id) closePointIfEmpty(activePoint);
+    activePoint = id;
+    pointLabel.textContent = label;
+    pointText.value = pointNotes[id] || "";
+    pointBox.classList.add("is-open");
+    Capture.mark(id, "question", { note: pointText.value, anchor: pointAnchor(id) });
+    pointText.focus();
+  }
+  g.addEventListener("click", activate);
+  g.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activate(); }
+  });
+});
+
+pointText.addEventListener("input", function (e) {
+  if (!activePoint) return;
+  pointNotes[activePoint] = e.target.value;
+  Capture.mark(activePoint, "question", { note: e.target.value, anchor: pointAnchor(activePoint) });
+  markPointEl(activePoint, e.target.value.trim() !== "");
+});
+
+/* ---------------- gating ---------------- */
+function firstFlagWithEmptyReason() {
+  for (var i = 0; i < WEEKS.length; i++) {
+    var wk = WEEKS[i];
+    if (rowFlagBtn(wk).getAttribute("aria-pressed") === "true" && rowReason(wk).value.trim() === "") {
+      return rowReason(wk);
+    }
+  }
+  for (var j = 0; j < SERIES.length; j++) {
+    var s = SERIES[j];
+    var sbtn = document.querySelector('.series-flag[data-series="' + s + '"]');
+    var sbox = document.getElementById("reason-series-" + s);
+    if (sbtn.getAttribute("aria-pressed") === "true" && sbox.value.trim() === "") {
+      return sbox;
+    }
+  }
+  return null;
+}
+
+function firstQuestionWithEmptyNote() {
+  for (var i = 0; i < WEEKS.length; i++) {
+    var wk = WEEKS[i];
+    var reveal = document.getElementById("reveal-q-" + wk);
+    var box = document.getElementById("note-" + wk);
+    if (reveal.classList.contains("is-open") && box.value.trim() === "") {
+      return box;
+    }
+  }
+  if (pointBox.classList.contains("is-open") && pointText.value.trim() === "") {
+    return pointText;
+  }
+  return null;
+}
+
+Capture.setGate(function () {
+  var noReason = firstFlagWithEmptyReason();
+  if (noReason) return { ok: false, reason: "Add a reason to each flagged row / series.", focus: noReason };
+  var noNote = firstQuestionWithEmptyNote();
+  if (noNote) return { ok: false, reason: "Say what looks off about each questioned number.", focus: noNote };
+  return { ok: true };
+});
+
+Capture.onChange(function () {
+  var flagged = Capture.payload().items.length > 0;
+  Capture.rollup(flagged ? "request_changes" : "approve");
+});
+</script>
+</body>
+</html>

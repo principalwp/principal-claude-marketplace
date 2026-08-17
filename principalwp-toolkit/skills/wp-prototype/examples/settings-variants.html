@@ -1,0 +1,212 @@
+<!doctype html>
+<html class="wp-toolbar">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Principal Editorial — Settings prototypes</title>
+<!-- Inline markers are replaced by scripts/inline.sh to produce a single file. -->
+<style>
+/*@inline classic-admin.bundle.min.css*/
+</style>
+<style>
+/*@inline dashicons.min.css*/
+</style>
+<style>
+/*@inline wpp-runtime.css*/
+</style>
+<style>
+/* SLOT:styles — prototype-specific CSS overrides go here. */
+</style>
+</head>
+<body class="wp-admin wp-core-ui js auto-fold">
+<div id="wpwrap">
+
+	<!-- ===== Admin bar (chrome — usually leave as is) ===== -->
+	<div id="wpadminbar" class="nojq nojs">
+		<div class="quicklinks" id="wp-toolbar" role="navigation" aria-label="Toolbar">
+			<ul id="wp-admin-bar-root-default" class="ab-top-menu">
+				<li id="wp-admin-bar-wp-logo" class="menupop"><a class="ab-item" href="#" aria-haspopup="true"><span class="ab-icon" aria-hidden="true"></span></a></li>
+				<li id="wp-admin-bar-site-name" class="menupop"><a class="ab-item" href="#">My Site</a></li>
+				<li id="wp-admin-bar-comments"><a class="ab-item" href="#"><span class="ab-icon" aria-hidden="true"></span><span class="ab-label awaiting-mod pending-count count-0" aria-hidden="true">0</span></a></li>
+				<li id="wp-admin-bar-new-content" class="menupop"><a class="ab-item" href="#" aria-haspopup="true"><span class="ab-icon" aria-hidden="true"></span><span class="ab-label">New</span></a></li>
+			</ul>
+			<ul id="wp-admin-bar-top-secondary" class="ab-top-secondary ab-top-menu">
+				<li id="wp-admin-bar-my-account" class="menupop"><a class="ab-item" href="#">Howdy, <span class="display-name">Admin</span></a></li>
+			</ul>
+		</div>
+	</div>
+
+	<!-- ===== Admin menu (SLOT:menu — set the current item / add your plugin's menu) ===== -->
+	<div id="adminmenumain" role="navigation" aria-label="Main menu">
+		<div id="adminmenuback"></div>
+		<div id="adminmenuwrap">
+			<ul id="adminmenu">
+				<li class="wp-first-item menu-top menu-top-first menu-icon-dashboard" id="menu-dashboard"><a href="#" class="wp-first-item menu-top menu-top-first menu-icon-dashboard"><div class="wp-menu-arrow"><div></div></div><div class="wp-menu-image dashicons-before dashicons-dashboard" aria-hidden="true"><br></div><div class="wp-menu-name">Dashboard</div></a></li>
+				<li class="wp-menu-separator" aria-hidden="true"><div class="separator"></div></li>
+				<li class="menu-top menu-icon-post" id="menu-posts"><a href="#" class="menu-top menu-icon-post"><div class="wp-menu-arrow"><div></div></div><div class="wp-menu-image dashicons-before dashicons-admin-post" aria-hidden="true"><br></div><div class="wp-menu-name">Posts</div></a></li>
+				<li class="menu-top menu-icon-media" id="menu-media"><a href="#" class="menu-top menu-icon-media"><div class="wp-menu-arrow"><div></div></div><div class="wp-menu-image dashicons-before dashicons-admin-media" aria-hidden="true"><br></div><div class="wp-menu-name">Media</div></a></li>
+				<li class="menu-top menu-icon-page" id="menu-pages"><a href="#" class="menu-top menu-icon-page"><div class="wp-menu-arrow"><div></div></div><div class="wp-menu-image dashicons-before dashicons-admin-page" aria-hidden="true"><br></div><div class="wp-menu-name">Pages</div></a></li>
+				<li class="menu-top menu-icon-comments" id="menu-comments"><a href="#" class="menu-top menu-icon-comments"><div class="wp-menu-arrow"><div></div></div><div class="wp-menu-image dashicons-before dashicons-admin-comments" aria-hidden="true"><br></div><div class="wp-menu-name">Comments</div></a></li>
+				<li class="wp-menu-separator" aria-hidden="true"><div class="separator"></div></li>
+				<li class="menu-top menu-icon-appearance" id="menu-appearance"><a href="#" class="menu-top menu-icon-appearance"><div class="wp-menu-arrow"><div></div></div><div class="wp-menu-image dashicons-before dashicons-admin-appearance" aria-hidden="true"><br></div><div class="wp-menu-name">Appearance</div></a></li>
+				<li class="menu-top menu-icon-plugins" id="menu-plugins"><a href="#" class="menu-top menu-icon-plugins"><div class="wp-menu-arrow"><div></div></div><div class="wp-menu-image dashicons-before dashicons-admin-plugins" aria-hidden="true"><br></div><div class="wp-menu-name">Plugins</div></a></li>
+				<li class="menu-top menu-icon-users" id="menu-users"><a href="#" class="menu-top menu-icon-users"><div class="wp-menu-arrow"><div></div></div><div class="wp-menu-image dashicons-before dashicons-admin-users" aria-hidden="true"><br></div><div class="wp-menu-name">Users</div></a></li>
+				<li class="menu-top menu-icon-tools" id="menu-tools"><a href="#" class="menu-top menu-icon-tools"><div class="wp-menu-arrow"><div></div></div><div class="wp-menu-image dashicons-before dashicons-admin-tools" aria-hidden="true"><br></div><div class="wp-menu-name">Tools</div></a></li>
+				<li class="wp-has-submenu wp-has-current-submenu wp-menu-open menu-top menu-icon-settings" id="menu-settings">
+					<a href="#" class="wp-has-submenu wp-has-current-submenu wp-menu-open menu-top menu-icon-settings"><div class="wp-menu-arrow"><div></div></div><div class="wp-menu-image dashicons-before dashicons-admin-settings" aria-hidden="true"><br></div><div class="wp-menu-name">Settings</div></a>
+					<ul class="wp-submenu wp-submenu-wrap">
+						<li class="wp-submenu-head" aria-hidden="true">Settings</li>
+						<li class="wp-first-item"><a href="#">General</a></li>
+						<li><a href="#">Writing</a></li>
+						<li><a href="#">Reading</a></li>
+						<li class="current"><a href="#" class="current" aria-current="page">Principal Editorial</a></li>
+					</ul>
+				</li>
+				<li id="collapse-menu" class="hide-if-no-js"><button type="button" id="collapse-button" aria-expanded="true"><span class="collapse-button-icon" aria-hidden="true"></span><span class="collapse-button-label">Collapse menu</span></button></li>
+			</ul>
+		</div>
+	</div>
+
+	<!-- ===== Page content ===== -->
+	<div id="wpcontent">
+		<div id="wpbody" role="main">
+			<div id="wpbody-content">
+
+				<!-- Variant A: everything on one page -->
+				<section data-screen="single" data-title="A — Single page">
+					<div class="wrap">
+						<h1>Principal Editorial</h1>
+
+						<form action="#" method="post">
+							<h2>AI Review</h2>
+							<table class="form-table" role="presentation">
+								<tr>
+									<th scope="row">AI review</th>
+									<td><label data-note="Master switch first — everything below depends on it"><input type="checkbox" checked> Review every post before it can be scheduled</label></td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="a-model">Reviewer model</label></th>
+									<td>
+										<select id="a-model"><option>Claude Fable 5</option><option>Claude Sonnet 5</option><option>Claude Haiku 4.5</option></select>
+										<p class="description">Model used for editorial review passes.</p>
+									</td>
+								</tr>
+								<tr>
+									<th scope="row">Review strictness</th>
+									<td>
+										<fieldset>
+											<label><input type="radio" name="a-tone"> Strict — block on any flag</label><br>
+											<label><input type="radio" name="a-tone" checked> Balanced — block on factual flags only</label><br>
+											<label><input type="radio" name="a-tone"> Light — never block, comment only</label>
+										</fieldset>
+									</td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="a-threshold">Auto-approve threshold</label></th>
+									<td><input type="number" id="a-threshold" value="85" class="small-text"> % confidence <p class="description">Reviews scoring above this skip the human queue.</p></td>
+								</tr>
+							</table>
+
+							<h2>Notifications</h2>
+							<table class="form-table" role="presentation">
+								<tr>
+									<th scope="row"><label for="a-email">Notify editors</label></th>
+									<td><input type="text" id="a-email" value="editors@principalwp.com" class="regular-text"></td>
+								</tr>
+								<tr>
+									<th scope="row">Slack</th>
+									<td><label><input type="checkbox" checked> Post flagged reviews to #editorial</label></td>
+								</tr>
+							</table>
+
+							<p class="submit"><input type="submit" class="button button-primary" value="Save Changes"></p>
+						</form>
+					</div>
+				</section>
+
+				<!-- Variant B: tabbed -->
+				<section data-screen="tabbed" data-title="B — Tabbed">
+					<div class="wrap">
+						<h1>Principal Editorial</h1>
+
+						<div data-tab-group>
+							<h2 class="nav-tab-wrapper wp-clearfix" data-note="Scales better if settings keep growing — but hides half of them">
+								<a href="#" class="nav-tab nav-tab-active" data-tab="review">AI Review</a>
+								<a href="#" class="nav-tab" data-tab="notify">Notifications</a>
+								<a href="#" class="nav-tab" data-tab="advanced">Advanced</a>
+							</h2>
+
+							<div data-tab-panel="review">
+								<form action="#" method="post">
+									<table class="form-table" role="presentation">
+										<tr>
+											<th scope="row">AI review</th>
+											<td><label><input type="checkbox" checked> Review every post before it can be scheduled</label></td>
+										</tr>
+										<tr>
+											<th scope="row"><label for="b-model">Reviewer model</label></th>
+											<td><select id="b-model"><option>Claude Fable 5</option><option>Claude Sonnet 5</option><option>Claude Haiku 4.5</option></select></td>
+										</tr>
+										<tr>
+											<th scope="row">Review strictness</th>
+											<td>
+												<fieldset>
+													<label><input type="radio" name="b-tone"> Strict</label><br>
+													<label><input type="radio" name="b-tone" checked> Balanced</label><br>
+													<label><input type="radio" name="b-tone"> Light</label>
+												</fieldset>
+											</td>
+										</tr>
+										<tr>
+											<th scope="row"><label for="b-threshold">Auto-approve threshold</label></th>
+											<td><input type="number" id="b-threshold" value="85" class="small-text"> %</td>
+										</tr>
+									</table>
+									<p class="submit"><input type="submit" class="button button-primary" value="Save Changes"></p>
+								</form>
+							</div>
+
+							<div data-tab-panel="notify" style="display: none">
+								<form action="#" method="post">
+									<table class="form-table" role="presentation">
+										<tr>
+											<th scope="row"><label for="b-email">Notify editors</label></th>
+											<td><input type="text" id="b-email" value="editors@principalwp.com" class="regular-text"></td>
+										</tr>
+										<tr>
+											<th scope="row">Slack</th>
+											<td><label><input type="checkbox" checked> Post flagged reviews to #editorial</label></td>
+										</tr>
+									</table>
+									<p class="submit"><input type="submit" class="button button-primary" value="Save Changes"></p>
+								</form>
+							</div>
+
+							<div data-tab-panel="advanced" style="display: none">
+								<form action="#" method="post">
+									<table class="form-table" role="presentation">
+										<tr>
+											<th scope="row"><label for="b-excluded">Excluded categories</label></th>
+											<td><textarea id="b-excluded" rows="4" cols="50" class="large-text">sponsored, syndicated</textarea></td>
+										</tr>
+									</table>
+									<p class="submit"><input type="submit" class="button button-primary" value="Save Changes"></p>
+								</form>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<div class="clear"></div>
+			</div>
+			<div class="clear"></div>
+		</div>
+	</div>
+
+	<div id="wpfooter" role="contentinfo"><p id="footer-left" class="alignleft">Thank you for creating with <a href="#">WordPress</a>.</p><div class="clear"></div></div>
+</div>
+<script>
+/*@inline wpp-runtime.js*/
+</script>
+</body>
+</html>

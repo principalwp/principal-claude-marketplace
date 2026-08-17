@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<!--
+  Example page built from invented data (Northwind, a fictional storefront company).
+  Demonstrates the two live-editor views below: feature flags and a prompt tuner.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Editors — feature flags and prompt tuner</title>
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzhDMzM0NCIvPjxwYXRoIGQ9Ik0zMCAyMiBINTggYTE4IDE4IDAgMCAxIDAgMzYgSDQyIFY3OCBIMzAgWiBNNDIgMzMgVjQ3IEg1NiBhNyA3IDAgMCAwIDAgLTE0IFoiIGZpbGw9IiNmZmYiLz48L3N2Zz4=">
+<link rel="stylesheet" href="base.css">
+<style>
+/* ---- page-specific layout on top of base.css (house style) ---- */
+
+/* tabs come from base.css (.tabs/.tab). Only align the strip to the page measure. */
+.tabs{max-width:var(--maxw);margin:var(--space-2) auto 0;padding:0 24px}
+
+main{max-width:var(--maxw);margin:0 auto;padding:var(--space-4) 24px var(--space-5)}
+.view[hidden]{display:none}
+.viewhead{margin-bottom:var(--space-4)}
+.viewhead h2{margin:0 0 var(--space-1)}
+.viewhead p{margin:0;max-width:74ch;color:var(--text)}
+
+.split{display:grid;grid-template-columns:1fr 340px;gap:var(--space-3);align-items:start}
+@media(max-width:900px){.split{grid-template-columns:1fr}}
+.card.slotpanel,.card + .card{margin-top:var(--space-3)}
+.side,.sticky{position:sticky;top:var(--space-2)}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);margin-bottom:var(--space-2)}
+.card-head h3{margin:0}
+.block-label{display:block;font-size:15px;font-weight:600;color:var(--ink);margin:0 0 var(--space-2)}
+.hint{font-size:15px;color:var(--text);margin:var(--space-1) 0 0}
+
+/* orchestrator model: single-select — base .btn with aria-pressed selected state */
+.seg{display:inline-flex;flex-wrap:wrap;gap:var(--space-1);margin-bottom:2px}
+
+/* agent toggle rows */
+.grouphead{display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-2);margin:var(--space-3) 0 var(--space-1)}
+.grouphead .gname{font-size:16px;font-weight:600;color:var(--ink)}
+.grouphead .gcount{font-family:var(--font-mono);font-size:13px;color:var(--text-muted)}
+.groupnote{font-size:15px;color:var(--text);margin:0 0 var(--space-1)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);padding:var(--space-2) 0;border-top:1px solid var(--border)}
+.row .meta{min-width:0}
+.row .name{font-family:var(--font-mono);font-size:14px;color:var(--ink);overflow-wrap:anywhere}
+.row .name .chg{font-family:var(--font-sans);font-size:13px;color:var(--text-muted);margin-left:8px}
+.row .desc{font-size:15px;color:var(--text);margin-top:2px}
+.row.changed{background:var(--accent-wash);border-left:3px solid var(--accent);margin:0 -12px;padding:var(--space-2) 12px;border-radius:var(--r-sm)}
+
+.toggle{flex:none;width:46px;height:26px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface-2);position:relative;cursor:pointer;padding:0;transition:background-color 120ms ease,border-color 120ms ease}
+.toggle::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:999px;background:var(--surface);box-shadow:0 1px 2px rgba(27,42,74,.25);transition:transform 120ms ease}
+.toggle[aria-checked="true"]{background:var(--ink);border-color:var(--ink)}
+.toggle[aria-checked="true"]::after{transform:translateX(20px)}
+.toggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* changes-to-submit panel — lives inside the live .callout (see markup) */
+.changetray{margin-top:0}
+.changetray .callout-q{margin:0 0 4px}
+.traysummary{display:flex;flex-wrap:wrap;gap:12px;font-family:var(--font-mono);font-size:13px;margin:0 0 var(--space-2)}
+.traylist{display:flex;flex-direction:column;gap:var(--space-1);margin-top:var(--space-1)}
+.trayentry{border:1px solid var(--border);background:var(--surface);border-radius:var(--r-md);padding:var(--space-2)}
+.entryhead{display:flex;align-items:center;gap:var(--space-1);flex-wrap:wrap}
+.entrykey{font-family:var(--font-mono);font-size:13.5px;color:var(--ink);flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
+.entrydelta{font-family:var(--font-mono);font-size:13px;color:var(--text-muted)}
+.entrydelta b{font-weight:600}
+.entrydelta .arrow{color:var(--text-faint);padding:0 3px}
+.entryrisk{display:inline-flex;align-items:center;gap:3px;font-family:var(--font-sans);font-size:12px;font-weight:600;margin-left:6px}
+.undoflag{appearance:none;background:none;border:0;color:var(--accent);font-family:var(--font-sans);font-size:15px;cursor:pointer;padding:2px 4px;text-decoration:underline;text-underline-offset:2px}
+.undoflag:hover{color:var(--accent-hover)}
+.btnrow{display:flex;gap:var(--space-1);flex-wrap:wrap;margin-top:var(--space-3)}
+
+/* prompt tuner */
+.tuner{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);align-items:start}
+@media(max-width:900px){.tuner{grid-template-columns:1fr}}
+.editorwrap{position:relative;border:1px solid var(--border-strong);border-radius:var(--r-md);background:var(--surface);overflow:hidden}
+.editorwrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-wash)}
+.ed-layer{margin:0;padding:14px;font-family:var(--font-mono);font-size:14px;line-height:1.6;white-space:pre-wrap;overflow-wrap:break-word;word-break:break-word;tab-size:2}
+.ed-highlight{position:absolute;inset:0;pointer-events:none;color:var(--ink);overflow:hidden}
+.ed-input{position:relative;background:transparent;color:transparent;caret-color:var(--accent);border:0;outline:0;resize:vertical;width:100%;min-height:480px;display:block}
+.ed-input::selection{background:var(--accent-wash)}
+.slot-known{background:color-mix(in srgb, var(--success) 16%, transparent);border-radius:3px;padding:0 1px}
+.slot-unknown{background:color-mix(in srgb, var(--warning) 18%, transparent);border-radius:3px;text-decoration:underline wavy var(--warning);padding:0 1px}
+.preview-known{background:color-mix(in srgb, var(--success) 14%, transparent);border-radius:3px}
+.preview-unknown{background:color-mix(in srgb, var(--warning) 18%, transparent);border-radius:3px;text-decoration:underline wavy var(--warning)}
+
+.slotgrid{display:flex;flex-direction:column}
+.slot{padding:10px 0;border-top:1px solid var(--border)}
+.slot:first-child{border-top:0}
+.slotlabel{display:block;font-family:var(--font-mono);font-size:14px;font-weight:400;color:var(--ink);margin:0 0 6px;overflow-wrap:anywhere}
+.slotlabel .kind{font-family:var(--font-sans);font-size:14px;color:var(--text-muted);margin-left:8px}
+
+.warnbox{margin-top:var(--space-2);border:1px solid var(--border);border-left:3px solid var(--warning);background:var(--surface-2);border-radius:var(--r-md);padding:12px 14px;font-size:15px;color:var(--text)}
+.warnbox.ok{border-left-color:var(--success)}
+.warnbox.block{border-left-color:var(--error)}      /* hard blocker (e.g. Apply-as-final with unbound slots) */
+.warnbox .mono{font-size:13px}
+.warnbox .vmark{font-weight:600;margin-right:6px}
+.warn{color:var(--warning);font-weight:600}
+.previewbox{margin-top:var(--space-2);border:1px solid var(--border);background:var(--surface-2);border-radius:var(--r-md);padding:var(--space-3);font-family:var(--font-mono);font-size:13.5px;line-height:1.6;white-space:pre-wrap;overflow-wrap:break-word;max-height:520px;overflow:auto}
+.terminal{display:flex;flex-direction:column;gap:var(--space-1);margin-top:var(--space-1)}
+.terminal label{font-size:16px;font-weight:400;color:var(--text);display:inline-flex;align-items:center;gap:8px;cursor:pointer;margin:0}
+
+/* ---- escape-hatch reveal boxes (Other… free-text + risky-flip / disposition reason) ---- *
+ * Show/hide + the revealed textarea come from base.css (.reveal / .reveal.is-open /
+ * .reveal-box); inputs and textareas otherwise inherit the global form styling. Only the
+ * sub-labels and the mono custom-model id input are page-specific. */
+.other-label{display:block;font-size:14px;font-weight:600;color:var(--ink);margin:0 0 6px}
+.otherinput{font-family:var(--font-mono);font-size:14px}   /* a model id is an identifier → mono */
+
+/* required reason field inside a risky staged entry */
+.reasonlabel{display:block;font-size:13px;font-weight:600;margin:0 0 4px}
+
+/* fixed submit bar — chrome (position/border/shadow/bg/z-index) from base .fixed-actionbar;
+   below is the page-specific inner layout: a centered measure that stacks the coverage hint
+   above the capture.js host. Reset the shared flex/padding so the .wrap drives layout. */
+.fixed-actionbar{display:block;padding:0}
+.fixed-actionbar .wrap{display:flex;flex-direction:column;gap:6px;padding-top:10px;padding-bottom:10px}
+.covhint{font-family:var(--font-mono);font-size:13px;color:var(--text-muted);margin:0}
+.covhint:empty{display:none}
+
+/* extra clearance for the taller fixed bar */
+body{padding-bottom:104px}
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <h1>Editors</h1>
+  <p class="lede">Two editors that change a Northwind pipeline run: flip feature flags against <span class="mono">engine.settings.json</span>, or tune the live shopper-intake prompt. Both read from the storefront orchestrator repo and submit only what you changed.</p>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="Editors">
+  <button class="tab" id="tab-flags" role="tab" aria-controls="view-flags" aria-selected="true">Feature flags</button>
+  <button class="tab" id="tab-tuner" role="tab" aria-controls="view-tuner" aria-selected="false">Prompt tuner</button>
+</nav>
+
+<main>
+
+  <!-- ============ VIEW A: FEATURE FLAGS ============ -->
+  <section class="view" id="view-flags" role="tabpanel" aria-labelledby="tab-flags">
+    <div class="viewhead">
+      <h2>Pipeline feature flags</h2>
+      <p>These map 1:1 to <span class="mono">storefront/engine.settings.json</span>. The model picks what the orchestrator runs on; each toggle adds or removes an agent from <span class="mono">agents.excluded</span>. The starting point is the repo's current config: the ten optional personas off, the seven always-on checks on.</p>
+    </div>
+
+    <div class="split">
+      <div class="card">
+        <p class="block-label">Orchestrator model</p>
+        <div class="seg" id="modelSeg" role="group" aria-label="Orchestrator model">
+          <button class="btn btn-secondary" type="button" data-model="opus" aria-pressed="false">opus</button>
+          <button class="btn btn-secondary" type="button" data-model="sonnet" aria-pressed="true">sonnet</button>
+          <button class="btn btn-secondary" type="button" data-model="haiku" aria-pressed="false">haiku</button>
+          <button class="btn btn-secondary" type="button" data-model="fable" aria-pressed="false">fable</button>
+          <button class="btn btn-secondary" type="button" data-model="__other__" aria-pressed="false">Other…</button>
+        </div>
+        <div class="reveal" id="modelOtherWrap">
+          <label class="other-label" for="modelOther">Custom model id</label>
+          <input type="text" id="modelOther" class="otherinput" autocomplete="off" spellcheck="false" placeholder="type a model id the presets don't cover">
+        </div>
+        <p class="hint">Seeded from <span class="mono">engine.model: "sonnet"</span>. <span class="mono">NORTHWIND_ORCHESTRATOR_MODEL</span> can override this at launch.</p>
+
+        <div id="agentGroups"></div>
+      </div>
+
+      <aside class="callout is-live side changetray" id="changeTray" aria-live="polite">
+        <span class="callout-label">Changes to submit</span>
+        <p class="callout-q" id="changeSummary">No changes yet</p>
+        <p class="traysummary" id="changeBreakdown" hidden></p>
+        <p class="hint" id="trayEmpty">Flip a toggle or change the model and it shows up here. Submit sends only what you changed.</p>
+        <div class="traylist" id="trayList"></div>
+        <span class="callout-label" style="margin-top:var(--space-2)">Resulting config</span>
+        <p class="hint" id="flagStat" style="margin-top:0"></p>
+        <div class="btnrow">
+          <button class="btn btn-secondary" id="resetFlags">Reset to initial</button>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============ VIEW B: PROMPT TUNER ============ -->
+  <section class="view" id="view-tuner" role="tabpanel" aria-labelledby="tab-tuner" hidden>
+    <div class="viewhead">
+      <h2>Prompt tuner</h2>
+      <p>The shopper-intake prompt from <span class="mono">checkout-api/ops/copy/shopper-intake.md</span>. Edit the text on the left; <span class="slot-known">known slots</span> and <span class="slot-unknown">unknown slots</span> highlight live. Fill the slot values and the filled prompt — exactly what the intake automation sends to Claude — renders on the right.</p>
+    </div>
+
+    <div class="tuner">
+      <div>
+        <div class="card">
+          <div class="card-head">
+            <p class="block-label" style="margin:0">Template <span class="mono" style="font-weight:400;color:var(--text-muted)">shopper-intake.md</span></p>
+            <button class="btn btn-secondary btn-sm" id="resetPrompt">Reset text</button>
+          </div>
+          <div class="editorwrap" id="editorWrap">
+            <pre class="ed-layer ed-highlight" id="ed-highlight" aria-hidden="true"></pre>
+            <textarea class="ed-layer ed-input" id="ed-input" spellcheck="false" aria-label="Prompt template editor"></textarea>
+          </div>
+        </div>
+
+        <div class="card slotpanel">
+          <h3>Slot values</h3>
+          <p class="hint">Auto-detected from the template. Edit a value to rebind it. Add a new <span class="mono">{{NAME}}</span> in the editor and it appears here.</p>
+          <div class="slotgrid" id="slotGrid"></div>
+        </div>
+      </div>
+
+      <div>
+        <aside class="callout is-live changetray" id="tunerTray" aria-live="polite">
+          <span class="callout-label">Changes to submit</span>
+          <p class="callout-q" id="tunerCount">No changes yet</p>
+          <p class="traysummary" id="tunerBreakdown" hidden></p>
+        </aside>
+
+        <aside class="callout is-live" id="dispositionCallout" aria-live="polite">
+          <p class="callout-q">When you submit, this prompt should…</p>
+          <div class="terminal" id="terminal" role="radiogroup" aria-label="Disposition">
+            <label><input type="radio" name="tdisp" value="apply_as_final"> Apply as final <span class="neg">⚠ overwrites the live prompt</span></label>
+            <label><input type="radio" name="tdisp" value="suggest_to_agent"> Suggest to the agent <span class="neutral">— the agent fills any gaps</span></label>
+            <label><input type="radio" name="tdisp" value="__other__"> Other… <span class="neutral">— a disposition these options don't cover</span></label>
+          </div>
+          <div class="reveal" id="applyReasonWrap">
+            <label class="other-label" for="applyReason">Why overwrite the live prompt? (recorded with your submission)</label>
+            <textarea id="applyReason" class="reveal-box" spellcheck="false" placeholder="note why this rebuilt prompt should replace the live one"></textarea>
+          </div>
+          <div class="reveal" id="dispOtherWrap">
+            <label class="other-label" for="dispOther">Describe the disposition</label>
+            <input type="text" id="dispOther" autocomplete="off" spellcheck="false" placeholder="how should the agent apply this change?">
+          </div>
+        </aside>
+
+        <div class="card sticky">
+          <div class="card-head">
+            <h3>Filled preview</h3>
+            <button class="btn btn-secondary btn-sm" id="copyPrompt">Copy filled prompt</button>
+          </div>
+          <p class="hint" id="previewMeta" aria-live="polite"></p>
+          <div id="warn"></div>
+          <div class="previewbox" id="previewBox"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Shared, page-wide capture action bar. capture.js renders its Submit / Copy / Submitted
+     controls INTO this host (cap-host mode), so the whole page submits once. -->
+<div class="fixed-actionbar" id="submitBar">
+  <div class="wrap">
+    <p class="covhint" id="covHint"></p>
+    <div id="capture-bar"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="capture.js"></script>
+
+<!-- Raw template seed: kept as text/plain so quotes/backticks/JSON survive verbatim. -->
+<script type="text/plain" id="seed-prompt">You are the first pass on Northwind's support inbox. One shopper contact comes in; you turn it into a routing packet the support console can act on without a human having to re-read the message first.
+
+## What you can call
+
+Two lookups. Call them rather than guessing.
+
+- `orderLookup(order_ref)` — the live state of one Northwind order: line items, payment, carrier scans, refunds.
+- `registerSearch({ area, open_only, updated_within_days, phrase })` — the known-issue register. `area` is one of {{REGISTER_AREAS}}. The filter is structured; there is no query string to write.
+
+## The message
+
+What the shopper sent and what the contact form managed to capture. Treat all of it as claimed, not confirmed.
+
+- Body: {{CONTACT_BODY}}
+- Arrived on {{CONTACT_CHANNEL}} at {{RECEIVED_AT}}
+- Order reference the form captured: {{ORDER_REF}} (null if it captured none)
+
+## What the console already knows
+
+- Shopper tier: {{SHOPPER_TIER}}
+- This shopper's recent contacts: {{PRIOR_CONTACTS}} (null if none in the last 30 days)
+- Live incident digest: {{LIVE_INCIDENTS}}
+- Queues you may route to: {{QUEUE_ROSTER}}
+- First-response target: {{SLA_MINUTES}} minutes from arrival
+
+## Non-negotiables
+
+These outrank the procedure. Where a step and a rule disagree, the rule wins.
+
+1. Never state an order fact that didn't come from `orderLookup`. If the shopper says a parcel went back to sender and the order doesn't show it, the reply says what the order shows and the discrepancy goes in `open_questions`.
+2. You don't grant refunds, credits or delivery dates. You may say a queue will decide one. The moment `reply.text` commits Northwind to money or to a date, `reply.send` cannot be `"now"`.
+3. A register entry sitting at `fix_pending_release` — NW-311 has been there a week — is not a resolution. It still belongs in `matches`, and the shopper still gets told what happens to their own order in the meantime.
+4. Card numbers, full addresses and anything else the shopper volunteered that the queue doesn't need stay out of `intake.one_line` and `consulted`. `reply.text` is the only field that goes back to the shopper, and it never reads their data back at them for confirmation.
+5. `consulted` has to stand on its own as the record of this pass: every lookup you made, including the ones that came back empty. Someone reviewing the packet reconstructs the decision from it without re-running anything.
+
+## How to work it
+
+Seven steps, in this order. Don't skip ahead — step 3 changes what step 4 searches for, and step 5 changes what step 6 is allowed to do.
+
+**1 — Say it back in one sentence.**
+
+Write `intake.one_line` before you call anything: the complaint as the shopper would put it, in their nouns, not the taxonomy's. It goes first so that keyword-spotting has nothing to latch onto and so the order state doesn't colour how you read the message. "Charged twice" and "the discount came off after I paid" are both payment contacts and need completely different handling. Only once the sentence is written do you pick `intake.topic` from the fixed list.
+
+**2 — Get the order on the table.**
+
+If {{ORDER_REF}} is set, or the body contains something order-shaped, call `orderLookup` now. Everything after this reads differently with the order state in hand: a "where is it" with a carrier scan from yesterday is not the same contact as one with no scan in nine days. If there is no order and none can be inferred, say so in `consulted` and carry on — most catalog and account contacts have none.
+
+**3 — Rate the damage.**
+
+`intake.severity` comes off this rubric, not off the shopper's tone:
+
+- `sev1` — money has left the shopper's account with nothing to show for it, or the storefront is refusing orders outright.
+- `sev2` — the order is stuck and there is no self-serve way out of it.
+- `sev3` — wrong, slow or confusing, but the shopper can still get where they were going.
+- `sev4` — a question, a preference, or a thank-you.
+
+A repeat contact costs a band. Set `intake.repeat_contact` true whenever {{PRIOR_CONTACTS}} shows this shopper writing in about the same thing, and rate it one band worse than the words alone would earn. Being made to ask twice is its own failure.
+
+**4 — Check the register.**
+
+Search now, with severity already set, because severity decides how wide to look. Call `registerSearch` scoped to the area the topic implies, `open_only: true`, and a recency window of 14 days for sev1 and sev2, 60 days for sev3 and sev4. If {{LIVE_INCIDENTS}} already names something that covers this contact, that entry is a match at 0.8 on its own — still run the search, since the digest lags behind the register.
+
+Score every candidate into `matches[].fit`:
+
+- 0.8 and up — the entry describes this exact failure on this exact surface.
+- 0.6 to 0.79 — same surface, same symptom, details differ.
+- 0.35 to 0.59 — a plausible read, but a second explanation fits just as well. Keep it and let the queue decide.
+- under 0.35 — leave it out.
+
+For each one you keep, `matches[].carries` says what this contact adds to that entry: a new affected path, a second data point on how often it happens, or nothing new. Write "nothing new" plainly when that's the answer — a duplicate report still counts for something.
+
+**5 — Draft the reply, then decide who may send it.**
+
+Write `reply.text` here, before the queue is chosen. What you can honestly tell the shopper is what determines whether a human has to touch this at all:
+
+- Everything you'd say is already confirmed by the order state or by an open register entry → `reply.send: "now"`.
+- The reply is right but names a date, a refund, or anything a queue would have to stand behind → `reply.send: "after_review"`.
+- You'd have to guess at a fact to make the reply hold together → `reply.send: "hold"`, `reply.text: null`, and name the missing fact in `reply.hold_note`.
+
+Shape it like this:
+
+- Line 1 — acknowledge the specific thing they wrote, in their words. Not "sorry for the inconvenience".
+- Lines 2-3 — what the order actually shows right now, in plain terms: "the parcel hasn't been scanned since Tuesday", never "no carrier event on the fulfilment record".
+- Line 4 — what happens next, who does it, and a time the {{SLA_MINUTES}}-minute first-response target can actually hold.
+- Then {{SIGNOFF}} on its own line, with nothing after it.
+
+**6 — Route it.**
+
+`handling` is a list, not one queue. Pick from {{QUEUE_ROSTER}} on topic, and mark exactly one entry `first: true` — the queue that owns the shopper's next reply. A sev1 always gets a second entry on `escalations` alongside its topic queue, and so does anything at sev2 or worse when {{SHOPPER_TIER}} is a paid tier. Everything else gets one entry unless two teams genuinely both have work. `because` is one clause, and it names the thing in this packet that put the queue there.
+
+**7 — Try to break your own answer.**
+
+A last pass over what you just wrote. Anything that would move severity a band, change who owns it, or make a sentence in `reply.text` untrue goes into `open_questions`, phrased so a human can answer it in one line. If any of them would make the reply untrue, overwrite `reply.send` to `"hold"` — this step outranks step 5. An empty `open_questions` is a real answer; don't pad it.
+
+## What to return
+
+JSON and nothing else — no preamble, no fence, no closing remark.
+
+```json
+{
+  "intake": {
+    "topic": "delivery | payment | catalog | account | returns | other",
+    "severity": "sev1 | sev2 | sev3 | sev4",
+    "repeat_contact": false,
+    "order_ref": "Northwind order id, or null",
+    "one_line": "The complaint in the shopper's own nouns"
+  },
+
+  "handling": [
+    { "queue": "one from the roster", "owner_role": "the role that picks it up", "first": true, "because": "one clause" }
+  ],
+
+  "matches": [
+    { "issue": "NW-310", "fit": 0.72, "state": "open | fix_pending_release", "carries": "What this contact adds, or nothing new" }
+  ],
+
+  "reply": {
+    "send": "now | after_review | hold",
+    "text": "Shopper-facing text, or null when held",
+    "hold_note": "The fact you would have had to guess, or null"
+  },
+
+  "consulted": [
+    "One line per lookup: what you called, and what came back"
+  ],
+
+  "open_questions": [
+    "One line each, answerable without re-reading the thread"
+  ]
+}
+```
+
+`matches` and `open_questions` are `[]` when empty, never null. `handling` always carries at least one entry.</script>
+
+<script>
+"use strict";
+
+/* ------------------------------------------------------------------ *
+ * Shared helpers
+ * ------------------------------------------------------------------ */
+function esc(s){
+  return s.replace(/[&<>]/g, function(c){
+    return c === "&" ? "&amp;" : c === "<" ? "&lt;" : "&gt;";
+  });
+}
+function copyText(text){
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text).then(function(){ return true; }, fallback);
+  }
+  return Promise.resolve(fallback());
+  function fallback(){
+    try {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.top = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      return ok;
+    } catch (e) { return false; }
+  }
+}
+var toastTimer = null;
+function toast(msg){
+  var t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("is-show");
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.classList.remove("is-show"); }, 1900);
+}
+function wireCopy(btn, getText, label){
+  btn.addEventListener("click", function(){
+    if (btn.disabled) return;
+    copyText(getText()).then(function(ok){
+      toast(ok ? (label + " copied") : "Copy failed — select manually");
+    });
+  });
+}
+
+/* ------------------------------------------------------------------ *
+ * Shared capture wiring (window.Capture, loaded from capture.js)
+ *
+ * One Capture instance for the whole page. Both views mark into it with
+ * view-namespaced stable ids, and the single shared bar (Submit / Copy /
+ * Submitted) commits everything in one batched Capture.submit().
+ * ------------------------------------------------------------------ */
+window.CAPTURE_SUBMIT_URL = ""; /* static example page - feedback falls back to the clipboard */
+
+var FLAG_TOTAL = 18; // 17 agent toggles + 1 orchestrator-model flag
+var SLOT_TOTAL = 11; // distinct {{variables}} in the seed template (the tuner coverage unit)
+Capture.init({ view: "editors", total: FLAG_TOTAL + SLOT_TOTAL });
+
+// Coverage units are ONLY the bounded primary elements: the 18 flags and the detected
+// template slots. The template-rewrite op is an "extra" mark — a real payload item, but
+// not a judged-vs-skipped coverage unit — so it is filtered out here and can never
+// inflate the engaged/total fraction.
+Capture.setCoverage(function(id){
+  return id.indexOf("feature-flags/") === 0 || id.indexOf("prompt-tuner/var:") === 0;
+});
+
+var ActiveTab = "flags";
+// Set by the tabs IIFE below: switch the page to a view by its id ("flags" | "tuner").
+// A gate validator whose missing field lives on the INACTIVE tab calls this from its
+// focus() so the field is visible by the time capture.js scrolls to and flashes it.
+var activateTab = function(){};
+var captureValidators = [];   // each returns null (ok) or { reason, focus } (or a bare reason string)
+var verdictParts = [];        // each returns a namespaced verdict token, or null
+var coverageHints = {};       // view id -> fn returning that view's coverage string
+
+function registerValidator(fn){ captureValidators.push(fn); }
+function registerVerdict(fn){ verdictParts.push(fn); }
+
+// One shared payload carries ONE verdict, but the two editors are independent. The
+// verdict is the UNION of each view's contribution, recomputed from BOTH views on every
+// change and never keyed to the active tab.
+function recomputeVerdict(){
+  var parts = [];
+  verdictParts.forEach(function(f){ var v = f(); if (v) parts.push(v); });
+  Capture.rollup(parts.length ? parts.join(" + ") : null);
+}
+
+// Submit gating lives in the shared primitive (Capture.setGate): the bar disables itself
+// and surfaces the reason in its own message line. We compose every view's validators —
+// a tab-independent gate, so a staged-but-incomplete change in either editor blocks the
+// single shared Submit regardless of which tab is showing.
+Capture.setGate(function(){
+  var reasons = [], focus = null;
+  captureValidators.forEach(function(v){
+    var r = v();
+    if (!r) return;
+    if (typeof r === "string") { reasons.push(r); }
+    else { reasons.push(r.reason); if (!focus) focus = r.focus; } // first failing validator wins the flash
+  });
+  return { ok: reasons.length === 0,
+           reason: reasons.length ? ("Submit blocked: " + reasons.join("  ·  ")) : "",
+           focus: focus };
+});
+
+// The shared bar's combined "Coverage N/32" folds both editors together; this line
+// disambiguates what the ACTIVE view actually judged. Runs on every Capture event and on
+// tab switch.
+function refreshGate(){
+  var el = document.getElementById("covHint");
+  if (!el) return;
+  var fn = coverageHints[ActiveTab];
+  el.textContent = fn ? fn() : "";
+}
+Capture.onChange(refreshGate);
+
+/* ------------------------------------------------------------------ *
+ * Tabs
+ * ------------------------------------------------------------------ */
+(function(){
+  var tabs = [
+    { tab: document.getElementById("tab-flags"), view: document.getElementById("view-flags"), id: "flags" },
+    { tab: document.getElementById("tab-tuner"), view: document.getElementById("view-tuner"), id: "tuner" }
+  ];
+  function select(i){
+    tabs.forEach(function(o, j){
+      var on = i === j;
+      o.tab.setAttribute("aria-selected", on ? "true" : "false");
+      o.view.hidden = !on;
+    });
+    ActiveTab = tabs[i].id;
+    refreshGate();
+  }
+  tabs.forEach(function(o, i){ o.tab.addEventListener("click", function(){ select(i); }); });
+  // Expose to gate validators: a focus() on an inactive tab activates its view first.
+  activateTab = function(id){
+    for (var k = 0; k < tabs.length; k++){ if (tabs[k].id === id){ select(k); return; } }
+  };
+})();
+
+/* ================================================================== *
+ * VIEW A — FEATURE FLAGS
+ * ================================================================== */
+(function(){
+  // Invented Northwind agent roster, grouped, for this example page. INITIAL config =
+  // engine.settings.json: engine.model = "sonnet"; agents.excluded = the ten sim-* personas.
+  // defaultOn is the single source of truth for two things: the seeded enabled-state, and
+  // whether switching an agent off counts as a risky flip (CHECK_SET below).
+  var GROUPS = [
+    {
+      name: "Optional personas",
+      defaultOn: false,
+      note: "All ten sit in agents.excluded right now. Switch one on and the change gets read through that persona too.",
+      agents: [
+        ["sim-merchandising", "Merchandising persona"],
+        ["sim-catalog-ops", "Catalog ops persona"],
+        ["sim-fulfillment", "Fulfillment persona"],
+        ["sim-support-lead", "Support lead persona"],
+        ["sim-marketing", "Marketing persona"],
+        ["sim-finance", "Finance persona"],
+        ["sim-trust-safety", "Trust & safety persona"],
+        ["sim-shopper", "Shopper persona"],
+        ["sim-seller-success", "Seller success persona"],
+        ["sim-site-reliability", "Site reliability persona"]
+      ]
+    },
+    {
+      name: "Always-on checks",
+      defaultOn: true,
+      note: "Each one runs on every Northwind change. Switch one off and it leaves this run — you have to say why before the change can be submitted.",
+      agents: [
+        ["chk-orders-rerun", "Re-runs a day of live orders against the build"],
+        ["chk-money-math", "Recomputes cart totals, tax and discounts"],
+        ["chk-stock-feed", "Reconciles the warehouse stock feed"],
+        ["chk-shipment-scans", "Replays shipment scans against tracking state"],
+        ["chk-refund-path", "Walks a refund and a chargeback through"],
+        ["chk-catalog-ranking", "Re-scores catalog ranking on last week's queries"],
+        ["chk-oncall-brief", "Writes the on-call brief for this release"]
+      ]
+    }
+  ];
+
+  // INITIAL enabled-state comes straight off each group's defaultOn.
+  var INITIAL = { model: "sonnet", enabled: {} };
+  GROUPS.forEach(function(g){
+    g.agents.forEach(function(a){ INITIAL.enabled[a[0]] = !!g.defaultOn; });
+  });
+
+  // Mutable state (deep copy of initial). modelIsOther = the model picked from the
+  // escape-hatch free-text box (a value the opus/sonnet/haiku/fable presets don't cover);
+  // reasons = per-flag required justification, keyed by the staged flag id, for risky flips.
+  var state = { model: INITIAL.model, modelIsOther: false, reasons: {}, enabled: {} };
+  Object.keys(INITIAL.enabled).forEach(function(k){ state.enabled[k] = INITIAL.enabled[k]; });
+
+  var elGroups = document.getElementById("agentGroups");
+  var elStat = document.getElementById("flagStat");
+  var btnReset = document.getElementById("resetFlags");
+  var seg = document.getElementById("modelSeg");
+  var modelOtherWrap = document.getElementById("modelOtherWrap");
+  var modelOtherInput = document.getElementById("modelOther");
+  var elTrayList = document.getElementById("trayList");
+  var elChangeSummary = document.getElementById("changeSummary");
+  var elChangeBreakdown = document.getElementById("changeBreakdown");
+  var elTrayEmpty = document.getElementById("trayEmpty");
+
+  var MODEL_ID = "feature-flags/engine.model";
+
+  // Risk model: switching off an always-on check or changing the orchestrator model is a
+  // high-risk flip; switching on an optional persona is low-risk. Carried as payload metadata only.
+  var CHECK_SET = {};
+  GROUPS.forEach(function(g){
+    if (g.defaultOn) g.agents.forEach(function(a){ CHECK_SET[a[0]] = true; });
+  });
+
+  var toggleEls = {}; // agent -> button
+  var rowEls = {};    // agent -> row div
+
+  // Render groups + toggles
+  GROUPS.forEach(function(g){
+    var head = document.createElement("div");
+    head.className = "grouphead";
+    var gname = document.createElement("span");
+    gname.className = "gname";
+    gname.textContent = g.name;
+    var gcount = document.createElement("span");
+    gcount.className = "gcount";
+    gcount.id = "gcount-" + g.name.replace(/\W+/g, "");
+    head.appendChild(gname);
+    head.appendChild(gcount);
+    elGroups.appendChild(head);
+
+    var noteP = document.createElement("p");
+    noteP.className = "groupnote";
+    noteP.textContent = g.note;
+    elGroups.appendChild(noteP);
+
+    g.agents.forEach(function(a){
+      var name = a[0], desc = a[1];
+      var row = document.createElement("div");
+      row.className = "row";
+      rowEls[name] = row;
+
+      var meta = document.createElement("div");
+      meta.className = "meta";
+      var nm = document.createElement("div");
+      nm.className = "name";
+      nm.textContent = name;
+      var chg = document.createElement("span");
+      chg.className = "chg";
+      chg.textContent = "";
+      nm.appendChild(chg);
+      var ds = document.createElement("div");
+      ds.className = "desc";
+      ds.textContent = desc;
+      meta.appendChild(nm);
+      meta.appendChild(ds);
+
+      var btn = document.createElement("button");
+      btn.className = "toggle";
+      btn.type = "button";
+      btn.setAttribute("role", "switch");
+      btn.setAttribute("aria-label", "Enable agent " + name);
+      toggleEls[name] = btn;
+      btn.addEventListener("click", function(){
+        state.enabled[name] = !state.enabled[name];
+        render();
+      });
+
+      row.appendChild(meta);
+      row.appendChild(btn);
+      elGroups.appendChild(row);
+    });
+  });
+
+  // Model segmented control (single-select). "Other…" is the escape hatch: it reveals a
+  // free-text box so the human is never trapped in the four presets, and the typed id
+  // becomes the effective model. sonnet stays the pre-selected default.
+  Array.prototype.forEach.call(seg.querySelectorAll("button"), function(b){
+    b.addEventListener("click", function(){
+      var dm = b.getAttribute("data-model");
+      if (dm === "__other__") {
+        state.modelIsOther = true;
+        modelOtherWrap.classList.add("is-open");
+        state.model = modelOtherInput.value.trim();
+        modelOtherInput.focus();
+      } else {
+        state.modelIsOther = false;
+        modelOtherWrap.classList.remove("is-open");
+        state.model = dm;
+      }
+      render();
+    });
+  });
+  modelOtherInput.addEventListener("input", function(){
+    if (!state.modelIsOther) return;
+    state.model = modelOtherInput.value.trim();
+    render();
+  });
+
+  // Build the sorted agents.excluded array for a given enabled-map.
+  function disabledList(enabled){
+    return Object.keys(enabled).filter(function(k){ return !enabled[k]; }).sort();
+  }
+
+  function updateGroupCounts(){
+    GROUPS.forEach(function(g){
+      var on = 0;
+      g.agents.forEach(function(a){ if (state.enabled[a[0]]) on++; });
+      var el = document.getElementById("gcount-" + g.name.replace(/\W+/g, ""));
+      if (el) el.textContent = on + " / " + g.agents.length + " on";
+    });
+  }
+
+  // The set of dirty flags vs INITIAL — the staged net diff (flip-then-unflip leaves no entry).
+  function dirtyFlags(){
+    var out = [];
+    // A custom model picked from the "Other…" box counts only once it has a non-empty
+    // value; an empty Other selection is an in-progress action, not a staged change.
+    if (state.model !== INITIAL.model && !(state.modelIsOther && state.model === "")) {
+      out.push({ id: MODEL_ID, rkey: "engine.model", label: "engine.model",
+        initial: INITIAL.model, next: state.model, risk: "high", kind: "model",
+        custom: state.modelIsOther });
+    }
+    GROUPS.forEach(function(g){
+      g.agents.forEach(function(a){
+        var name = a[0];
+        if (state.enabled[name] !== INITIAL.enabled[name]) {
+          out.push({ id: "feature-flags/" + name, rkey: name, label: name,
+            initial: INITIAL.enabled[name], next: state.enabled[name],
+            risk: CHECK_SET[name] ? "high" : "low", kind: "agent" });
+        }
+      });
+    });
+    return out;
+  }
+
+  // All possible flag ids, so we can unmark anything that returned to INITIAL.
+  var ALL_FLAG_IDS = [MODEL_ID];
+  GROUPS.forEach(function(g){ g.agents.forEach(function(a){ ALL_FLAG_IDS.push("feature-flags/" + a[0]); }); });
+
+  // Mirror the net diff into Capture: one mark per dirty flag, unmark the rest.
+  function syncCapture(dirty){
+    var present = {};
+    dirty.forEach(function(d){
+      present[d.id] = true;
+      var value = { initial: d.initial, next: d.next, risk: d.risk };
+      if (d.kind === "model" && d.custom) value.custom = true;
+      var meta = { anchor: d.kind === "model" ? "engine.model" : "agents.excluded" };
+      // Risky flips carry their required justification (value + note) into the payload.
+      if (d.risk === "high") {
+        var r = (state.reasons[d.id] || "").trim();
+        if (r) meta.reason = r;
+      }
+      Capture.mark(d.id, value, meta);
+    });
+    // Anything back at INITIAL leaves the diff — and drops any reason it had collected.
+    ALL_FLAG_IDS.forEach(function(id){ if (!present[id]) { Capture.unmark(id); delete state.reasons[id]; } });
+  }
+
+  function revertFlag(d){
+    if (d.kind === "model") state.model = INITIAL.model;
+    else state.enabled[d.rkey] = INITIAL.enabled[d.rkey];
+    render();
+  }
+
+  function rebuildTray(dirty){
+    elChangeSummary.textContent = dirty.length === 0
+      ? "No changes yet"
+      : dirty.length + " change" + (dirty.length === 1 ? "" : "s") + " staged";
+
+    // Valence breakdown so added vs removed vs risky reads unambiguously at a glance.
+    var addedN = 0, removedN = 0, modelN = 0, riskyN = 0;
+    dirty.forEach(function(d){
+      if (d.kind === "model") { modelN++; }
+      else if (d.next) { addedN++; } else { removedN++; }
+      if (d.risk === "high") { riskyN++; }
+    });
+    if (dirty.length === 0) {
+      elChangeBreakdown.hidden = true;
+      elChangeBreakdown.innerHTML = "";
+    } else {
+      var segs = [];
+      if (addedN)   segs.push('<span class="pos">✓ ' + addedN + ' added</span>');
+      if (removedN) segs.push('<span class="neg">✗ ' + removedN + ' removed</span>');
+      if (modelN)   segs.push('<span class="neutral">↻ model changed</span>');
+      if (riskyN)   segs.push('<span class="neg">⚠ ' + riskyN + ' risky</span>');
+      elChangeBreakdown.innerHTML = segs.join("");
+      elChangeBreakdown.hidden = false;
+    }
+
+    elTrayEmpty.hidden = dirty.length !== 0;
+    elTrayList.innerHTML = "";
+    dirty.forEach(function(d){
+      var entry = document.createElement("div");
+      entry.className = "trayentry";
+
+      var head = document.createElement("div");
+      head.className = "entryhead";
+
+      var key = document.createElement("span");
+      key.className = "entrykey";
+      key.textContent = d.label;
+
+      // Valence: turning an agent ON is an add (pos), OFF is a removal (neg).
+      // A model swap is neutral in sign but flagged risky below.
+      var added = d.kind === "agent" && d.next === true;
+      var removed = d.kind === "agent" && d.next === false;
+      var toClass = added ? "pos" : removed ? "neg" : "neutral";
+      var marker = added ? "✓ " : removed ? "✗ " : "";
+
+      var delta = document.createElement("span");
+      delta.className = "entrydelta";
+      var from = d.kind === "model" ? d.initial : (d.initial ? "on" : "off");
+      var to = d.kind === "model" ? d.next : (d.next ? "on" : "off");
+      delta.innerHTML = esc(from) + ' <span class="arrow">→</span> <b class="' + toClass + '">'
+        + marker + esc(to) + "</b>";
+
+      head.appendChild(key);
+      head.appendChild(delta);
+
+      // High-risk flips (switching off a check, swapping the orchestrator model) get an
+      // explicit negative marker — a bare delta would read as neutral otherwise.
+      if (d.risk === "high") {
+        var risk = document.createElement("span");
+        risk.className = "entryrisk neg";
+        risk.textContent = "⚠ risky";
+        risk.title = d.kind === "model"
+          ? "Changing the orchestrator model affects the whole run"
+          : "Switching off an always-on agent removes a check from the run";
+        head.appendChild(risk);
+      }
+
+      var undo = document.createElement("button");
+      undo.className = "undoflag";
+      undo.type = "button";
+      undo.textContent = "undo";
+      undo.title = "Revert to initial";
+      undo.addEventListener("click", function(){ revertFlag(d); });
+
+      head.appendChild(undo);
+      entry.appendChild(head);
+
+      // Negative / risky flip — reveal a required reason box on selection. A check
+      // taken out of the run or a swapped orchestrator model must be justified; Submit
+      // stays gated until the note is non-empty (see the registered validator below).
+      if (d.risk === "high") {
+        var rwrap = document.createElement("div");
+        rwrap.className = "reveal is-open";
+        var rid = "reason-" + d.id.replace(/[^A-Za-z0-9]+/g, "-");
+        var rlab = document.createElement("label");
+        rlab.className = "reasonlabel";
+        rlab.setAttribute("for", rid);
+        rlab.textContent = d.kind === "model"
+          ? "Why change the orchestrator model?"
+          : "Why take this check out of the run?";
+        var ta = document.createElement("textarea");
+        ta.className = "reveal-box";
+        ta.id = rid;
+        ta.value = state.reasons[d.id] || "";
+        ta.addEventListener("input", function(){
+          state.reasons[d.id] = ta.value;
+          // Re-mark with the note + re-evaluate the gate without rebuilding the tray
+          // (rebuilding would steal focus from the textarea mid-type).
+          syncCapture(dirtyFlags());
+          recomputeVerdict();
+          refreshGate();
+        });
+        rwrap.appendChild(rlab);
+        rwrap.appendChild(ta);
+        entry.appendChild(rwrap);
+      }
+
+      elTrayList.appendChild(entry);
+    });
+  }
+
+  registerVerdict(function(){
+    return dirtyFlags().length ? "feature-flags:submit_changes" : null;
+  });
+  coverageHints.flags = function(){
+    return "Feature flags · " + dirtyFlags().length + " of " + FLAG_TOTAL + " flags changed vs initial";
+  };
+
+  // Every risky flip (a check switched off, or a model swap) must carry a reason before submit.
+  registerValidator(function(){
+    var missing = dirtyFlags().filter(function(d){
+      return d.risk === "high" && !(state.reasons[d.id] || "").trim();
+    });
+    if (!missing.length) return null;
+    // Flash the FIRST risky flip's reason box; its id matches rebuildTray's rid scheme.
+    var rid = "reason-" + missing[0].id.replace(/[^A-Za-z0-9]+/g, "-");
+    return {
+      reason: missing.length + " risky flip" + (missing.length === 1 ? " needs" : "s need") + " a reason",
+      focus: function(){ activateTab("flags"); return document.getElementById(rid); }
+    };
+  });
+  // "Other…" model picked but no id typed yet — an unfinished escape-hatch selection.
+  registerValidator(function(){
+    if (state.modelIsOther && state.model === "") {
+      return {
+        reason: "Enter a custom orchestrator model id",
+        focus: function(){ activateTab("flags"); return document.getElementById("modelOther"); }
+      };
+    }
+    return null;
+  });
+
+  function render(){
+    // toggles + changed-row markers
+    Object.keys(toggleEls).forEach(function(name){
+      toggleEls[name].setAttribute("aria-checked", state.enabled[name] ? "true" : "false");
+      var changed = state.enabled[name] !== INITIAL.enabled[name];
+      rowEls[name].classList.toggle("changed", changed);
+      var chg = rowEls[name].querySelector(".chg");
+      if (chg) chg.textContent = changed ? "changed" : "";
+    });
+    // model seg — "Other…" is pressed whenever the free-text box drives the model.
+    Array.prototype.forEach.call(seg.querySelectorAll("button"), function(b){
+      var dm = b.getAttribute("data-model");
+      var pressed = dm === "__other__" ? state.modelIsOther : (!state.modelIsOther && dm === state.model);
+      b.setAttribute("aria-pressed", pressed ? "true" : "false");
+    });
+    updateGroupCounts();
+
+    var disCount = disabledList(state.enabled).length;
+    elStat.innerHTML = "agents.excluded holds <b>" + disCount + "</b> agent" + (disCount === 1 ? "" : "s")
+      + " · orchestrator on <b class=\"mono\">" + esc(state.model) + "</b>";
+
+    // capture layer: staged tray + Capture sync + verdict + gate
+    var dirty = dirtyFlags();
+    rebuildTray(dirty);
+    syncCapture(dirty);
+    recomputeVerdict();
+    refreshGate();
+  }
+
+  btnReset.addEventListener("click", function(){
+    state.model = INITIAL.model;
+    state.modelIsOther = false;
+    state.reasons = {};
+    modelOtherInput.value = "";
+    modelOtherWrap.classList.remove("is-open");
+    Object.keys(INITIAL.enabled).forEach(function(k){ state.enabled[k] = INITIAL.enabled[k]; });
+    render();
+    toast("Reset to initial");
+  });
+
+  render();
+})();
+
+/* ================================================================== *
+ * VIEW B — PROMPT TUNER
+ * ================================================================== */
+(function(){
+  var SEED = document.getElementById("seed-prompt").textContent;
+
+  // Known slot dictionary (name -> default sample value). Anything not here = unknown.
+  var KNOWN = {
+    CONTACT_BODY: "Order NW-ORD-48213 says delivered but nothing arrived. That's twice now on this address and I keep getting told to contact the carrier.",
+    CONTACT_CHANNEL: "chat-widget",
+    RECEIVED_AT: "2026-04-02T14:26:09Z",
+    SHOPPER_TIER: "member",
+    ORDER_REF: "NW-ORD-48213",
+    PRIOR_CONTACTS: "2 in the last 30 days, both about delivery scans on this address",
+    LIVE_INCIDENTS: "none open",
+    QUEUE_ROSTER: "delivery-ops, payments, catalog-data, accounts, returns, escalations",
+    REGISTER_AREAS: "storefront, checkout-api, fulfillment, payments, catalog",
+    SLA_MINUTES: "45",
+    SIGNOFF: "— Northwind Support"
+  };
+  // Live slot values (seeded from KNOWN; unknown slots get an empty editable value).
+  var values = {};
+
+  var SLOT_RE = /\{\{([A-Z0-9_]+)\}\}/g;
+
+  var input = document.getElementById("ed-input");
+  var highlight = document.getElementById("ed-highlight");
+  var slotGrid = document.getElementById("slotGrid");
+  var previewBox = document.getElementById("previewBox");
+  var previewMeta = document.getElementById("previewMeta");
+  var warnEl = document.getElementById("warn");
+  var btnCopy = document.getElementById("copyPrompt");
+  var btnResetPrompt = document.getElementById("resetPrompt");
+  var elTunerCount = document.getElementById("tunerCount");
+  var elTunerBreakdown = document.getElementById("tunerBreakdown");
+  var applyReasonWrap = document.getElementById("applyReasonWrap");
+  var applyReasonInput = document.getElementById("applyReason");
+  var dispOtherWrap = document.getElementById("dispOtherWrap");
+  var dispOtherInput = document.getElementById("dispOther");
+
+  var TEMPLATE_ID = "prompt-tuner/template";
+  var DISP_ID = "prompt-tuner/disposition";   // extra mark (not a coverage unit)
+  var markedVars = {};   // var id -> true (so we can unmark removed ones)
+  var tunerVerdict = null;
+  var applyReason = "";  // note revealed by the negative "Apply as final" disposition
+  var otherDisp = "";    // free-text revealed by the "Other…" disposition escape hatch
+
+  function proposedFor(name){
+    return Object.prototype.hasOwnProperty.call(KNOWN, name) ? KNOWN[name] : "";
+  }
+
+  function detectSlots(text){
+    var seen = [];
+    var m;
+    SLOT_RE.lastIndex = 0;
+    while ((m = SLOT_RE.exec(text)) !== null) {
+      if (seen.indexOf(m[1]) === -1) seen.push(m[1]);
+    }
+    return seen;
+  }
+
+  // Build the highlighted layer (escape first, then wrap slots).
+  function renderHighlight(text){
+    var esc1 = esc(text);
+    var html = esc1.replace(/\{\{([A-Z0-9_]+)\}\}/g, function(full, name){
+      var cls = Object.prototype.hasOwnProperty.call(KNOWN, name) ? "slot-known" : "slot-unknown";
+      return '<span class="' + cls + '">' + full + "</span>";
+    });
+    highlight.innerHTML = html + "\n";
+  }
+
+  // Build the filled preview. Known/filled slots substitute; unknown-or-empty stay as {{NAME}} and flag.
+  function renderPreview(text){
+    var slots = detectSlots(text);
+    var unresolved = [];
+    var knownCount = 0;
+    slots.forEach(function(n){ if (Object.prototype.hasOwnProperty.call(KNOWN, n)) knownCount++; });
+
+    var html = esc(text).replace(/\{\{([A-Z0-9_]+)\}\}/g, function(full, name){
+      var has = Object.prototype.hasOwnProperty.call(values, name) && values[name] !== "";
+      if (has) {
+        return '<span class="preview-known">' + esc(values[name]) + "</span>";
+      }
+      if (unresolved.indexOf(name) === -1) unresolved.push(name);
+      return '<span class="preview-unknown">' + full + "</span>";
+    });
+    previewBox.innerHTML = html;
+
+    var unknownTotal = slots.length - knownCount;
+    var knownCls = knownCount ? "pos" : "neutral";
+    var unknownCls = unknownTotal ? "neg" : "neutral";
+    previewMeta.innerHTML = slots.length + " slot" + (slots.length === 1 ? "" : "s") + " detected · "
+      + '<span class="' + knownCls + '">' + knownCount + " known</span> · "
+      + '<span class="' + unknownCls + '">' + unknownTotal + " unknown</span>";
+
+    if (unresolved.length === 0) {
+      warnEl.innerHTML = '<div class="warnbox ok"><span class="vmark pos">✓</span>'
+        + "All slots resolved. This is exactly what the automation would hand to Claude.</div>";
+    } else {
+      var unknownNames = unresolved.filter(function(n){ return !Object.prototype.hasOwnProperty.call(KNOWN, n); });
+      var emptyKnown = unresolved.filter(function(n){ return Object.prototype.hasOwnProperty.call(KNOWN, n); });
+      // Valence tracks the consequence: in "Suggest" mode an unresolved slot is a
+      // caution (amber — the agent can fill it); in "Apply as final" mode it is a
+      // hard blocker (red), so escalate the whole box.
+      var hardBlock = (tunerVerdict === "apply_as_final");
+      var ucls = hardBlock ? "neg" : "warn";
+      var parts = [];
+      if (unknownNames.length) parts.push('<span class="' + ucls + '">' + unknownNames.length + " unknown slot" + (unknownNames.length === 1 ? "" : "s") + " (not in the automation's contract)</span>: <span class='mono'>" + unknownNames.map(esc).join(", ") + "</span>");
+      if (emptyKnown.length) parts.push('<span class="' + ucls + '">' + emptyKnown.length + " known slot" + (emptyKnown.length === 1 ? "" : "s") + " left empty</span>: <span class='mono'>" + emptyKnown.map(esc).join(", ") + "</span>");
+      var lead = hardBlock ? '<b class="neg">Apply as final is blocked until these are filled.</b><br>' : "";
+      warnEl.innerHTML = '<div class="warnbox' + (hardBlock ? " block" : "") + '"><span class="vmark ' + (hardBlock ? "neg" : "warn") + '">' + (hardBlock ? "✗" : "⚠") + "</span>" + lead + parts.join("<br>") + "</div>";
+    }
+  }
+
+  // Plain-text filled prompt (for Copy). Unresolved slots stay literal {{NAME}}.
+  function filledText(text){
+    return text.replace(/\{\{([A-Z0-9_]+)\}\}/g, function(full, name){
+      var has = Object.prototype.hasOwnProperty.call(values, name) && values[name] !== "";
+      return has ? values[name] : full;
+    });
+  }
+
+  // A variable is "engaged" (a coverage unit) once its value differs from the proposed binding.
+  function varEngaged(name){
+    return values[name] !== proposedFor(name);
+  }
+
+  // Mirror one variable's disposition into Capture (delta vs the proposed binding).
+  function syncVar(name){
+    var id = "prompt-tuner/var:" + name;
+    var proposed = proposedFor(name);
+    var changed = values[name] !== proposed;
+    if (varEngaged(name)) {
+      Capture.mark(id,
+        { value: values[name], proposed: proposed, changed: changed },
+        { reason: changed ? "rebind" : undefined,
+          anchor: { slot: "variables", name: name } });
+      markedVars[id] = true;
+    } else if (markedVars[id]) {
+      Capture.unmark(id);
+      delete markedVars[id];
+    }
+  }
+
+  // Rebuild the slot-value inputs to match currently-detected slots (preserving entered values).
+  function renderSlotInputs(text){
+    var slots = detectSlots(text);
+    slotGrid.innerHTML = "";
+    if (slots.length === 0) {
+      var none = document.createElement("p");
+      none.className = "hint";
+      none.style.margin = "0";
+      none.textContent = "No slots in the template.";
+      slotGrid.appendChild(none);
+    } else {
+      // In "Apply as final" mode an unknown slot is a hard blocker (red); otherwise
+      // it is a caution the agent could resolve (amber).
+      var hardBlock = (tunerVerdict === "apply_as_final");
+      var unknownCls = hardBlock ? "neg" : "warn";
+      var unknownNote = hardBlock ? " — blocks Apply as final" : "";
+      slots.forEach(function(name){
+        var isKnown = Object.prototype.hasOwnProperty.call(KNOWN, name);
+        if (!Object.prototype.hasOwnProperty.call(values, name)) {
+          values[name] = isKnown ? KNOWN[name] : "";
+        }
+
+        var row = document.createElement("div");
+        row.className = "slot";
+
+        var lab = document.createElement("label");
+        lab.className = "slotlabel";
+        lab.setAttribute("for", "slot-" + name);
+        lab.innerHTML = "{{" + esc(name) + "}}<span class='kind'>"
+          + (isKnown ? "<span class='pos'>✓ known slot</span>" : "<span class='" + unknownCls + "'>⚠ unknown slot" + unknownNote + "</span>")
+          + "</span>";
+
+        var inp = document.createElement("input");
+        inp.type = "text";
+        inp.id = "slot-" + name;
+        inp.value = values[name];
+        inp.placeholder = isKnown ? "" : "define a value for this custom slot";
+        inp.addEventListener("input", function(){
+          values[name] = inp.value;
+          var text2 = input.value;
+          renderPreview(text2);
+          stash(text2);
+          syncVar(name);
+          updateTunerCount();
+          refreshGate();
+        });
+
+        row.appendChild(lab);
+        row.appendChild(inp);
+        slotGrid.appendChild(row);
+      });
+    }
+
+    // Sync Capture for every detected variable; unmark any that vanished from the template.
+    slots.forEach(syncVar);
+    Object.keys(markedVars).forEach(function(id){
+      var nm = id.slice("prompt-tuner/var:".length);
+      if (slots.indexOf(nm) === -1) { Capture.unmark(id); delete markedVars[id]; }
+    });
+  }
+
+  function stash(text){ renderPreview._filled = filledText(text); }
+
+  function syncScroll(){
+    highlight.scrollTop = input.scrollTop;
+    highlight.scrollLeft = input.scrollLeft;
+  }
+
+  // The template edit is recorded as ONE substitute op (not per-keystroke). We attach a
+  // computed line-level diff so the agent never has to re-diff SEED against the rewrite.
+  function lineDiff(before, after){
+    var a = before.split("\n"), b = after.split("\n");
+    var n = a.length, m = b.length;
+    var lcs = [];
+    for (var p = 0; p <= n; p++){ lcs.push(new Array(m + 1).fill(0)); }
+    for (var i = n - 1; i >= 0; i--){
+      for (var j = m - 1; j >= 0; j--){
+        lcs[i][j] = a[i] === b[j] ? lcs[i + 1][j + 1] + 1 : Math.max(lcs[i + 1][j], lcs[i][j + 1]);
+      }
+    }
+    var out = [], x = 0, y = 0;
+    while (x < n && y < m){
+      if (a[x] === b[y]){ x++; y++; }
+      else if (lcs[x + 1][y] >= lcs[x][y + 1]){ out.push({ op: "-", line: a[x] }); x++; }
+      else { out.push({ op: "+", line: b[y] }); y++; }
+    }
+    while (x < n){ out.push({ op: "-", line: a[x] }); x++; }
+    while (y < m){ out.push({ op: "+", line: b[y] }); y++; }
+    return out;
+  }
+
+  function syncTemplate(text){
+    var changed = text !== SEED;
+    if (changed) {
+      Capture.mark(TEMPLATE_ID,
+        { type: "substitute", changed: true, before: SEED, after: text, diff: lineDiff(SEED, text) },
+        { anchor: { slot: "template" } });
+    } else {
+      Capture.unmark(TEMPLATE_ID);
+    }
+  }
+
+  // Unbound = a detected variable left with an empty value (unknown or known).
+  function currentUnbound(){
+    return detectSlots(input.value).filter(function(n){
+      return !(Object.prototype.hasOwnProperty.call(values, n) && values[n] !== "");
+    });
+  }
+
+  function tunerStagedCount(){
+    return Object.keys(markedVars).length + (input.value !== SEED ? 1 : 0);
+  }
+
+  // The tuner's live "Changes to submit" callout — mirrors the flags changetray:
+  // a prominent staged count plus a valence-chip breakdown (rebound / template / unbound).
+  function updateTunerCount(){
+    var reboundN = Object.keys(markedVars).length;
+    var templateEdited = input.value !== SEED;
+    var n = reboundN + (templateEdited ? 1 : 0);
+    elTunerCount.textContent = n === 0
+      ? "No changes yet"
+      : n + " change" + (n === 1 ? "" : "s") + " staged";
+
+    var unbound = currentUnbound();
+    var hardBlock = (tunerVerdict === "apply_as_final");
+    var segs = [];
+    if (reboundN)       segs.push('<span class="pos">✓ ' + reboundN + " slot" + (reboundN === 1 ? "" : "s") + " rebound</span>");
+    if (templateEdited) segs.push('<span class="neutral">↻ template edited</span>');
+    if (unbound.length) segs.push('<span class="' + (hardBlock ? "neg" : "warn") + '">' + (hardBlock ? "✗" : "⚠") + " " + unbound.length + " unbound</span>");
+    elTunerBreakdown.innerHTML = segs.join("");
+    elTunerBreakdown.hidden = segs.length === 0;
+  }
+
+  function fullRender(rebuildInputs){
+    var text = input.value;
+    renderHighlight(text);
+    if (rebuildInputs) renderSlotInputs(text);
+    renderPreview(text);
+    stash(text);
+    syncScroll();
+    syncTemplate(text);
+    updateTunerCount();
+  }
+
+  // Mirror the disposition's revealed free-text into Capture as an extra mark (the
+  // setCoverage filter only counts prompt-tuner/var:* ids, so this never inflates
+  // coverage). "Apply as final" is the negative disposition — its reveal is a reason
+  // note; "Other…" is the escape hatch — its reveal is the custom disposition value.
+  function syncDisposition(){
+    if (tunerVerdict === "__other__" && otherDisp.trim()) {
+      Capture.mark(DISP_ID, { verdict: "other", custom: otherDisp.trim() },
+        { reason: otherDisp.trim(), anchor: { slot: "disposition" } });
+    } else if (tunerVerdict === "apply_as_final" && applyReason.trim()) {
+      Capture.mark(DISP_ID, { verdict: "apply_as_final" },
+        { reason: applyReason.trim(), anchor: { slot: "disposition" } });
+    } else {
+      Capture.unmark(DISP_ID);
+    }
+  }
+
+  // Show only the reveal box that belongs to the current disposition.
+  function syncDispReveal(){
+    applyReasonWrap.classList.toggle("is-open", tunerVerdict === "apply_as_final");
+    dispOtherWrap.classList.toggle("is-open", tunerVerdict === "__other__");
+  }
+
+  // ---- terminal disposition (the one thing the human picks) ----
+  Array.prototype.forEach.call(document.querySelectorAll("#terminal input[name='tdisp']"), function(r){
+    r.addEventListener("change", function(){
+      tunerVerdict = r.value;
+      syncDispReveal();
+      if (tunerVerdict === "apply_as_final") applyReasonInput.focus();
+      else if (tunerVerdict === "__other__") dispOtherInput.focus();
+      // Re-render preview + slot labels so blocker valence (Apply-as-final) escalates
+      // to red the moment the disposition changes, then refresh the staged-changes callout.
+      renderPreview(input.value);
+      renderSlotInputs(input.value);
+      syncDisposition();
+      updateTunerCount();
+      recomputeVerdict();
+      refreshGate();
+    });
+  });
+
+  applyReasonInput.addEventListener("input", function(){
+    applyReason = applyReasonInput.value;
+    syncDisposition();
+    recomputeVerdict();
+    refreshGate();
+  });
+  dispOtherInput.addEventListener("input", function(){
+    otherDisp = dispOtherInput.value;
+    syncDisposition();
+    recomputeVerdict();
+    refreshGate();
+  });
+
+  // A staged tuner change must declare how it applies — disposition is required to submit.
+  registerValidator(function(){
+    if (tunerStagedCount() === 0) return null;
+    if (tunerVerdict) return null;
+    return {
+      reason: "Choose a disposition for the prompt change (Apply as final / Suggest)",
+      focus: function(){ activateTab("tuner"); return document.getElementById("terminal"); }
+    };
+  });
+
+  // Apply-as-final demands a fully bound prompt; suggest-to-agent lets the agent fill gaps.
+  registerValidator(function(){
+    if (tunerVerdict !== "apply_as_final") return null;
+    var unbound = currentUnbound();
+    if (!unbound.length) return null;
+    // Flash the FIRST unbound slot's value input (renderSlotInputs uses id "slot-"+name).
+    var firstName = unbound[0];
+    return {
+      reason: unbound.length + " unbound variable" + (unbound.length === 1 ? "" : "s") + " block Apply as final",
+      focus: function(){ activateTab("tuner"); return document.getElementById("slot-" + firstName); }
+    };
+  });
+
+  // A staged change with "Other…" selected but no text typed is an unfinished
+  // escape-hatch choice — block submit until the custom disposition is described.
+  registerValidator(function(){
+    if (tunerStagedCount() === 0) return null;
+    if (tunerVerdict === "__other__" && !otherDisp.trim()) {
+      return {
+        reason: "Describe the custom disposition",
+        focus: function(){ activateTab("tuner"); return document.getElementById("dispOther"); }
+      };
+    }
+    return null;
+  });
+
+  registerVerdict(function(){
+    if (!tunerVerdict) return null;
+    if (tunerVerdict === "__other__") return otherDisp.trim() ? "prompt-tuner:other" : null;
+    return "prompt-tuner:" + tunerVerdict;
+  });
+  coverageHints.tuner = function(){
+    var slots = detectSlots(input.value);
+    var engaged = slots.filter(varEngaged).length;
+    var edited = input.value !== SEED ? "  ·  template edited" : "";
+    return "Prompt tuner · " + engaged + " of " + slots.length + " slots changed" + edited;
+  };
+
+  input.addEventListener("input", function(){ fullRender(true); });
+  input.addEventListener("scroll", syncScroll);
+
+  wireCopy(btnCopy, function(){ return renderPreview._filled || filledText(input.value); }, "Filled prompt");
+
+  btnResetPrompt.addEventListener("click", function(){
+    input.value = SEED;
+    values = {};
+    Object.keys(markedVars).forEach(function(id){ Capture.unmark(id); });
+    markedVars = {};
+    Capture.unmark(TEMPLATE_ID);
+    fullRender(true);
+    recomputeVerdict();
+    refreshGate();
+    toast("Template reset");
+  });
+
+  // init
+  input.value = SEED;
+  fullRender(true);
+})();
+</script>
+</body>
+</html>

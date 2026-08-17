@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<!--
+  Example page for the htmlizer gallery. Northwind is a fictional storefront
+  company; every repo, commit, finding, and decision below is invented for this demo.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Implementation plan — gift-card redemption at Northwind checkout</title>
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzhDMzM0NCIvPjxwYXRoIGQ9Ik0zMCAyMiBINTggYTE4IDE4IDAgMCAxIDAgMzYgSDQyIFY3OCBIMzAgWiBNNDIgMzMgVjQ3IEg1NiBhNyA3IDAgMCAwIDAgLTE0IFoiIGZpbGw9IiNmZmYiLz48L3N2Zz4=">
+<link rel="stylesheet" href="base.css">
+<style>
+/* ---- page-specific layout on top of base.css ----
+   Type scale, colors, fonts, buttons all come from base.css. This file only
+   adds layout/rhythm and the per-step flag affordance. Spacing uses the shared
+   --space-* tokens so the page keeps a calm, consistent vertical rhythm. */
+.stack-sections > section + section{margin-top:var(--space-4)}
+.steps{margin-top:var(--space-4)}     /* same rhythm into the step list */
+
+/* supporting context: sequencing + findings as plain readable lists */
+.seq,.findings{margin:var(--space-2) 0 0;padding-left:0;list-style:none}
+.seq li,.findings li{margin:0 0 var(--space-2)}
+.seq li:last-child,.findings li:last-child{margin-bottom:0}
+.seq li strong,.findings li strong{color:var(--ink)}
+
+/* ---- the step list (the work) ---- */
+.step-head{display:flex;align-items:flex-start;gap:var(--space-3)}
+.step-id{display:flex;align-items:baseline;gap:var(--space-2);flex:1 1 auto;min-width:0;flex-wrap:wrap}
+/* §-number is a locator, NOT an action — keep it off the one cranberry accent */
+.step-num{font-family:var(--font-mono);font-size:15px;color:var(--text-muted);font-weight:500;flex:none}
+.step-title{margin:0;line-height:1.2}                 /* size from base h3 */
+.step-pr{font-size:14px;color:var(--text-muted);font-weight:500}
+.flag-btn{flex:none}
+.step-body{margin-top:var(--space-3)}
+.step-body > p{margin:var(--space-2) 0}
+.step-body > p:first-child{margin-top:0}
+.step-body ul{margin:var(--space-2) 0}
+.step-body li{margin:var(--space-1) 0}
+.step-body .ref{color:var(--text)}
+.step.is-flagged{border-left:3px solid var(--warning)}
+
+/* per-step objection — the one way to flag/comment a step. The box itself now
+   uses the shared .reveal (the flag JS toggles .is-open); these rules only add the
+   page-specific separator + the revealed rhythm on top of base's .reveal.is-open. */
+.step-fb{padding-top:var(--space-2);border-top:1px solid var(--border)}
+.reveal.step-fb.is-open{margin-top:var(--space-3)}
+
+/* resolved-rationale box inside a step — neutral edge, NOT the brand accent
+   (cranberry is reserved for the selected decision option + sanctioned .callout bar) */
+.decision{border:1px solid var(--border);border-left:3px solid var(--border-strong);border-radius:var(--r-md);background:var(--surface-2);padding:var(--space-2) var(--space-3);margin:var(--space-3) 0}
+.decision .dh{font-family:var(--font-mono);font-weight:600;color:var(--ink);font-size:12.5px;margin-bottom:4px}
+.decision .chose{font-weight:600;color:var(--ink)}
+.decision .because{color:var(--text);margin-top:4px}
+
+/* ---- LIVE decision callouts: the open items that need the human's call ----
+   Each is a base .callout (sanctioned accent left-bar). The radio-style btn
+   group is the inline answer affordance; .is-live tints the box once touched. */
+.decisions{margin-top:var(--space-2)}
+.decisions > .callout{margin:0}
+.decisions > .callout + .callout{margin-top:var(--space-3)}
+.decision-live .dec-context{margin:var(--space-1) 0 0;color:var(--text);font-size:var(--fs-body)}
+.decision-live .choices{display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:var(--space-2)}
+/* escape-hatch boxes (decision "Other…" + the "apply the rest" No/Other reason) now use the
+   shared .reveal container + .reveal-box textarea (base.css); the JS toggles .is-open. */
+
+/* ---- sticky submit bar: progress + Submit only (NO verdict buttons — the single
+   routable verdict is DERIVED from the answers, not a control the human picks).
+   Shell = shared .fixed-actionbar (base.css: fixed position + border + shadow).
+   .vbar-inner is the page-specific max-width inner row; .fixed-actionbar already
+   supplies the 12px/24px padding, so the inner row carries none. ---- */
+.vbar-inner{max-width:var(--maxw);width:100%;margin:0 auto;display:flex;align-items:center;gap:var(--space-3);flex-wrap:wrap}
+.bar-cap{margin-left:auto}
+body{padding-bottom:104px}
+footer{padding:var(--space-4) 0 var(--space-2);color:var(--text-muted);font-size:14px}
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <h1>Implementation plan — gift-card redemption at Northwind checkout</h1>
+  <p class="lede">Eight tickets (NW-201 … NW-208) that let a shopper pay for an order with a gift card, in whole or in part, sequenced into three phases across <code>northwind/checkout-api</code> and <code>northwind/storefront</code>. Code refs are <code>path:line</code> against committed main (<code>4f9a1c2</code>); the flagged rollout and the legacy card import run on northwind-staging first. Read the steps and flag anything you object to, make the four open calls under <a href="#decisions-wrap">Decisions</a>, and say whether to <a href="#apply-rest-wrap">apply the rest</a> of the steps. The overall go/no-go is computed from those answers — there is no separate verdict button.</p>
+</header>
+
+<div class="wrap stack-sections">
+
+  <!-- THE open calls — the most actionable content, surfaced FIRST (decisions ->
+       evidence -> explainers), immediately under the lede. Each is a live decision
+       callout with an inline single-select answer. Recommended defaults are
+       pre-selected where one exists; the two calls that change a stored contract
+       (nullable payment record, refund routing) need an explicit nod and gate the submit. -->
+  <section class="card" id="decisions-wrap">
+    <h2>Decisions that need your call</h2>
+    <p>Four open choices. Recommended defaults are pre-selected on the two that are reversible in code — change them if you disagree. The <b>zero-remainder</b> and <b>refund-routing</b> calls have no default: each one writes itself into a stored contract that other teams read, so both need your explicit nod and leaving either blank holds the submit. Pick <b>Other…</b> on any call to write an option the list doesn't cover.</p>
+    <div id="decisions" class="decisions"><!-- decision callouts injected --></div>
+  </section>
+
+  <!-- sequencing overview -->
+  <section class="card">
+    <h2>Sequencing — three phases</h2>
+    <p>Phase 1 is self-contained: nothing calls the ledger yet, so the tables and the tender arithmetic land and get tested on their own. Phase 2 is the only phase that touches both repos, and the API half must ship before the storefront half in the same release train. Phase 3 is not a cleanup tail — the reconciler in <a href="#steps">&sect;7</a> has to be running and quiet for a full day before the flag in &sect;8 widens past staff accounts. That ordering is the gate on the rollout, not a preference.</p>
+    <ul class="seq">
+      <li><strong>Phase 1 — Ledger, lookup, tender maths</strong> (&sect;1–&sect;3, NW-201…203): append-only ledger in <code class="file">src/giftcards/ledger.ts</code>, an enumeration-resistant lookup in <code class="file">src/giftcards/routes.ts</code>, and a pure tender split beside <a href="https://git.example.com/northwind/checkout-api/blob/4f9a1c2/src/pricing/rules.py"><code class="file">src/pricing/rules.py</code></a>. No shopper-visible change.</li>
+      <li><strong>Phase 2 — Checkout wiring</strong> (&sect;4–&sect;6, NW-204…206): holds on the checkout session in <a href="https://git.example.com/northwind/checkout-api/blob/4f9a1c2/src/checkout/session.ts"><code class="file">src/checkout/session.ts</code></a>, the redeem-then-charge sequence in <code class="file">src/checkout/place.ts</code>, and the tender UI in <code class="file">northwind/storefront</code>. Depends on all of Phase 1.</li>
+      <li><strong>Phase 3 — Refunds, reconciler, rollout</strong> (&sect;7–&sect;8, NW-207…208): split-tender refunds, the hourly reconciler that releases stranded holds, and the staged flag. NW-209 (dormancy reporting) is tracked but not in this plan.</li>
+    </ul>
+  </section>
+
+  <!-- live-data findings -->
+  <section class="card">
+    <h2>What the legacy card export showed</h2>
+    <p>41,180 active cards came out of the retiring gift-card system. Three numbers in that export changed the plan rather than confirming it. (Implementation specifics are in the steps, not here.)</p>
+    <ul class="findings">
+      <li><strong class="pos">68%</strong> — of legacy gift-card orders were paid <em>entirely</em> by the card, with no second tender. The plan had been written around a card topping up a credit-card payment; the <span class="pos">zero-remainder path is the majority case</span>, which is why it gets a first-class code path and its own open call rather than an <code>if</code> at the end.</li>
+      <li><strong class="neutral">12%</strong> — 4,940 cards carry a CAD balance while the checkout they would be used in is USD-only. Rejected at lookup rather than converted (see &sect;3); they stay spendable on the CAD storefront.</li>
+      <li><strong class="neg">0.4%</strong> — 164 cards already show a <span class="neg">negative balance</span> in the export, from double-redeems the old system allowed. They import clamped to zero and land on a list for finance; importing a negative would trip the ledger invariant on the very first read.</li>
+    </ul>
+  </section>
+
+  <!-- Scope frame: a SUMMARY, not a work step — rendered outside the step loop so it
+       carries no §-number and no "Flag a problem" affordance. -->
+  <section class="card">
+    <h2>Scope and non-goals</h2>
+    <p><b>In scope.</b> Applying up to three gift cards to a checkout, partial and full coverage, removing an applied card, refunding a split-tender order, and importing the legacy card balances. Staff issuance keeps the admin form it already has — it just writes a ledger entry now.</p>
+    <p><b>Deliberately not in this plan</b>, each for a reason rather than for time:</p>
+    <ul>
+      <li><b>Selling gift cards on the storefront.</b> A card sale is not a taxable sale in most of the jurisdictions Northwind ships to — tax attaches when the card is spent. That is a pricing-rules change of its own, plus delivery email, and it does not block redemption.</li>
+      <li><b>A public balance-check page.</b> It is the same enumeration surface as the lookup endpoint (&sect;2) with none of the checkout-session rate limit to hang off.</li>
+      <li><b>Currency conversion.</b> A rate pinned at redemption and re-pinned at refund drifts, and the drift lands on the ledger as cents nobody can reconcile.</li>
+      <li><b>Gift cards on subscription renewals.</b> A renewal charges off-session, with no checkout session to hold a balance against. Needs its own design.</li>
+      <li><b>Dormancy and escheatment reporting</b> (NW-209). Jurisdiction rules differ enough to be their own project, and nothing about launch depends on it.</li>
+    </ul>
+    <div class="decision">
+      <div class="dh">RESOLVED</div>
+      <div class="chose">A gift card is tender, never a discount.</div>
+      <div class="because">Because tax is computed and remitted on the full order total. Modelling a card as a line-level or order-level discount would shrink the taxable subtotal and under-remit tax on every order it touched — the single most expensive way to get this feature wrong. Tender allocation happens strictly after <code>compute_totals</code> returns, so <code>total_cents</code> is unchanged and every finance and tax export keeps reading the same field it reads today.</div>
+    </div>
+  </section>
+
+  <!-- the work, step by step -->
+  <section class="card">
+    <h2>The plan, step by step</h2>
+    <p>Each step is accepted by default. Flag a step to object precisely — a flag needs a reason, and unresolved flags hold the submit. Open choices that need a decision are not here — they are in <a href="#decisions-wrap">Decisions</a>.</p>
+  </section>
+
+  <div id="steps" class="stack-sections steps"><!-- step cards injected --></div>
+
+  <!-- Residual: only the items that need NO decision (accepted / confirmed /
+       tracked). The open calls were lifted into #decisions above. Rendered
+       outside the step loop — no §-number, no flag (it is not objectable work). -->
+  <section class="card">
+    <h2>Residual items — accepted, confirmed, and tracked</h2>
+    <p>These needed no call. The open choices that do are in <a href="#decisions-wrap">Decisions</a> at the top.</p>
+    <ul>
+      <li><b>Two tabs, one card.</b> A shopper checking out twice at once takes two holds against the same card; the second gets whatever the first left. Arithmetically correct, but the second tab shows a smaller applied amount than the shopper expects. <span class="neutral">Accepted</span> — the tender row always shows the amount actually held, never the amount requested.</li>
+      <li><b>Abandoned-cart lockup.</b> A card stays partly held until the hold expires, so a shopper who abandons on a phone and immediately retries on a laptop sees a reduced balance for the remainder of the TTL. <span class="neutral">Accepted</span> over a shorter TTL, which would drop cards out of slow but genuine checkouts.</li>
+      <li><b>Staff issuance</b> keeps the existing admin form and its approval rule; the form now writes an <code>issue</code> entry instead of setting a balance column. <span class="pos">✓ Confirmed</span>.</li>
+      <li><b>Dust cards.</b> 1,270 imported cards hold under $1. They import and spend normally; no special casing, no write-off. <span class="pos">✓ Confirmed</span>.</li>
+      <li><b>Docs sweep</b> — <code class="file">docs/checkout-tenders.md</code>, <code class="file">docs/pricing-order-of-operations.md</code>, and the storefront's <code class="file">docs/checkout-flow.md</code> all describe checkout as single-tender. <span class="neutral">Tracked, not gated</span>.</li>
+    </ul>
+  </section>
+
+  <!-- The body of proposed steps §1–§8 above carry only an optional per-step flag, so
+       per PRINCIPLES rule (2) they get ONE explicit yes/no/other home. This is a
+       required call (rendered like the Decisions callouts); it — plus the answered
+       decisions and any flags — is what the DERIVED verdict is computed from. There is
+       NO manual Approve / Request-changes button anywhere: the go/no-go is derived. -->
+  <section class="card" id="apply-rest-wrap">
+    <h2>Apply the rest of the proposed steps?</h2>
+    <p>Steps &sect;1–&sect;8 above are proposed changes with no open call of their own. Answer <b>Yes</b> to apply them all as written, or flag individual steps above to object precisely. <b>No</b> or <b>Other…</b> reveal a box for what must change first. This call is required — leaving it blank holds the submit.</p>
+    <div id="apply-rest" class="decisions"><!-- the "apply the rest" call injected --></div>
+  </section>
+
+</div>
+
+<!-- sticky submit bar — progress + Submit only (verdict is derived, not a control here) -->
+<div class="fixed-actionbar" role="region" aria-label="Submit plan review">
+  <div class="vbar-inner">
+    <div id="capture-bar" class="bar-cap"></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <footer>
+    Principal WP — htmlizer example gallery. Source: <code class="file">docs/plans/2026-07-21-giftcard-redemption.md</code><br>
+    Base SHA <code>4f9a1c2</code> &middot; GitHub base <code>https://git.example.com/northwind/checkout-api/blob/4f9a1c2/</code> &middot; storefront changes in <code>https://git.example.com/northwind/storefront</code> &middot; import + flagged rollout on northwind-staging.
+  </footer>
+</div>
+
+<!-- shared feedback-capture primitive (same-origin); page sets its submit URL -->
+<script src="capture.js"></script>
+<script>window.CAPTURE_SUBMIT_URL = ""; /* static example page - feedback falls back to the clipboard */</script>
+
+<script>
+/* ---------------- the work: example plan steps §1–§8 (invented Northwind demo data) ----------------
+   The scope frame and the residual list are static HTML above — they are not
+   objectable work, so they carry no §-number and no flag.
+   `pr` carries the phase + ticket label rendered beside the step title. */
+const SECTIONS = [
+  {
+    n: '1', pr: 'Phase 1 &middot; NW-201',
+    title: 'Gift-card ledger and the never-negative invariant',
+    html: `
+      <p class="ref">Two new tables in <code>northwind/checkout-api</code>. <code class="file">gift_cards</code> holds identity only — <code>code_hash</code> (SHA-256 over the normalized code plus a per-environment pepper), <code>last4</code>, <code>currency</code>, <code>status</code>, <code>expires_at</code>. <code class="file">gift_card_entries</code> is append-only and holds every movement.</p>
+      <p><b>Balance is a query, not a column.</b> <code>availableCents(giftCardId)</code> is <code>SUM(gift_card_entries.amount_cents)</code> over non-expired entries. Entry kinds: <code>issue</code> (+), <code>hold</code> (− , carries <code>expires_at</code>), <code>redeem</code> (−), <code>release</code> (+, reverses a hold), <code>refund</code> (+), <code>adjust</code> (±, staff only, reason required).</p>
+      <p><b>The one write path.</b> <code class="file">src/giftcards/ledger.ts</code> exposes exactly one mutator:</p>
+      <ul>
+        <li><code>applyEntry(tx, { giftCardId, kind, amountCents, idempotencyKey, actor })</code> — takes an existing transaction, never opens its own.</li>
+        <li>Unique index on <code>(gift_card_id, idempotency_key)</code>. A retried write collides with the index and returns the entry already there, so a retry can never double-move value.</li>
+        <li>Inside the same transaction: <code>SELECT ... FOR UPDATE</code> on the <code>gift_cards</code> row, insert, then re-assert the sum. A result below zero rolls back with <code>InsufficientGiftCardBalance</code>.</li>
+      </ul>
+      <p><b class="neg">⚠ Hazards.</b> The row lock serializes all movement on one card, so a card being hammered by a script queues rather than races — correct, and slow in a way that is itself a fraud signal. Entries per card are bounded in the tens in the legacy data; an ops alert fires at 500 entries on one card rather than a performance fix, because a card with 500 entries is not a busy card.</p>
+      <div class="decision">
+        <div class="dh">RESOLVED</div>
+        <div class="chose">Derive the balance from the ledger; do not keep a <code>balance_cents</code> column on <code>gift_cards</code>.</div>
+        <div class="because">Because a maintained column is a second source of truth, and the two drift on exactly the paths that matter — a crashed transaction, a manual adjustment, a replayed webhook. Finance reconciles against entries, so entries are what the system should have to be right about. The cost is a SUM on every read; with the row already locked and entries in the tens, that is not the bottleneck.</div>
+      </div>`
+  },
+  {
+    n: '2', pr: 'Phase 1 &middot; NW-202',
+    title: 'Code lookup that does not answer guesses',
+    html: `
+      <p><b>Endpoint.</b> <code>POST /v1/gift-cards/lookup</code> in <code class="file">src/giftcards/routes.ts</code>, body <code>{ code, checkoutSessionId }</code>. Codes normalize before hashing: strip spaces and dashes, uppercase, then fold the look-alikes (the printed alphabet excludes O, I, L and U, so folding to 0 and 1 cannot collide with a real code).</p>
+      <p><b>What comes back.</b> On success, <code>{ token, last4, currency, availableCents }</code>. The <code>token</code> is an HMAC over <code>gift_card_id</code> + session id + expiry, good for 20 minutes — the raw code crosses the wire once and is never written to the checkout session, the order, or browser storage.</p>
+      <p><b>On failure, one answer.</b> Unknown code, expired, zero balance, frozen and wrong-currency all return the same <code>{ error: "gift_card_unusable" }</code> with the same status. The not-found branch still computes a throwaway hash so response time does not separate a real code from a guess.</p>
+      <ul>
+        <li>Rate limit in <code class="file">src/checkout/ratelimit.ts</code>: 5 lookups per checkout session, 30 per IP per hour. The sixth is a flat 429 that says nothing about the code.</li>
+        <li>A request carrying a staff token gets the real reason in a <code>debug_reason</code> field, so support can answer &quot;why won't my card work&quot; without the public endpoint becoming the oracle that answers it for everyone.</li>
+      </ul>
+      <div class="decision">
+        <div class="dh">YOUR CALL — open in Decisions</div>
+        <div class="chose">Whether the public failure stays one message (recommended) or names the reason.</div>
+        <div class="because">Naming the reason is genuinely better support copy, and it is also exactly the signal that grades a list of guessed codes. <a href="#decisions-wrap">Make the call in Decisions →</a></div>
+      </div>`
+  },
+  {
+    n: '3', pr: 'Phase 1 &middot; NW-203',
+    title: 'Tender split — after tax, never inside it',
+    html: `
+      <p class="ref">Today: <code>compute_totals</code> (<code class="file">src/pricing/rules.py:203-255</code>) runs subtotal &rarr; discounts &rarr; shipping &rarr; tax &rarr; total and returns an <code>OrderTotals</code>. Gift cards must not appear anywhere in that chain.</p>
+      <p><b>New module</b> <code class="file">src/pricing/tender.py</code>, pure and I/O-free, called with the totals already computed:</p>
+      <ul>
+        <li><code>def split_tender(total_cents: int, holds: Sequence[TenderHold]) -&gt; TenderSplit</code></li>
+        <li><code>TenderSplit</code> = an ordered list of <code>(tender_type, amount_cents)</code> plus <code>remainder_cents</code>. Cards are consumed in the order the shopper applied them; whatever is left is the remainder the payment processor sees.</li>
+        <li>Property test in <code class="file">tests/pricing/test_tender.py</code>: for any total and any set of holds, allocations plus remainder equal the total exactly, and no allocation exceeds its own hold. Cents, integers, no floats anywhere in the path.</li>
+      </ul>
+      <p><b class="neg">⚠ Hazard.</b> The tempting shortcut is a <code>gift_card</code> discount type, because the discount machinery already exists and already renders a line in the summary. It would also reduce the taxable base on every order — a silent, per-order tax error that only surfaces at a filing. The type deliberately does not exist.</p>
+      <div class="decision">
+        <div class="dh">RESOLVED</div>
+        <div class="chose">A card whose currency differs from the checkout currency is refused at lookup, not converted.</div>
+        <div class="because">Because conversion means pinning a rate at redemption and pinning another at refund, and the gap between the two lands on the ledger as cents that belong to no one. 4,940 CAD cards are affected; they remain fully spendable on the CAD storefront, which is where they were issued.</div>
+      </div>`
+  },
+  {
+    n: '4', pr: 'Phase 2 &middot; NW-204',
+    title: 'Applying a card to a live checkout session',
+    html: `
+      <p class="ref">Today: <code>CheckoutSession</code> (<code class="file">src/checkout/session.ts:41-96</code>) carries one payment method and expires after <code>SESSION_TTL_MINUTES</code> (20). It gains <code>giftCardHolds: GiftCardHold[]</code>, capped at three.</p>
+      <p><b>Why three.</b> Each hold is a row lock held for the length of the session and a tender line in the order summary. Three bounds both, and a checkout reaching for a fourth card is a bulk-fraud pattern more often than a real shopper. Staff can override on a support-assisted checkout.</p>
+      <p><b>Apply.</b> <code>applyGiftCard(session, token)</code> resolves the token, opens one transaction, locks the card row, writes a <code>hold</code> for <code>min(available, remainingTotal)</code>, attaches it to the session, and re-runs <code>split_tender</code>. Hold <code>expires_at</code> is copied from the session, not computed independently — one expiry concept, one sweeper.</p>
+      <p><b class="neg">⚠ Re-pricing is the real hazard here.</b> Every cart mutation changes the total, so every existing hold has to be resized in the same transaction as the re-price:</p>
+      <ul>
+        <li><code>resizeHolds(session)</code> shrinks a hold by writing a partial <code>release</code>; it never rewrites the original entry, so the ledger keeps the history.</li>
+        <li>A hold that would need to grow past its card's balance simply stays where it is, and the remainder grows instead.</li>
+        <li>Resize order is oldest-hold-first and stable, so a shopper who applied two cards and then changed the shipping method does not watch the two amounts swap.</li>
+      </ul>
+      <div class="decision">
+        <div class="dh">DEFAULT — open call in Decisions</div>
+        <div class="chose">Holds expire with the checkout session, at 20 minutes.</div>
+        <div class="because">One expiry concept and one sweeper, rather than two clocks that disagree on whether a hold outlived its session. <a href="#decisions-wrap">Confirm, or set a different hold TTL in Decisions →</a></div>
+      </div>`
+  },
+  {
+    n: '5', pr: 'Phase 2 &middot; NW-205',
+    title: 'Placing the order — redeem, charge, and unwind a decline',
+    html: `
+      <p><b>The sequence that matters.</b> In <code>placeOrder</code> (<code class="file">src/checkout/place.ts</code>): (1) convert every hold into a <code>redeem</code> entry in the same transaction that inserts the order; (2) charge <code>remainder_cents</code> with the processor; (3) on a decline, write compensating <code>refund</code> entries against the same ledger and leave the order <code>payment_failed</code>.</p>
+      <p><b>Why redeem first.</b> Charging first and then finding the card drained by another tab leaves real money captured against an order that cannot complete — a refund to a customer who never got anything, plus a support ticket. The opposite failure, card redeemed and credit card declined, is entirely reversible inside our own ledger. Given a choice of which failure to have, take the one you can undo alone.</p>
+      <ul>
+        <li>Idempotency keys are derived, not random: the processor call uses <code>order:&lt;order id&gt;</code>, the compensating write uses <code>release:&lt;order id&gt;</code>. A retried <code>placeOrder</code> on the same order can neither double-charge nor double-refund.</li>
+        <li>When <code>remainder_cents</code> is zero there is no processor call at all. Per the export, that is 68% of these orders, not an edge case.</li>
+      </ul>
+      <p><b class="neg">⚠ The gap nobody can close in code here.</b> If the process dies between the charge and the compensating write, the unwind never runs. That is why &sect;7's reconciler exists and why it is not optional: it looks for orders sitting in <code>payment_failed</code> with a net-negative ledger movement and no compensating entry, older than 15 minutes, and finishes the job.</p>
+      <div class="decision">
+        <div class="dh">YOUR CALL — open in Decisions</div>
+        <div class="chose">What a fully-covered order records when no money moves through the processor.</div>
+        <div class="because">Every order row today carries a non-null payment reference, and the finance export joins on it. Skipping the processor on the majority path means that column becomes nullable and two exports learn a new shape. <a href="#decisions-wrap">Make the call in Decisions →</a></div>
+      </div>`
+  },
+  {
+    n: '6', pr: 'Phase 2 &middot; NW-206',
+    title: 'Checkout UI — apply, show, remove',
+    html: `
+      <p class="ref">Repo: <code>northwind/storefront</code>. New <code class="file">src/checkout/GiftCardField.tsx</code>, plus a tender row per applied card inside the existing order-summary component.</p>
+      <ul>
+        <li>The field submits the raw code once, receives a token, and clears the raw value out of component state on success. <code>autocomplete="off"</code>, no persistence to session storage.</li>
+        <li>An applied card renders as a tender line — <code>•••• 4821 — $40.00 applied</code> — with a Remove control that calls <code>DELETE /v1/checkout/:id/gift-cards/:holdId</code>, writes a <code>release</code>, and re-prices.</li>
+        <li>Every failure shows the same sentence, matching &sect;2. After two failures the copy adds a support link rather than a second, more specific guess.</li>
+        <li>The tender rows sit in an <code>aria-live="polite"</code> region so a screen reader hears the new total after Apply, not just the sighted user.</li>
+      </ul>
+      <p><b>The zero-remainder screen is the main screen.</b> When the cards cover the total, the payment form collapses and the button reads <b>Place order</b> instead of <b>Pay $x.xx</b>. Two thirds of these checkouts end on that screen, so it gets designed in this pass — not treated as the state to polish later.</p>`
+  },
+  {
+    n: '7', pr: 'Phase 3 &middot; NW-207',
+    title: 'Refunds and the hourly reconciler',
+    html: `
+      <p><b>Refunds.</b> <code>refundOrder(orderId, amountCents)</code> in <code class="file">src/checkout/refund.ts</code> reads the order's tender split and pays each tender back. How a <em>partial</em> refund divides between them is the open call in Decisions — it is visible to finance, and it is the difference between a shopper getting their money back and a shopper converting gift-card value into cash.</p>
+      <p><b>Rounding is fixed regardless of that call.</b> Sub-cent remainders go to the credit-card tender by largest-remainder, deterministically, so the same refund computed twice produces the same cents.</p>
+      <p><b>Reconciler</b> — <code class="file">scripts/reconcile-giftcards.ts</code>, hourly:</p>
+      <ul>
+        <li>Releases holds past <code>expires_at</code> that no order ever claimed.</li>
+        <li>Finishes the unwind &sect;5 could not: orders in <code>payment_failed</code> with net-negative movement, no compensating entry, older than 15 minutes. Writes the entry and alerts.</li>
+        <li>Re-asserts <code>SUM(entries) &gt;= 0</code> for every card touched in the window, and pages on any negative.</li>
+        <li><code>--dry-run</code> prints the entries it would write and touches nothing.</li>
+      </ul>
+      <p>By construction the reconciler writes only <code>release</code> and <code>refund</code> — never <code>redeem</code>, never <code>adjust</code>. A bug in the job can therefore give value back to a shopper by mistake, and cannot take any.</p>
+      <div class="decision">
+        <div class="dh">RESOLVED</div>
+        <div class="chose">A refund to an expired card revives it, with a 30-day extension.</div>
+        <div class="because">Because the shopper did not choose how long the return took, and refunding value into a dead card is the same as not refunding it. The extension is written as an <code>adjust</code> entry with the order id as its reason, so the revival is auditable rather than a mutated expiry date.</div>
+      </div>`
+  },
+  {
+    n: '8', pr: 'Phase 3 &middot; NW-208',
+    title: 'Import, staged flag, and the two ways to stop',
+    html: `
+      <p><b>Import.</b> <code class="file">scripts/import-legacy-giftcards.ts</code> turns the 41,180-card export into <code>issue</code> entries, idempotent on <code>code_hash</code> so a re-run is a no-op. The 164 negative balances clamp to zero and print to a finance list; the 1,270 sub-dollar cards import untouched.</p>
+      <p><b>Flag.</b> <code>checkout.gift_card_tender</code>, off in production at merge. Widening order: staff accounts &rarr; 5% of sessions &rarr; 100%. The gate between 5% and 100% is 24 uninterrupted hours of the reconciler running with zero negative-balance alerts and zero holds it had to force-release — a time-and-signal gate, not a calendar date.</p>
+      <p><b>Two different stop buttons, and they are not interchangeable:</b></p>
+      <ul>
+        <li><b>Flag off</b> stops new holds. Existing holds keep expiring through the reconciler, which reads no flag on purpose. Nothing has to be un-migrated, and no shopper mid-checkout loses an applied card.</li>
+        <li><b><code>giftcards.freeze_all</code></b> blocks <code>hold</code> and <code>redeem</code> but leaves <code>refund</code> working — for the case where the ledger itself is suspect and returns still have to be processed while it is investigated.</li>
+      </ul>
+      <div class="decision">
+        <div class="dh">RESOLVED</div>
+        <div class="chose">The reconciler ships and runs before the flag widens past staff accounts.</div>
+        <div class="because">Because &sect;5 has a failure window that only the reconciler closes. Widening to 5% of real sessions without it means the first crashed <code>placeOrder</code> strands a shopper's balance with nothing scheduled to give it back.</div>
+      </div>`
+  }
+];
+
+/* ---------------- the open calls: lifted out of the steps into live decision callouts ----------------
+   Each has an inline single-select. `default` => recommended option is pre-selected
+   and recorded (the plan stated a default). `required:true` with no `default` =>
+   no pre-selection, must be picked, and gates the submit (the "needs your nod" ask). */
+const DECISIONS = [
+  {
+    id: 'call-zero-remainder',
+    required: true,
+    q: 'When gift cards cover the whole total, do we still create a payment record with the processor?',
+    context: 'This is 68% of gift-card orders, not an edge case. Every order row today carries a non-null payment reference, and the daily finance export joins on it.',
+    recWhy: 'The processor rejects a zero-value authorization for a one-off payment, so keeping the record means inventing a fake one on the majority path. Making the payment reference nullable is a one-time change to two exports, and it tells the truth.',
+    options: [
+      { v: 'skip_processor', label: 'Skip the processor — the ledger entry is the tender record', rec: true },
+      { v: 'zero_auth', label: 'Create a zero-value payment record so every order has one' },
+      { v: 'other', label: 'Other…' }
+    ]
+  },
+  {
+    id: 'call-refund-split',
+    required: true,
+    q: 'On a partial refund of a split-tender order, which tender gets paid back first?',
+    context: 'An order can be paid part gift card, part credit card. A partial refund has to choose an order, and the choice is visible to both finance and fraud.',
+    recWhy: 'Paying the credit card first turns non-refundable gift-card value into cash: order high, return most of it, keep the difference on a real card. Proportional pays each tender back with what that tender actually paid.',
+    options: [
+      { v: 'proportional', label: 'Proportional — split in the original tender ratio', rec: true },
+      { v: 'giftcard_first', label: 'Gift card first, then the credit card' },
+      { v: 'card_first', label: 'Credit card first, then the gift card' },
+      { v: 'other', label: 'Other…' }
+    ]
+  },
+  {
+    id: 'call-lookup-errors',
+    default: 'uniform',
+    q: 'Should a failed gift-card lookup tell the shopper why it failed?',
+    context: 'Unknown, expired, zero balance, frozen and wrong currency are five different failures. Telling them apart is also how you grade a list of guessed codes.',
+    recWhy: 'Distinct errors make the endpoint an oracle that sorts real codes from guesses. One message plus the per-session rate limit leaves nothing to sort on, and staff still get the true reason on a tokened request.',
+    options: [
+      { v: 'uniform', label: 'One message for every failure', rec: true },
+      { v: 'specific', label: 'Name the reason — fewer support tickets' },
+      { v: 'other', label: 'Other…' }
+    ]
+  },
+  {
+    id: 'call-hold-ttl',
+    default: 'match_session',
+    q: 'How long should a gift-card hold survive an abandoned checkout?',
+    context: 'A hold takes its amount out of the card. Checkout sessions already expire after 20 minutes, and the same sweeper can clear both.',
+    recWhy: 'Matching the checkout session keeps one expiry concept instead of two clocks that can disagree. An unbounded hold locks a balance behind a tab nobody ever closed.',
+    options: [
+      { v: 'match_session', label: '20 minutes — match the checkout session', rec: true },
+      { v: 'ttl_60', label: '60 minutes — outlast a slow checkout' },
+      { v: 'until_abandoned', label: 'Hold until the session is explicitly abandoned' },
+      { v: 'other', label: 'Other…' }
+    ]
+  }
+];
+
+/* ---------------- render the step list ---------------- */
+const stepsEl = document.getElementById('steps');
+
+SECTIONS.forEach((s) => {
+  const card = document.createElement('section');
+  card.className = 'card step';
+  card.dataset.step = s.n;
+  card.innerHTML = `
+    <div class="step-head">
+      <div class="step-id">
+        <span class="step-num">&sect;${s.n}</span>
+        <h3 class="step-title">${s.title}</h3>
+        <span class="step-pr">${s.pr}</span>
+      </div>
+      <button type="button" class="btn btn-secondary btn-sm flag-btn" aria-pressed="false">Flag a problem</button>
+    </div>
+    <div class="step-body">${s.html}</div>
+    <div class="reveal step-fb">
+      <label for="reason-${s.n}">What's wrong, or what to change</label>
+      <textarea id="reason-${s.n}" class="reason-in reveal-box" rows="2" placeholder="Be precise — which part, and why (or what to change it to)"></textarea>
+    </div>`;
+  stepsEl.appendChild(card);
+
+  const id = s.n;
+  const flagBtn = card.querySelector('.flag-btn');
+  const reasonIn = card.querySelector('.reason-in');
+  const stepFb = card.querySelector('.step-fb');
+
+  flagBtn.addEventListener('click', () => {
+    const on = flagBtn.getAttribute('aria-pressed') === 'true';
+    if (on) {
+      // back to the default accepted state
+      flagBtn.setAttribute('aria-pressed', 'false');
+      flagBtn.textContent = 'Flag a problem';
+      card.classList.remove('is-flagged', 'has-reason');
+      stepFb.classList.remove('is-open');   // collapse the shared .reveal box
+      Capture.unmark(id);
+    } else {
+      flagBtn.setAttribute('aria-pressed', 'true');
+      flagBtn.textContent = '⚑ Flagged — clear';
+      card.classList.add('is-flagged');
+      stepFb.classList.add('is-open');       // reveal the objection box
+      const r = reasonIn.value.trim();
+      card.classList.toggle('has-reason', !!r);
+      Capture.mark(id, 'flag', { reason: r || undefined });
+      reasonIn.focus();
+    }
+  });
+
+  reasonIn.addEventListener('input', () => {
+    if (!card.classList.contains('is-flagged')) { return; }
+    const r = reasonIn.value.trim();
+    card.classList.toggle('has-reason', !!r);
+    Capture.mark(id, 'flag', { reason: r || undefined });
+  });
+});
+
+/* ---------------- the "apply the rest" call ----------------
+   Steps §1–§8 are a body of proposed changes with no open call of their own, so per
+   PRINCIPLES rule (2) they get ONE explicit yes/no/other home. It renders like the other
+   decision callouts, but BOTH "No" and "Other…" reveal the reason box (revealOn). It is
+   required and has no pre-selection (Yes is shown as the recommendation only) so it gates
+   the submit until answered — and it is a primary input to the DERIVED verdict below. */
+const APPLY_REST = {
+  id: 'apply-rest',
+  required: true,
+  q: 'Apply the rest of the proposed steps (every step §1–§8 above not in an open call)?',
+  context: 'These steps carry only an optional per-step flag. Yes applies them all as written; flag a step above to object to one precisely.',
+  recWhy: 'Steps §1–§8 are the agreed body of work; Yes applies them as written while any individual objection still rides on that step’s flag.',
+  revealOn: ['no', 'other'],
+  revealLabel: 'What must change before the rest can be applied?',
+  revealPlaceholder: 'Which steps or phases, and what to change before the rest can be applied',
+  options: [
+    { v: 'yes', label: 'Yes — apply them', rec: true },
+    { v: 'no', label: 'No — do not apply' },
+    { v: 'other', label: 'Other…' }
+  ]
+};
+// every fixed-option call on the page (the 4 decisions + the "apply the rest" call)
+const ALL_DECISIONS = DECISIONS.concat([APPLY_REST]);
+function revealOnFor(id) {
+  const d = ALL_DECISIONS.find((x) => x.id === id);
+  return (d && d.revealOn) || ['other'];   // default: only "Other…" reveals the box
+}
+
+/* ---------------- render one live decision callout ---------------- */
+function renderDecision(d, container) {
+  const revealOn = d.revealOn || ['other'];
+  const box = document.createElement('div');
+  box.className = 'callout decision-live';
+  box.dataset.decision = d.id;
+  // Option choices are clickable DIVs (not <button>) so the descriptive option
+  // text stays selectable and never reads as a draggable control; single-select
+  // state still uses aria-pressed + the cranberry .is-selected accent, and each
+  // is keyboard-operable via tabindex + the Enter/Space handler below.
+  const optsHtml = d.options.map((o) =>
+    `<div class="btn btn-secondary btn-sm dec-opt" data-choice="${o.v}" tabindex="0" aria-pressed="false">${o.label}</div>`
+  ).join('');
+  const recOpt = d.options.find((o) => o.rec);
+  const recHtml = recOpt
+    ? `<p class="reco">Recommended: <strong>${recOpt.label}</strong> <span class="why" tabindex="0">(why)<span class="why-pop">${d.recWhy}</span></span></p>`
+    : '';
+  box.innerHTML = `
+    <p class="callout-q"><strong>Question:</strong> ${d.q}</p>
+    <p class="dec-context">${d.context}</p>
+    ${recHtml}
+    <div class="choices" role="group" aria-label="${d.q}">${optsHtml}</div>
+    <div class="reveal">
+      <label for="other-${d.id}">${d.revealLabel || 'Your call — what would you prefer instead?'}</label>
+      <textarea id="other-${d.id}" class="dec-other-in reveal-box" rows="2" placeholder="${d.revealPlaceholder || "Describe the option the choices don't cover"}"></textarea>
+    </div>`;
+  container.appendChild(box);
+
+  const optBtns = Array.from(box.querySelectorAll('.dec-opt'));
+  const otherWrap = box.querySelector('.reveal');
+  const otherIn = box.querySelector('.dec-other-in');
+  let current = null;   // the currently-selected choice value (for live note capture)
+
+  function select(choice, touched) {
+    current = choice;
+    optBtns.forEach((b) => {
+      const on = b.dataset.choice === choice;
+      b.classList.toggle('is-selected', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    const reveals = revealOn.indexOf(choice) !== -1;   // No/Other (or just Other) opens the box
+    otherWrap.classList.toggle('is-open', reveals);    // progressive disclosure
+    if (reveals) {
+      Capture.mark(d.id, choice, { note: otherIn.value.trim() || undefined });
+    } else {
+      Capture.mark(d.id, choice, { note: undefined });   // clear any stale reason note
+    }
+    if (touched) { box.classList.add('is-live'); }   // .is-live tint only once the human touches it
+    if (reveals && touched) { otherIn.focus(); }
+  }
+
+  optBtns.forEach((b) => {
+    b.addEventListener('click', () => select(b.dataset.choice, true));
+    // div (not <button>) so the text is selectable — restore keyboard activation
+    b.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(b.dataset.choice, true); }
+    });
+  });
+
+  // typing in the reason box updates the captured note live (only while a reveal choice is the pick)
+  otherIn.addEventListener('input', () => {
+    if (!otherWrap.classList.contains('is-open')) { return; }
+    Capture.mark(d.id, current, { note: otherIn.value.trim() || undefined });
+  });
+
+  if (d.default) {
+    select(d.default, false);   // pre-select + record the stated default, not yet "live"
+  }
+  // required, unanswered decisions stay unselected — the submit gate is the signal
+}
+
+/* ---------------- render the live decision callouts + the "apply the rest" call ---------------- */
+const decisionsEl = document.getElementById('decisions');
+DECISIONS.forEach((d) => renderDecision(d, decisionsEl));
+renderDecision(APPLY_REST, document.getElementById('apply-rest'));
+
+/* ---------------- capture wiring: derived verdict + gated submit ---------------- */
+// Coverage denominator = the reviewable steps + every open call (the 4 decisions +
+// the "apply the rest" call). Default-accept means an untouched plan engages only the
+// pre-selected decision defaults until the required calls are answered.
+Capture.init({ view: 'implementation-plan', total: SECTIONS.length + ALL_DECISIONS.length });
+// Bounded coverage units = the reviewable steps + every open call. (No verdict
+// annotation exists any more — the verdict is DERIVED, not a captured control.)
+Capture.setCoverage(function (id) {
+  return SECTIONS.some((s) => s.n === id) || ALL_DECISIONS.some((d) => d.id === id);
+});
+
+function counts() {
+  const p = Capture.payload();
+  let flags = 0, unresolved = 0;
+  p.items.forEach((it) => {
+    if (it.value === 'flag') { flags++; if (!it.reason) { unresolved++; } }
+  });
+  return { flags: flags, unresolved: unresolved };
+}
+
+// Required calls (no stated default) the human has not yet answered — the two
+// contract-changing calls at the top and the "apply the rest" call at the bottom.
+// DECISIONS come first so the gate flashes the top-of-page one first.
+function pendingRequiredDecisions() {
+  const answered = new Set(Capture.payload().items.map((it) => it.id));
+  return ALL_DECISIONS.filter((d) => d.required && !answered.has(d.id));
+}
+
+// Calls answered with a reveal choice ("Other…", or "apply the rest" = No/Other) but no
+// typed reason yet — a recorded-but-empty dead end.
+function emptyRevealDecisions() {
+  return Capture.payload().items.filter((it) =>
+    ALL_DECISIONS.some((d) => d.id === it.id) &&
+    revealOnFor(it.id).indexOf(it.value) !== -1 &&
+    !(it.note && it.note.trim())
+  );
+}
+
+// The single routable verdict is COMPUTED from the answers — never a manual button
+// (PRINCIPLES.md → "No standalone overall verdict"). It has exactly TWO values:
+// approve | request_changes. A flagged step, a decision = Other, or apply-the-rest =
+// Other are FEEDBACK — they ride along in the payload items and never change the
+// verdict. Recomputed on every change and set via Capture.rollup:
+//   apply-the-rest = No                          -> request_changes (the one blocking answer)
+//   all required calls answered + apply-the-rest != No
+//        -> approve
+//   apply-the-rest not answered yet              -> unset (the gate holds the submit)
+function deriveVerdict() {
+  const items = Capture.payload().items;
+  const get = (id) => items.find((it) => it.id === id);
+  const applyRest = get('apply-rest');
+  const applyVal = applyRest && applyRest.value;
+  const allRequiredAnswered = ALL_DECISIONS.filter((d) => d.required).every((d) => !!get(d.id));
+
+  let verdict;
+  if (applyVal === 'no') {
+    verdict = 'request_changes';
+  } else if (applyVal && allRequiredAnswered) {
+    verdict = 'approve';
+  } else {
+    verdict = undefined;   // a required call (incl. apply-the-rest) is still unanswered
+  }
+  Capture.rollup(verdict);
+  return verdict;
+}
+
+// Gate the one Submit — no verdict-button branch (the verdict is derived, so it can never
+// be "unpicked"; the required "apply the rest" call is what makes the go/no-go answerable).
+// Every ok:false branch returns a focus target so clicking Submit scrolls to and flashes it.
+Capture.setGate(function () {
+  const pending = pendingRequiredDecisions();
+  if (pending.length > 0) {
+    return {
+      ok: false,
+      reason: 'Make the required call: ' + pending[0].q,
+      // the first unanswered required call's callout (its option group is the control)
+      focus: function () { return document.querySelector('[data-decision="' + pending[0].id + '"]'); }
+    };
+  }
+  const emptyReveal = emptyRevealDecisions();
+  if (emptyReveal.length > 0) {
+    return {
+      ok: false,
+      reason: 'Fill the reason box to record that call.',
+      // the empty reason row (its textarea) of the first such call
+      focus: function () { return document.querySelector('[data-decision="' + emptyReveal[0].id + '"] .reveal'); }
+    };
+  }
+  const c = counts();
+  if (c.unresolved > 0) {
+    return {
+      ok: false,
+      reason: 'Add a reason to ' + (c.unresolved === 1 ? 'the flagged step' : 'each flagged step') + ' to submit.',
+      // the first flagged step still missing a reason (its reason field row)
+      focus: function () { return document.querySelector('.step.is-flagged:not(.has-reason) .step-fb'); }
+    };
+  }
+  return { ok: true };
+});
+
+// Keep the derived verdict in sync with every mark/unmark/flag.
+Capture.onChange(deriveVerdict);
+deriveVerdict();
+</script>
+</body>
+</html>

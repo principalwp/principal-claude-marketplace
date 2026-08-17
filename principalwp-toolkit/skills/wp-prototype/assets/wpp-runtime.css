@@ -1,0 +1,166 @@
+/*
+ * wpp-runtime.css — prototype scaffolding styles (NOT WordPress UI).
+ * Deliberately styled unlike wp-admin so reviewers can tell scaffolding
+ * from the mockup itself: dark floating pill, monospace labels.
+ */
+
+/* Screens: only the active one is visible */
+[data-screen] { display: none; }
+[data-screen].wpp-active { display: block; }
+
+/* Floating variant/screen switcher */
+/* One row, fixed width regardless of screen count — a button per screen ran off
+   both edges of the window once a prototype had more than four. */
+.wpp-bar {
+  position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+  z-index: 999999;
+  display: flex; align-items: center; gap: 2px;
+  max-width: calc(100vw - 32px);
+  padding: 5px 8px;
+  background: #101828; color: #eee;
+  border-radius: 999px;
+  box-shadow: 0 4px 24px rgba(0,0,0,.35);
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px;
+}
+.wpp-bar__label { padding: 0 8px 0 6px; opacity: .55; user-select: none; }
+.wpp-bar button {
+  font: inherit; color: inherit; background: none; border: none; cursor: pointer;
+  padding: 5px 10px; border-radius: 999px; white-space: nowrap;
+}
+.wpp-bar button:hover { background: rgba(255,255,255,.12); }
+.wpp-bar button.wpp-on { background: #4f6df5; color: #fff; }
+.wpp-bar__nav { padding: 2px 8px !important; font-size: 16px; line-height: 1; }
+.wpp-bar__icon { width: 28px; text-align: center; padding: 5px 0 !important; }
+.wpp-bar__count { opacity: .45; padding: 0 8px 0 4px; user-select: none; }
+.wpp-bar__sel { position: relative; display: inline-flex; }
+.wpp-bar__sel::after {
+  content: '▾'; position: absolute; right: 9px; top: 50%;
+  transform: translateY(-50%); opacity: .55; pointer-events: none; font-size: 10px;
+}
+.wpp-bar__sel select {
+  appearance: none; -webkit-appearance: none;
+  font: inherit; color: inherit; cursor: pointer;
+  background: rgba(255,255,255,.10); border: 0; border-radius: 999px;
+  padding: 5px 24px 5px 12px;
+  max-width: 300px; text-overflow: ellipsis;
+}
+.wpp-bar__sel select:hover { background: rgba(255,255,255,.18); }
+.wpp-bar__sel option { color: #1e1e1e; background: #fff; }
+
+/* Rationale strip: <section data-screen data-subtitle="Why this direction">.
+   Sits just above the bar and overlays the page — it never pushes the mockup
+   down, which is the whole reason it is here rather than in a header. The ⓘ
+   button in the bar hides it. */
+.wpp-info {
+  position: fixed; bottom: 58px; left: 50%; transform: translateX(-50%);
+  z-index: 999998;
+  max-width: min(720px, calc(100vw - 48px));
+  padding: 7px 14px;
+  background: rgba(16, 24, 40, .93); color: #cfd4e0;
+  border-radius: 8px; cursor: pointer;
+  font: 12.5px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  text-align: center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.wpp-info.is-expanded { white-space: normal; }
+body.wpp-info-off .wpp-info { display: none; }
+
+/* Used by the runtime wherever something is hidden (empty rationale strip,
+   a [data-reveal] whose toggle is off). */
+.wpp-hidden { display: none !important; }
+
+/* ---------------------------------------------------------------------------
+ * Side-by-side compare screen. Drop the editor chrome and show the variants
+ * next to each other at the width each would really get — this is the view that
+ * actually answers "which one", so give any prototype with 2+ directions one.
+ * ------------------------------------------------------------------------- */
+.wpp-compare {
+  min-height: 100vh; box-sizing: border-box;
+  padding: 40px 32px 110px;
+  background: #f0f0f1;
+}
+/* Always one row. Auto-fit wrapped to a second row as soon as a variant's own
+   content was wider than its share, which defeats the point — you could no
+   longer see all of them at once. Grid tracks are allowed to shrink below their
+   content (minmax(0,…)), and if a variant genuinely needs more room, give that
+   column a min-width and the row scrolls sideways. */
+.wpp-compare__grid {
+  display: grid; gap: 24px; align-items: start;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  overflow-x: auto;
+  max-width: 1600px; margin: 0 auto;
+}
+.wpp-compare__col {
+  background: #fff; border: 1px solid #dcdcde; border-radius: 8px; overflow: hidden;
+}
+.wpp-compare__head { padding: 14px 18px; border-bottom: 1px solid #f0f0f1; }
+.wpp-compare__head h3 {
+  margin: 0; font: 600 14px/1.3 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+.wpp-compare__head p {
+  margin: 4px 0 0; font: 12px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #757575;
+}
+.wpp-compare__body { padding: 20px; }
+
+/* Annotations: <span data-note="Why this is here">. The outline is pure CSS;
+   the bubbles are real elements built by the runtime — NOT ::after content,
+   which would collide with WordPress's own pseudo-elements (wp-clearfix,
+   dashicons) on the annotated element. */
+body.wpp-notes-on [data-note] {
+  outline: 2px dashed #e5484d; outline-offset: 2px;
+}
+.wpp-note-bubble {
+  position: absolute; z-index: 999998;
+  max-width: 280px; width: max-content;
+  padding: 6px 10px;
+  background: #e5484d; color: #fff;
+  font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------------
+ * Viewport preview. Gutenberg narrows the white page inside the grey canvas
+ * rather than the canvas itself, so that is what these do. For a shell with no
+ * .editor-canvas__paper, mark the element to narrow with data-viewport-paper.
+ * ------------------------------------------------------------------------- */
+.wpp-vp-tablet .editor-canvas__paper, .wpp-vp-tablet [data-viewport-paper] { max-width: 768px; }
+.wpp-vp-mobile .editor-canvas__paper, .wpp-vp-mobile [data-viewport-paper] { max-width: 360px; }
+.editor-canvas__paper, [data-viewport-paper] {
+  margin-left: auto; margin-right: auto;
+  transition: max-width .18s ease;
+}
+
+/* ---------------------------------------------------------------------------
+ * Charts. Sized by --wpp-chart-h (default 80px); colour follows the element's
+ * own `color`, so a chart inherits whatever the block around it is using.
+ * ------------------------------------------------------------------------- */
+.wpp-chart { --wpp-chart-h: 80px; position: relative; }
+.wpp-chart__plot { position: relative; height: var(--wpp-chart-h); }
+.wpp-chart__plot svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.wpp-chart__line { fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.wpp-chart__fill { fill: currentColor; opacity: .13; stroke: none; }
+.wpp-chart__dot {
+  position: absolute; width: 6px; height: 6px; border-radius: 50%;
+  background: currentColor; transform: translate(-50%, -50%);
+}
+.wpp-chart__val {
+  position: absolute; transform: translate(-50%, -170%);
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+}
+/* bars */
+.wpp-chart.is-bars .wpp-chart__plot { display: flex; align-items: flex-end; gap: 4px; }
+.wpp-chart__bar { flex: 1; background: currentColor; border-radius: 2px 2px 0 0; position: relative; }
+.wpp-chart__bar[data-v]::after {
+  content: attr(data-v);
+  position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%);
+  margin-bottom: 4px; font-size: 12px; font-weight: 600; white-space: nowrap;
+}
+/* x-axis labels */
+.wpp-chart__labels { position: relative; height: 18px; margin-top: 6px; }
+.wpp-chart__labels span {
+  position: absolute; transform: translateX(-50%);
+  font-size: 11px; opacity: .7; white-space: nowrap;
+}

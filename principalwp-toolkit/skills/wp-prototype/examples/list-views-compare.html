@@ -1,0 +1,257 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Review Queue — classic vs DataViews</title>
+<style>
+/*@inline classic-admin.bundle.min.css*/
+</style>
+<style>
+/*@inline wpds-tokens.css*/
+</style>
+<style>
+/*@inline wpds-components.css*/
+</style>
+<style>
+/*@inline dashicons.min.css*/
+</style>
+<style>
+/*@inline wpp-runtime.css*/
+</style>
+<style>
+/* Score pill used in the classic variant */
+.pe-score { display: inline-block; min-width: 36px; text-align: center; padding: 2px 6px; border-radius: 10px; background: #edfaef; color: #007017; font-weight: 600; }
+.pe-score.is-low { background: #fcf0f1; color: #d63638; }
+</style>
+</head>
+<body class="wp-admin wp-core-ui js auto-fold">
+
+<!-- ============ Variant A: classic WP_List_Table ============ -->
+<section data-screen="classic" data-title="A — Classic list table">
+<div id="wpwrap">
+	<div id="adminmenumain" role="navigation" aria-label="Main menu">
+		<div id="adminmenuback"></div>
+		<div id="adminmenuwrap">
+			<ul id="adminmenu">
+				<li class="wp-first-item menu-top menu-top-first menu-icon-dashboard" id="menu-dashboard"><a href="#" class="wp-first-item menu-top menu-top-first menu-icon-dashboard"><div class="wp-menu-arrow"><div></div></div><div class="wp-menu-image dashicons-before dashicons-dashboard" aria-hidden="true"><br></div><div class="wp-menu-name">Dashboard</div></a></li>
+				<li class="menu-top menu-icon-post" id="menu-posts"><a href="#" class="menu-top menu-icon-post"><div class="wp-menu-arrow"><div></div></div><div class="wp-menu-image dashicons-before dashicons-admin-post" aria-hidden="true"><br></div><div class="wp-menu-name">Posts</div></a></li>
+				<li class="menu-top menu-icon-media" id="menu-media"><a href="#" class="menu-top menu-icon-media"><div class="wp-menu-arrow"><div></div></div><div class="wp-menu-image dashicons-before dashicons-admin-media" aria-hidden="true"><br></div><div class="wp-menu-name">Media</div></a></li>
+				<li class="wp-menu-separator" aria-hidden="true"><div class="separator"></div></li>
+				<li class="wp-has-submenu wp-has-current-submenu wp-menu-open menu-top" id="menu-editorial">
+					<a href="#" class="wp-has-submenu wp-has-current-submenu wp-menu-open menu-top"><div class="wp-menu-arrow"><div></div></div><div class="wp-menu-image dashicons-before dashicons-welcome-write-blog" aria-hidden="true"><br></div><div class="wp-menu-name">Editorial</div></a>
+					<ul class="wp-submenu wp-submenu-wrap">
+						<li class="wp-submenu-head" aria-hidden="true">Editorial</li>
+						<li class="wp-first-item current"><a href="#" class="current" aria-current="page">Review Queue</a></li>
+						<li><a href="#">Settings</a></li>
+					</ul>
+				</li>
+				<li class="menu-top menu-icon-settings" id="menu-settings"><a href="#" class="menu-top menu-icon-settings"><div class="wp-menu-arrow"><div></div></div><div class="wp-menu-image dashicons-before dashicons-admin-settings" aria-hidden="true"><br></div><div class="wp-menu-name">Settings</div></a></li>
+				<li id="collapse-menu" class="hide-if-no-js"><button type="button" id="collapse-button" aria-expanded="true"><span class="collapse-button-icon" aria-hidden="true"></span><span class="collapse-button-label">Collapse menu</span></button></li>
+			</ul>
+		</div>
+	</div>
+
+	<div id="wpcontent">
+		<div id="wpbody" role="main">
+			<div id="wpbody-content">
+				<div class="wrap">
+					<h1 class="wp-heading-inline">Review Queue</h1>
+					<hr class="wp-header-end">
+
+					<ul class="subsubsub">
+						<li class="all"><a href="#">All <span class="count">(4)</span></a> |</li>
+						<li class="pending"><a href="#" class="current" aria-current="page">Pending <span class="count">(2)</span></a> |</li>
+						<li class="flagged"><a href="#">Flagged <span class="count">(1)</span></a> |</li>
+						<li class="approved"><a href="#">Approved <span class="count">(1)</span></a></li>
+					</ul>
+
+					<form method="get">
+						<p class="search-box">
+							<label class="screen-reader-text" for="review-search-input">Search Reviews:</label>
+							<input type="search" id="review-search-input" name="s">
+							<input type="submit" class="button" value="Search Reviews">
+						</p>
+
+						<div class="tablenav top">
+							<div class="alignleft actions bulkactions">
+								<select name="action"><option value="-1">Bulk actions</option><option>Approve</option><option>Re-run review</option></select>
+								<input type="submit" class="button action" value="Apply">
+							</div>
+							<div class="tablenav-pages"><span class="displaying-num">4 items</span></div>
+							<br class="clear">
+						</div>
+
+						<table class="wp-list-table widefat fixed striped">
+							<thead>
+								<tr>
+									<td class="manage-column column-cb check-column"><input type="checkbox"></td>
+									<th scope="col" class="manage-column column-title column-primary">Post</th>
+									<th scope="col" class="manage-column" style="width:90px">Score</th>
+									<th scope="col" class="manage-column" style="width:110px">Status</th>
+									<th scope="col" class="manage-column" style="width:140px">Reviewed</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr>
+									<th scope="row" class="check-column"><input type="checkbox"></th>
+									<td class="title column-title has-row-actions column-primary">
+										<strong><a class="row-title" href="#">Why headless CMS hype cooled off</a></strong>
+										<div class="row-actions"><span class="approve"><a href="#">Approve</a> | </span><span class="view"><a href="#">View report</a> | </span><span class="edit"><a href="#">Edit post</a></span></div>
+									</td>
+									<td><span class="pe-score">92</span></td>
+									<td>Pending</td>
+									<td>2026/07/23</td>
+								</tr>
+								<tr>
+									<th scope="row" class="check-column"><input type="checkbox"></th>
+									<td class="title column-title has-row-actions column-primary">
+										<strong><a class="row-title" href="#">Q3 traffic report deep-dive</a> — <span class="post-state">Flagged: 2 factual claims</span></strong>
+										<div class="row-actions"><span class="view"><a href="#">View report</a> | </span><span class="edit"><a href="#">Edit post</a> | </span><span class="trash"><a href="#" class="submitdelete">Dismiss</a></span></div>
+									</td>
+									<td><span class="pe-score is-low">61</span></td>
+									<td>Flagged</td>
+									<td>2026/07/23</td>
+								</tr>
+								<tr>
+									<th scope="row" class="check-column"><input type="checkbox"></th>
+									<td class="title column-title has-row-actions column-primary">
+										<strong><a class="row-title" href="#">Interview: a WP core committer on 7.1</a></strong>
+										<div class="row-actions"><span class="approve"><a href="#">Approve</a> | </span><span class="view"><a href="#">View report</a></span></div>
+									</td>
+									<td><span class="pe-score">88</span></td>
+									<td>Pending</td>
+									<td>2026/07/22</td>
+								</tr>
+								<tr>
+									<th scope="row" class="check-column"><input type="checkbox"></th>
+									<td class="title column-title has-row-actions column-primary">
+										<strong><a class="row-title" href="#">Newsletter: what we shipped in July</a></strong>
+										<div class="row-actions"><span class="view"><a href="#">View report</a></span></div>
+									</td>
+									<td><span class="pe-score">95</span></td>
+									<td>Approved</td>
+									<td>2026/07/21</td>
+								</tr>
+							</tbody>
+						</table>
+
+						<div class="tablenav bottom">
+							<div class="alignleft actions bulkactions">
+								<select name="action2"><option value="-1">Bulk actions</option></select>
+								<input type="submit" class="button action" value="Apply">
+							</div>
+							<div class="tablenav-pages"><span class="displaying-num">4 items</span></div>
+							<br class="clear">
+						</div>
+					</form>
+				</div>
+				<div class="clear"></div>
+			</div>
+			<div class="clear"></div>
+		</div>
+	</div>
+</div>
+</section>
+
+<!-- ============ Variant B: DataViews in the WP 7.0 admin ============ -->
+<section data-screen="dataviews" data-title="B — DataViews (WP 7.0)">
+<div class="wpds-root">
+	<div class="wpadmin7-frame">
+		<nav class="wpadmin7-rail" aria-label="Main navigation">
+			<span class="wpadmin7-rail__logo">W</span>
+			<button class="wpadmin7-rail__item" aria-label="Dashboard"><span class="dashicons dashicons-dashboard"></span></button>
+			<button class="wpadmin7-rail__item" aria-label="Posts"><span class="dashicons dashicons-admin-post"></span></button>
+			<button class="wpadmin7-rail__item is-active" aria-label="Editorial"><span class="dashicons dashicons-welcome-write-blog"></span></button>
+			<span class="wpadmin7-rail__spacer"></span>
+			<button class="wpadmin7-rail__item" aria-label="Settings"><span class="dashicons dashicons-admin-settings"></span></button>
+		</nav>
+		<div class="wpadmin7-content">
+			<header class="wpadmin7-header">
+				<div class="wpadmin7-breadcrumbs">Editorial <span aria-hidden="true">/</span> <strong>Review Queue</strong></div>
+				<button class="wpadmin7-command"><span class="dashicons dashicons-search" style="font-size:16px;width:16px;height:16px"></span> Search or run a command <kbd>⌘K</kbd></button>
+			</header>
+			<div class="wpadmin7-body">
+				<div class="wpadmin7-page-header">
+					<h1>Review Queue</h1>
+					<span class="spacer"></span>
+					<button class="components-button is-secondary">Re-run all pending</button>
+				</div>
+
+				<div class="dataviews-wrapper">
+					<div class="dataviews__view-actions" data-note="Filters are composable chips instead of subsubsub links — scales to many facets">
+						<div class="dataviews-search"><input type="search" placeholder="Search"></div>
+						<button class="dataviews-filters__summary-chip is-active">Status: Pending</button>
+						<button class="dataviews-filters__button"><span class="dashicons dashicons-plus-alt2" style="font-size:14px;width:14px;height:14px"></span> Add filter</button>
+						<span class="spacer"></span>
+						<button class="components-button has-icon" aria-label="Table view"><span class="dashicons dashicons-list-view"></span></button>
+						<button class="components-button has-icon" aria-label="Grid view"><span class="dashicons dashicons-grid-view"></span></button>
+					</div>
+
+					<table class="dataviews-view-table">
+						<thead>
+							<tr>
+								<th style="width:32px"><input type="checkbox"></th>
+								<th>Post</th>
+								<th>Score</th>
+								<th>Status</th>
+								<th>Reviewed</th>
+								<th style="width:110px"></th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td><input type="checkbox"></td>
+								<td class="dataviews-view-table__primary-field"><a href="#">Why headless CMS hype cooled off</a></td>
+								<td><span class="wpds-badge is-success">92</span></td>
+								<td><span class="wpds-badge is-warning">Pending</span></td>
+								<td>Jul 23, 2026</td>
+								<td><span class="dataviews-view-table__actions"><button class="components-button is-tertiary">Approve</button><button class="components-button has-icon" aria-label="Options"><span class="dashicons dashicons-ellipsis"></span></button></span></td>
+							</tr>
+							<tr>
+								<td><input type="checkbox"></td>
+								<td class="dataviews-view-table__primary-field"><a href="#">Q3 traffic report deep-dive</a></td>
+								<td><span class="wpds-badge is-error">61</span></td>
+								<td><span class="wpds-badge is-error">Flagged</span></td>
+								<td>Jul 23, 2026</td>
+								<td><span class="dataviews-view-table__actions"><button class="components-button is-tertiary">Report</button><button class="components-button has-icon" aria-label="Options"><span class="dashicons dashicons-ellipsis"></span></button></span></td>
+							</tr>
+							<tr>
+								<td><input type="checkbox"></td>
+								<td class="dataviews-view-table__primary-field"><a href="#">Interview: a WP core committer on 7.1</a></td>
+								<td><span class="wpds-badge is-success">88</span></td>
+								<td><span class="wpds-badge is-warning">Pending</span></td>
+								<td>Jul 22, 2026</td>
+								<td><span class="dataviews-view-table__actions"><button class="components-button is-tertiary">Approve</button><button class="components-button has-icon" aria-label="Options"><span class="dashicons dashicons-ellipsis"></span></button></span></td>
+							</tr>
+							<tr>
+								<td><input type="checkbox"></td>
+								<td class="dataviews-view-table__primary-field"><a href="#">Newsletter: what we shipped in July</a></td>
+								<td><span class="wpds-badge is-success">95</span></td>
+								<td><span class="wpds-badge is-success">Approved</span></td>
+								<td>Jul 21, 2026</td>
+								<td><span class="dataviews-view-table__actions"><button class="components-button has-icon" aria-label="Options"><span class="dashicons dashicons-ellipsis"></span></button></span></td>
+							</tr>
+						</tbody>
+					</table>
+
+					<div class="dataviews-pagination">
+						<span>Showing 1–4 of 4</span>
+						<span class="dataviews-pagination__controls">
+							<button class="components-button has-icon" disabled aria-label="Previous page"><span class="dashicons dashicons-arrow-left-alt2"></span></button>
+							<span>Page 1 of 1</span>
+							<button class="components-button has-icon" disabled aria-label="Next page"><span class="dashicons dashicons-arrow-right-alt2"></span></button>
+						</span>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+</section>
+
+<script>
+/*@inline wpp-runtime.js*/
+</script>
+</body>
+</html>

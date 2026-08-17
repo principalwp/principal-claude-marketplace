@@ -1,0 +1,540 @@
+/*
+ * wpds-components.css — hand-built replicas of WordPress design-system components
+ * for static prototyping. NOT harvested from core (the real components use hashed
+ * CSS-module classes); review against Gutenberg Storybook after a major WP bump.
+ *
+ * Class names deliberately mirror the real Gutenberg vocabulary
+ * (components-*, block-editor-*, interface-*, dataviews-*) so prototype markup
+ * reads like real editor markup. Colors/spacing come from wpds-tokens.css
+ * (--wpds-* custom properties) with hardcoded fallbacks.
+ *
+ * Controls are built on native inputs (checkbox/radio/select) so they are
+ * interactive in a static page with no JS.
+ */
+
+/* ============================================================
+   Base
+   ============================================================ */
+
+.wpds-root {
+  font-family: var(--wpds-typography-font-family-body, -apple-system, system-ui, sans-serif);
+  font-size: var(--wpds-typography-font-size-md, 13px);
+  line-height: 1.4;
+  color: var(--wpds-color-foreground-content-neutral, #1e1e1e);
+  background: #fff;
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+}
+.wpds-root *, .wpds-root *::before, .wpds-root *::after { box-sizing: inherit; }
+body.wpds-root { margin: 0; }
+/* :where() keeps this reset at zero specificity so component classes
+   (.components-button, .components-panel__body-title, …) always override it */
+:where(.wpds-root button) {
+  font: inherit; color: inherit; background: none; border: none;
+  cursor: pointer; padding: 0; margin: 0;
+}
+
+/* ============================================================
+   Editor chrome (interface skeleton: header / canvas / sidebar)
+   ============================================================ */
+
+.interface-interface-skeleton {
+  display: flex; flex-direction: column;
+  height: 100vh; overflow: hidden;
+}
+.editor-header {
+  display: flex; align-items: center; gap: 8px;
+  height: 60px; flex-shrink: 0;
+  padding: 0 8px;
+  background: #fff;
+  border-bottom: 1px solid var(--wpds-color-stroke-surface-neutral, #dbdbdb);
+}
+.editor-header__center { flex: 1; text-align: center; font-size: 13px; color: #757575; }
+.editor-header__center strong { color: var(--wpds-color-foreground-content-neutral, #1e1e1e); font-weight: 500; }
+.editor-header__end { display: flex; align-items: center; gap: 4px; }
+
+.interface-interface-skeleton__body { display: flex; flex: 1; min-height: 0; }
+.interface-interface-skeleton__content {
+  flex: 1; overflow-y: auto;
+  background: var(--wpds-color-background-surface-neutral-weak, #f0f0f0);
+}
+.interface-interface-skeleton__sidebar {
+  width: 281px; flex-shrink: 0; overflow-y: auto;
+  background: #fff;
+  border-left: 1px solid var(--wpds-color-stroke-surface-neutral, #dbdbdb);
+}
+
+/* Canvas "paper" — the fake post being edited */
+.editor-canvas__paper {
+  max-width: 840px; margin: 32px auto; padding: 60px;
+  background: #fff; min-height: 70vh;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+}
+.editor-canvas__paper h1 { font-size: 40px; font-weight: 600; margin: 0 0 24px; line-height: 1.2; }
+.editor-canvas__paper p { font-size: 16px; line-height: 1.7; color: #2f2f2f; }
+
+/* Selected-block outline — put on the block being prototyped */
+.is-selected-block { outline: 2px solid var(--wpds-color-stroke-interactive-brand, #3858e9); outline-offset: 2px; position: relative; }
+
+/* Block toolbar floating above a selected block */
+.block-editor-block-toolbar {
+  position: absolute; top: -52px; left: -2px;
+  display: inline-flex; align-items: center;
+  background: #fff; border: 1px solid var(--wpds-color-foreground-content-neutral, #1e1e1e);
+  border-radius: var(--wpds-border-radius-sm, 2px);
+  box-shadow: 0 2px 6px rgba(0,0,0,.1);
+}
+.block-editor-block-toolbar .components-button.has-icon { height: 46px; min-width: 46px; }
+.block-editor-block-toolbar__group { display: inline-flex; border-right: 1px solid #ddd; }
+.block-editor-block-toolbar__group:last-child { border-right: none; }
+
+/* Block card at the top of the inspector */
+.block-editor-block-card {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 16px;
+}
+.block-editor-block-card__icon {
+  width: 24px; height: 24px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--wpds-color-foreground-content-neutral, #1e1e1e);
+}
+.block-editor-block-card__title { font-weight: 500; margin: 0 0 4px; font-size: 13px; }
+.block-editor-block-card__description { font-size: 12px; color: #757575; margin: 0; }
+
+/* ============================================================
+   Block placeholder (the "set me up" state of data-driven blocks)
+   ============================================================ */
+
+.components-placeholder {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 12px;
+  padding: 24px;
+  background: var(--wpds-color-background-surface-neutral-weak, #f0f0f0);
+  border-radius: var(--wpds-border-radius-sm, 2px);
+  font-size: 13px; color: var(--wpds-color-foreground-content-neutral, #1e1e1e);
+}
+.components-placeholder__label {
+  display: flex; align-items: center; gap: 8px;
+  font-weight: 600; font-size: 13px;
+}
+.components-placeholder__instructions { margin: 0; color: #757575; }
+.components-placeholder__fieldset { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+/* ============================================================
+   Sidebar tabs (Settings / Styles)
+   ============================================================ */
+
+.components-tab-panel__tabs {
+  display: flex;
+  border-bottom: 1px solid var(--wpds-color-stroke-surface-neutral, #dbdbdb);
+}
+.components-tab-panel__tabs-item {
+  flex: 1; height: 48px;
+  font-size: 13px; font-weight: 400; color: var(--wpds-color-foreground-content-neutral, #1e1e1e);
+  position: relative;
+}
+.components-tab-panel__tabs-item.is-active { font-weight: 500; }
+.components-tab-panel__tabs-item.is-active::after {
+  content: ""; position: absolute; left: 16px; right: 16px; bottom: -1px;
+  height: var(--wpds-border-width-md, 4px);
+  background: var(--wpds-color-background-interactive-brand-strong, #3858e9);
+  border-radius: 2px 2px 0 0;
+}
+.components-tab-panel__tabs-item:hover { color: var(--wpds-color-foreground-interactive-brand, #2937ba); }
+
+/* ============================================================
+   Panels (inspector sections)
+   ============================================================ */
+
+.components-panel { border-top: 1px solid var(--wpds-color-stroke-surface-neutral, #dbdbdb); }
+.components-panel__body {
+  border-bottom: 1px solid var(--wpds-color-stroke-surface-neutral, #dbdbdb);
+}
+.components-panel__body-title {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; height: 48px; padding: 0 16px;
+  font-size: 13px; font-weight: 500; text-align: left;
+}
+.components-panel__body-title:hover { background: var(--wpds-color-background-surface-neutral, #fcfcfc); }
+.components-panel__body-title::after {          /* chevron */
+  content: ""; width: 8px; height: 8px; margin-left: 8px; flex-shrink: 0;
+  border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg); transition: transform .15s ease;
+}
+.components-panel__body.is-opened > .components-panel__body-title::after { transform: rotate(45deg); }
+.components-panel__body-content { padding: 0 16px 16px; display: grid; gap: 16px; }
+.components-panel__body:not(.is-opened) > .components-panel__body-content { display: none; }
+.components-panel__row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+
+/* ============================================================
+   Base control + labels
+   ============================================================ */
+
+.components-base-control { display: block; }
+.components-base-control__label {
+  display: block; margin-bottom: 8px;
+  font-size: var(--wpds-typography-font-size-xs, 11px);
+  font-weight: 500; text-transform: uppercase;
+  color: var(--wpds-color-foreground-content-neutral, #1e1e1e);
+}
+.components-base-control__help {
+  margin: 8px 0 0; font-size: 12px;
+  color: var(--wpds-color-foreground-content-neutral-weak, #757575);
+}
+
+/* ============================================================
+   Text / number / select inputs
+   ============================================================ */
+
+.components-text-control__input,
+.components-select-control__input,
+.wpds-root input[type="text"],
+.wpds-root input[type="number"],
+.wpds-root input[type="search"],
+.wpds-root input[type="url"],
+.wpds-root select,
+.wpds-root textarea {
+  width: 100%; height: 40px; min-height: 0; padding: 0 12px; /* min-height beats classic forms.css's 40px minimum in mixed-dialect pages */
+  font: inherit; color: inherit; background: #fff;
+  border: 1px solid var(--wpds-color-stroke-interactive-neutral, #949494);
+  border-radius: var(--wpds-border-radius-sm, 2px);
+}
+.wpds-root textarea { height: auto; padding: 8px 12px; }
+.wpds-root select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M17.5 11.6 12 16l-5.5-4.4.9-1.2L12 14l4.5-3.6 1 1.2z' fill='%231e1e1e'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 6px center;
+  padding-right: 32px;
+}
+.components-text-control__input:focus,
+.components-select-control__input:focus,
+.wpds-root input:focus, .wpds-root select:focus, .wpds-root textarea:focus {
+  outline: none;
+  border-color: var(--wpds-color-stroke-focus, #3858e9);
+  box-shadow: 0 0 0 calc(var(--wpds-border-width-focus, 1.5px) - 1px) var(--wpds-color-stroke-focus, #3858e9);
+}
+
+/* ============================================================
+   ToggleControl (switch) — native checkbox inside
+   ============================================================ */
+
+.components-toggle-control { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.components-toggle-control__label { font-size: 13px; }
+.components-form-toggle { position: relative; display: inline-flex; flex-shrink: 0; }
+.components-form-toggle input[type="checkbox"] {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  opacity: 0; margin: 0; cursor: pointer;
+}
+.components-form-toggle__track {
+  display: inline-block; width: 36px; height: 18px;
+  background: #fff;
+  border: 1px solid var(--wpds-color-stroke-interactive-neutral, #949494);
+  border-radius: 9px;
+  transition: background .1s ease, border-color .1s ease;
+}
+.components-form-toggle__thumb {
+  position: absolute; top: 3px; left: 3px;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--wpds-color-background-thumb-neutral-weak, #757575);
+  transition: transform .1s ease, background .1s ease;
+  pointer-events: none;
+}
+.components-form-toggle input:checked ~ .components-form-toggle__track {
+  background: var(--wpds-color-background-interactive-brand-strong, #3858e9);
+  border-color: var(--wpds-color-background-interactive-brand-strong, #3858e9);
+}
+.components-form-toggle input:checked ~ .components-form-toggle__thumb {
+  transform: translateX(18px);
+  background: #fff;
+}
+.components-form-toggle input:focus-visible ~ .components-form-toggle__track {
+  box-shadow: 0 0 0 var(--wpds-border-width-focus, 1.5px) var(--wpds-color-stroke-focus, #3858e9);
+}
+
+/* ============================================================
+   CheckboxControl / RadioControl — native inputs restyled
+   ============================================================ */
+
+.components-checkbox-control, .components-radio-control__option {
+  display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;
+}
+.components-radio-control { display: grid; gap: 8px; }
+.components-radio-control > .components-base-control__label { margin-bottom: 0; }
+/* :where() keeps the form-toggle exclusion at zero specificity so the
+   :checked rules below (0,3,1) still beat this base rule */
+.wpds-root input[type="checkbox"]:where(:not(.components-form-toggle input)),
+.wpds-root input[type="radio"] {
+  appearance: none; width: 20px; height: 20px; margin: 0; flex-shrink: 0;
+  border: 1px solid var(--wpds-color-stroke-interactive-neutral, #949494);
+  border-radius: var(--wpds-border-radius-sm, 2px);
+  background: #fff; cursor: pointer; display: inline-grid; place-content: center;
+}
+.wpds-root input[type="radio"] { border-radius: 50%; }
+.wpds-root input[type="checkbox"]:checked {
+  background: var(--wpds-color-background-interactive-brand-strong, #3858e9);
+  border-color: var(--wpds-color-background-interactive-brand-strong, #3858e9);
+}
+.wpds-root input[type="checkbox"]:checked::before {
+  content: ""; width: 10px; height: 6px; margin: 0; /* margin guards against classic forms.css leaking into mixed-dialect pages */
+  border-left: 2px solid #fff; border-bottom: 2px solid #fff;
+  transform: rotate(-45deg) translate(1px, -1px);
+}
+.wpds-root input[type="radio"]:checked {
+  border-color: var(--wpds-color-background-interactive-brand-strong, #3858e9);
+}
+.wpds-root input[type="radio"]:checked::before {
+  content: ""; width: 10px; height: 10px; margin: 0; border-radius: 50%;
+  background: var(--wpds-color-background-interactive-brand-strong, #3858e9);
+}
+
+/* ============================================================
+   RangeControl
+   ============================================================ */
+
+.components-range-control { display: flex; align-items: center; gap: 12px; }
+.components-range-control input[type="range"] {
+  flex: 1; appearance: none; height: 4px; border-radius: 2px;
+  background: var(--wpds-color-background-track-neutral, #ddd);
+  outline: none; margin: 0; cursor: pointer;
+}
+.components-range-control input[type="range"]::-webkit-slider-thumb {
+  appearance: none; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--wpds-color-background-thumb-brand, #3858e9);
+  border: none; cursor: grab;
+}
+.components-range-control__number {
+  width: 64px !important; text-align: center; flex-shrink: 0;
+}
+
+/* ============================================================
+   ToggleGroupControl (segmented) — native radios inside
+   ============================================================ */
+
+.components-toggle-group-control {
+  display: flex; height: 40px; padding: 2px;
+  border: 1px solid var(--wpds-color-stroke-interactive-neutral, #949494);
+  border-radius: var(--wpds-border-radius-sm, 2px);
+}
+.components-toggle-group-control label { flex: 1; position: relative; display: flex; cursor: pointer; }
+.components-toggle-group-control input[type="radio"] {
+  position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0;
+  border: none; margin: 0; cursor: pointer;
+}
+.components-toggle-group-control label span {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 500; border-radius: 1px;
+  color: var(--wpds-color-foreground-content-neutral, #1e1e1e);
+  pointer-events: none;
+}
+.components-toggle-group-control input:checked + span {
+  background: var(--wpds-color-background-interactive-neutral-strong, #1e1e1e);
+  color: #fff;
+}
+
+/* ============================================================
+   Buttons
+   ============================================================ */
+
+.components-button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 36px; padding: 0 12px;
+  font-size: 13px; font-weight: 400; white-space: nowrap;
+  border-radius: var(--wpds-border-radius-sm, 2px);
+  transition: background .1s ease, color .1s ease, box-shadow .1s ease;
+}
+.components-button.is-primary {
+  background: var(--wpds-color-background-interactive-brand-strong, #3858e9);
+  color: #fff;
+}
+.components-button.is-primary:hover { background: var(--wpds-color-background-interactive-brand-strong-active, #2937ba); }
+.components-button.is-secondary {
+  color: var(--wpds-color-foreground-interactive-brand, #3858e9);
+  box-shadow: inset 0 0 0 1px var(--wpds-color-stroke-interactive-brand, #3858e9);
+}
+/* hover states use the -weak-active tokens — the plain -weak tokens are transparent (#0000) by design */
+.components-button.is-secondary:hover { background: var(--wpds-color-background-interactive-brand-weak-active, #e6eaf4); }
+.components-button.is-tertiary { color: var(--wpds-color-foreground-interactive-brand, #3858e9); }
+.components-button.is-tertiary:hover { background: var(--wpds-color-background-interactive-brand-weak-active, #e6eaf4); }
+.components-button.is-destructive { color: var(--wpds-color-foreground-interactive-error, #cc1818); }
+.components-button.is-destructive:hover { background: var(--wpds-color-background-interactive-error-weak-active, #f6e6e3); }
+.components-button.has-icon { min-width: 36px; padding: 0 6px; }
+.components-button.is-pressed { background: var(--wpds-color-background-interactive-inverse, #1e1e1e); color: #fff; }
+.components-button.is-pressed:hover { background: #2f2f2f; }
+.components-button:disabled { opacity: .4; cursor: default; }
+.components-button svg { fill: currentColor; }
+
+/* ============================================================
+   Notices + Snackbar
+   ============================================================ */
+
+.components-notice {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 12px; margin: 0 0 12px; font-size: 13px;
+  background: var(--wpds-color-background-surface-info-weak, #eff5fa);
+  border-left: 4px solid var(--wpds-color-stroke-surface-info-strong, #3582c4);
+}
+.components-notice.is-success {
+  background: var(--wpds-color-background-surface-success-weak, #edfaef);
+  border-left-color: var(--wpds-color-stroke-surface-success-strong, #00a32a);
+}
+.components-notice.is-warning {
+  background: var(--wpds-color-background-surface-warning-weak, #fcf9e8);
+  border-left-color: var(--wpds-color-stroke-surface-warning-strong, #dba617);
+}
+.components-notice.is-error {
+  background: var(--wpds-color-background-surface-error-weak, #fce9e9);
+  border-left-color: var(--wpds-color-stroke-surface-error-strong, #cc1818);
+}
+.components-snackbar {
+  display: inline-flex; align-items: center; gap: 12px;
+  padding: 12px 20px;
+  background: var(--wpds-color-background-interactive-neutral-strong, #1e1e1e);
+  color: #fff; font-size: 13px;
+  border-radius: var(--wpds-border-radius-md, 4px);
+  box-shadow: 0 2px 12px rgba(0,0,0,.25);
+}
+
+/* ============================================================
+   Color settings row (PanelColorSettings approximation)
+   ============================================================ */
+
+.components-color-list-picker__row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 6px 0; font-size: 13px; cursor: pointer;
+}
+.components-color-indicator {
+  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.15);
+}
+
+/* ============================================================
+   DataViews (WP 6.6+ list views; class names match @wordpress/dataviews)
+   ============================================================ */
+
+.dataviews-wrapper { background: #fff; }
+.dataviews__view-actions {
+  display: flex; align-items: center; gap: 8px;
+  padding: 16px 24px; flex-wrap: wrap;
+}
+.dataviews-search { position: relative; width: 240px; }
+.dataviews-search input { height: 32px !important; font-size: 13px; }
+.dataviews-filters__button,
+.dataviews-filters__summary-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 32px; padding: 0 12px; font-size: 12px;
+  border: 1px dashed var(--wpds-color-stroke-interactive-neutral, #949494);
+  border-radius: 16px; color: var(--wpds-color-foreground-content-neutral, #1e1e1e);
+}
+.dataviews-filters__summary-chip.is-active {
+  border-style: solid;
+  background: var(--wpds-color-background-interactive-brand-weak-active, #e6eaf4);
+  border-color: var(--wpds-color-stroke-interactive-brand, #3858e9);
+  color: var(--wpds-color-foreground-interactive-brand, #3858e9);
+}
+.dataviews__view-actions .spacer { flex: 1; }
+
+.dataviews-view-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.dataviews-view-table th {
+  text-align: left; font-weight: 500; padding: 12px 12px;
+  color: var(--wpds-color-foreground-content-neutral, #1e1e1e);
+  border-bottom: 1px solid var(--wpds-color-stroke-surface-neutral, #dbdbdb);
+  white-space: nowrap;
+}
+.dataviews-view-table th:first-child, .dataviews-view-table td:first-child { padding-left: 24px; }
+.dataviews-view-table th:last-child, .dataviews-view-table td:last-child { padding-right: 24px; }
+.dataviews-view-table td {
+  padding: 12px; vertical-align: middle;
+  border-bottom: 1px solid var(--wpds-color-stroke-surface-neutral-weak, #f0f0f0);
+}
+.dataviews-view-table tr:hover td { background: var(--wpds-color-background-surface-neutral, #fcfcfc); }
+.dataviews-view-table__actions { opacity: 0; display: inline-flex; gap: 2px; }
+.dataviews-view-table tr:hover .dataviews-view-table__actions { opacity: 1; }
+.dataviews-view-table .components-button.has-icon { height: 28px; min-width: 28px; }
+.dataviews-view-table__primary-field { font-weight: 500; }
+.dataviews-view-table__primary-field a { color: inherit; text-decoration: none; }
+.dataviews-view-table__primary-field a:hover { color: var(--wpds-color-foreground-interactive-brand, #3858e9); }
+
+.dataviews-view-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 24px; padding: 8px 24px 24px;
+}
+.dataviews-view-grid__card {
+  border: 1px solid var(--wpds-color-stroke-surface-neutral, #dbdbdb);
+  border-radius: var(--wpds-border-radius-lg, 8px); overflow: hidden;
+}
+.dataviews-view-grid__media {
+  aspect-ratio: 16/10; background: var(--wpds-color-background-track-neutral, #e0e0e0);
+  display: flex; align-items: center; justify-content: center; color: #757575;
+}
+.dataviews-view-grid__fields { padding: 12px; font-size: 12px; color: #757575; }
+.dataviews-view-grid__title { font-size: 13px; font-weight: 500; color: var(--wpds-color-foreground-content-neutral, #1e1e1e); margin-bottom: 4px; }
+
+.dataviews-pagination {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 24px; font-size: 12px; color: #757575;
+  border-top: 1px solid var(--wpds-color-stroke-surface-neutral, #dbdbdb);
+}
+.dataviews-pagination__controls { display: flex; align-items: center; gap: 4px; }
+
+/* Status badge used in list views */
+.wpds-badge {
+  display: inline-flex; align-items: center; height: 24px; padding: 0 8px;
+  font-size: 12px; border-radius: var(--wpds-border-radius-md, 4px);
+  background: var(--wpds-color-background-surface-neutral-weak, #f0f0f0); /* -strong is white in the tokens */
+}
+.wpds-badge.is-success { background: var(--wpds-color-background-surface-success-weak, #edfaef); color: var(--wpds-color-foreground-content-success, #007017); }
+.wpds-badge.is-warning { background: var(--wpds-color-background-surface-warning-weak, #fcf9e8); color: var(--wpds-color-foreground-content-warning, #996800); }
+.wpds-badge.is-error   { background: var(--wpds-color-background-surface-error-weak, #fce9e9); color: var(--wpds-color-foreground-content-error, #cc1818); }
+
+/* ============================================================
+   WP 7.0 admin frame — icon rail + header (approximation;
+   the real thing uses hashed CSS-module classes)
+   ============================================================ */
+
+.wpadmin7-frame { display: flex; height: 100vh; overflow: hidden; }
+.wpadmin7-rail {
+  width: 64px; flex-shrink: 0; display: flex; flex-direction: column;
+  align-items: center; gap: 4px; padding: 12px 0;
+  background: var(--wpds-color-background-interactive-neutral-strong, #1e1e1e);
+}
+.wpadmin7-rail__logo {
+  width: 36px; height: 36px; margin-bottom: 12px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: #fff; color: #1e1e1e; font-weight: 700;
+}
+.wpadmin7-rail__item {
+  width: 40px; height: 40px; border-radius: var(--wpds-border-radius-md, 4px);
+  display: flex; align-items: center; justify-content: center;
+  color: #ccc; font-size: 20px;
+}
+.wpadmin7-rail__item:hover { background: rgba(255,255,255,.1); color: #fff; }
+.wpadmin7-rail__item.is-active { background: rgba(255,255,255,.15); color: #fff; }
+.wpadmin7-rail__spacer { flex: 1; }
+
+.wpadmin7-content { flex: 1; display: flex; flex-direction: column; min-width: 0; background: #fff; }
+.wpadmin7-header {
+  display: flex; align-items: center; gap: 16px;
+  height: 60px; flex-shrink: 0; padding: 0 24px;
+  border-bottom: 1px solid var(--wpds-color-stroke-surface-neutral, #dbdbdb);
+}
+.wpadmin7-breadcrumbs { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #757575; }
+.wpadmin7-breadcrumbs strong { color: var(--wpds-color-foreground-content-neutral, #1e1e1e); font-weight: 500; }
+.wpadmin7-command {
+  margin-left: auto;
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 36px; padding: 0 12px; width: 280px;
+  font-size: 13px; color: #757575;
+  background: var(--wpds-color-background-surface-neutral-weak, #f0f0f0);
+  border-radius: var(--wpds-border-radius-md, 4px); cursor: pointer;
+}
+.wpadmin7-command kbd {
+  margin-left: auto; font-size: 11px; font-family: inherit;
+  background: #fff; border-radius: 3px; padding: 2px 6px;
+  box-shadow: inset 0 0 0 1px #ddd;
+}
+.wpadmin7-body { flex: 1; overflow-y: auto; }
+.wpadmin7-page-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 24px 24px 16px;
+}
+.wpadmin7-page-header h1 { font-size: var(--wpds-typography-font-size-xl, 20px); font-weight: 500; margin: 0; }
+.wpadmin7-page-header .spacer { flex: 1; }

@@ -1,0 +1,134 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prototype — WP 7.0 Admin</title>
+<style>
+/*@inline wpds-tokens.css*/
+</style>
+<style>
+/*@inline wpds-components.css*/
+</style>
+<style>
+/*@inline dashicons.min.css*/
+</style>
+<style>
+/*@inline wpp-runtime.css*/
+</style>
+<style>
+.wpadmin7-rail .dashicons { font-size: 20px; width: 20px; height: 20px; }
+/* SLOT:styles — prototype-specific CSS overrides go here. */
+</style>
+</head>
+<body class="wpds-root">
+
+<!-- WP 7.0 redesigned admin: dark icon rail + breadcrumb header + WPDS content.
+     This frame is an approximation (core's real classes are hashed CSS modules);
+     everything inside .wpadmin7-body uses the components-*/dataviews-* replicas.
+     For design variants, duplicate the <section data-screen> — and give each
+     variant's radio inputs unique name= values (no <form>s here, so same-name
+     radios group document-wide and checked state leaks between screens). -->
+<section data-screen="default" data-title="Default">
+	<div class="wpadmin7-frame">
+
+		<!-- ===== Icon rail (chrome — usually leave as is) ===== -->
+		<nav class="wpadmin7-rail" aria-label="Main navigation">
+			<span class="wpadmin7-rail__logo">W</span>
+			<button class="wpadmin7-rail__item" aria-label="Dashboard"><span class="dashicons dashicons-dashboard"></span></button>
+			<button class="wpadmin7-rail__item is-active" aria-label="Posts"><span class="dashicons dashicons-admin-post"></span></button>
+			<button class="wpadmin7-rail__item" aria-label="Media"><span class="dashicons dashicons-admin-media"></span></button>
+			<button class="wpadmin7-rail__item" aria-label="Pages"><span class="dashicons dashicons-admin-page"></span></button>
+			<button class="wpadmin7-rail__item" aria-label="Comments"><span class="dashicons dashicons-admin-comments"></span></button>
+			<button class="wpadmin7-rail__item" aria-label="Appearance"><span class="dashicons dashicons-admin-appearance"></span></button>
+			<button class="wpadmin7-rail__item" aria-label="Plugins"><span class="dashicons dashicons-admin-plugins"></span></button>
+			<span class="wpadmin7-rail__spacer"></span>
+			<button class="wpadmin7-rail__item" aria-label="Users"><span class="dashicons dashicons-admin-users"></span></button>
+			<button class="wpadmin7-rail__item" aria-label="Settings"><span class="dashicons dashicons-admin-settings"></span></button>
+		</nav>
+
+		<div class="wpadmin7-content">
+
+			<!-- ===== Header with breadcrumbs + command palette ===== -->
+			<header class="wpadmin7-header">
+				<div class="wpadmin7-breadcrumbs">My Site <span aria-hidden="true">/</span> <strong>Posts</strong></div>
+				<button class="wpadmin7-command"><span class="dashicons dashicons-search" style="font-size:16px;width:16px;height:16px"></span> Search or run a command <kbd>⌘K</kbd></button>
+			</header>
+
+			<!-- ===== Page body (SLOT:content — the screen being prototyped) ===== -->
+			<div class="wpadmin7-body">
+				<div class="wpadmin7-page-header">
+					<h1>Posts</h1>
+					<span class="spacer"></span>
+					<button class="components-button is-primary">Add new post</button>
+				</div>
+
+				<div class="dataviews-wrapper">
+					<div class="dataviews__view-actions">
+						<div class="dataviews-search"><input type="search" placeholder="Search"></div>
+						<button class="dataviews-filters__summary-chip is-active">Status: Published</button>
+						<button class="dataviews-filters__button"><span class="dashicons dashicons-plus-alt2" style="font-size:14px;width:14px;height:14px"></span> Add filter</button>
+						<span class="spacer"></span>
+						<button class="components-button has-icon" aria-label="Table view"><span class="dashicons dashicons-list-view"></span></button>
+						<button class="components-button has-icon" aria-label="Grid view"><span class="dashicons dashicons-grid-view"></span></button>
+					</div>
+
+					<table class="dataviews-view-table">
+						<thead>
+							<tr>
+								<th style="width:32px"><input type="checkbox"></th>
+								<th>Title</th>
+								<th>Status</th>
+								<th>Author</th>
+								<th>Date</th>
+								<th style="width:80px"></th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td><input type="checkbox"></td>
+								<td class="dataviews-view-table__primary-field"><a href="#">First post</a></td>
+								<td><span class="wpds-badge is-success">Published</span></td>
+								<td>Admin</td>
+								<td>Jul 20, 2026</td>
+								<td><span class="dataviews-view-table__actions"><button class="components-button has-icon" aria-label="Edit"><span class="dashicons dashicons-edit"></span></button><button class="components-button has-icon" aria-label="Options"><span class="dashicons dashicons-ellipsis"></span></button></span></td>
+							</tr>
+							<tr>
+								<td><input type="checkbox"></td>
+								<td class="dataviews-view-table__primary-field"><a href="#">Second post</a></td>
+								<td><span class="wpds-badge">Draft</span></td>
+								<td>Admin</td>
+								<td>Jul 22, 2026</td>
+								<td><span class="dataviews-view-table__actions"><button class="components-button has-icon" aria-label="Edit"><span class="dashicons dashicons-edit"></span></button><button class="components-button has-icon" aria-label="Options"><span class="dashicons dashicons-ellipsis"></span></button></span></td>
+							</tr>
+							<tr>
+								<td><input type="checkbox"></td>
+								<td class="dataviews-view-table__primary-field"><a href="#">Third post</a></td>
+								<td><span class="wpds-badge is-warning">Pending</span></td>
+								<td>Admin</td>
+								<td>Jul 23, 2026</td>
+								<td><span class="dataviews-view-table__actions"><button class="components-button has-icon" aria-label="Edit"><span class="dashicons dashicons-edit"></span></button><button class="components-button has-icon" aria-label="Options"><span class="dashicons dashicons-ellipsis"></span></button></span></td>
+							</tr>
+						</tbody>
+					</table>
+
+					<div class="dataviews-pagination">
+						<span>Showing 1–3 of 3</span>
+						<span class="dataviews-pagination__controls">
+							<button class="components-button has-icon" disabled aria-label="Previous page"><span class="dashicons dashicons-arrow-left-alt2"></span></button>
+							<span>Page 1 of 1</span>
+							<button class="components-button has-icon" disabled aria-label="Next page"><span class="dashicons dashicons-arrow-right-alt2"></span></button>
+						</span>
+					</div>
+				</div>
+			</div>
+
+		</div>
+	</div>
+</section>
+
+<script>
+/*@inline wpp-runtime.js*/
+</script>
+</body>
+</html>

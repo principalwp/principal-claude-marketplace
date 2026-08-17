@@ -1,0 +1,234 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Related Articles (AI) — inspector prototypes</title>
+<style>
+/*@inline wpds-tokens.css*/
+</style>
+<style>
+/*@inline wpds-components.css*/
+</style>
+<style>
+/*@inline dashicons.min.css*/
+</style>
+<style>
+/*@inline wpp-runtime.css*/
+</style>
+<style>
+.editor-header .components-button.has-icon { width: 36px; }
+.editor-header .editor-header__inserter { width: 32px; height: 32px; min-width: 32px; margin-right: 8px; }
+.editor-header .dashicons { font-size: 20px; width: 20px; height: 20px; }
+
+/* The block's front-end appearance */
+.related-articles { display: grid; gap: 12px; margin: 0; }
+.related-articles h3 { margin: 0 0 4px; font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: #757575; }
+.related-articles article { border: 1px solid #e0e0e0; border-radius: 4px; padding: 12px 16px; }
+.related-articles article a { font-size: 16px; font-weight: 600; color: #1e1e1e; text-decoration: none; }
+.related-articles article a:hover { color: #3858e9; }
+.related-articles .match-reason { margin: 4px 0 0; font-size: 12px; color: #757575; }
+.related-articles .match-reason .score { color: #007017; font-weight: 600; }
+</style>
+</head>
+<body class="wpds-root">
+
+<!-- ====================== Variant A: one flat panel ====================== -->
+<section data-screen="flat" data-title="A — One flat panel">
+	<div class="interface-interface-skeleton">
+		<div class="editor-header">
+			<button class="components-button is-primary has-icon editor-header__inserter" aria-label="Block inserter"><span class="dashicons dashicons-plus-alt2"></span></button>
+			<button class="components-button has-icon" aria-label="Undo"><span class="dashicons dashicons-undo"></span></button>
+			<button class="components-button has-icon" aria-label="Redo"><span class="dashicons dashicons-redo"></span></button>
+			<div class="editor-header__center"><strong>Why headless CMS hype cooled off</strong> · Draft</div>
+			<div class="editor-header__end">
+				<button class="components-button is-tertiary">Save draft</button>
+				<button class="components-button is-primary">Publish</button>
+				<button class="components-button has-icon" aria-label="Settings"><span class="dashicons dashicons-admin-generic"></span></button>
+			</div>
+		</div>
+		<div class="interface-interface-skeleton__body">
+			<div class="interface-interface-skeleton__content">
+				<div class="editor-canvas__paper">
+					<h1>Why headless CMS hype cooled off</h1>
+					<p>Publishers spent five years being told to decouple everything. The ones who did are now quietly recoupling, and the reasons are more interesting than the original pitch…</p>
+
+					<div class="is-selected-block" style="position: relative; margin: 32px 0; padding: 16px;">
+						<div class="block-editor-block-toolbar">
+							<div class="block-editor-block-toolbar__group">
+								<button class="components-button has-icon" aria-label="Block type"><span class="dashicons dashicons-networking"></span></button>
+								<button class="components-button has-icon" aria-label="Drag"><span class="dashicons dashicons-move"></span></button>
+							</div>
+							<div class="block-editor-block-toolbar__group">
+								<button class="components-button has-icon" aria-label="Options"><span class="dashicons dashicons-ellipsis"></span></button>
+							</div>
+						</div>
+						<div class="related-articles">
+							<h3>Related articles</h3>
+							<article><a href="#">The monolith strikes back: WP 7.0 in production</a><p class="match-reason"><span class="score">92%</span> · shared topic "CMS architecture"</p></article>
+							<article><a href="#">What DataViews means for plugin developers</a><p class="match-reason"><span class="score">87%</span> · same author, related tags</p></article>
+							<article><a href="#">Editorial AI without the slop</a><p class="match-reason"><span class="score">81%</span> · semantic match on intro</p></article>
+						</div>
+					</div>
+
+					<p>The pattern repeats across every mid-size newsroom we talked to.</p>
+				</div>
+			</div>
+			<div class="interface-interface-skeleton__sidebar">
+				<div class="block-editor-block-card">
+					<span class="block-editor-block-card__icon"><span class="dashicons dashicons-networking"></span></span>
+					<div>
+						<h2 class="block-editor-block-card__title">Related Articles (AI)</h2>
+						<p class="block-editor-block-card__description">Suggests related posts using AI semantic matching.</p>
+					</div>
+				</div>
+				<div class="components-panel">
+					<div class="components-panel__body is-opened" data-note="Everything in one panel: nothing hidden, but 6 controls is at the edge of comfortable">
+						<button class="components-panel__body-title">Settings</button>
+						<div class="components-panel__body-content">
+							<div class="components-base-control">
+								<label class="components-base-control__label">Source</label>
+								<select><option>AI semantic match</option><option>Same category</option><option>Same tags</option></select>
+							</div>
+							<div class="components-base-control">
+								<label class="components-base-control__label">Articles</label>
+								<div class="components-range-control">
+									<input type="range" min="1" max="6" value="3">
+									<input type="number" class="components-range-control__number" value="3">
+								</div>
+							</div>
+							<div class="components-base-control">
+								<label class="components-base-control__label">Layout</label>
+								<div class="components-toggle-group-control" role="radiogroup" aria-label="Layout">
+									<label><input type="radio" name="a-layout" checked><span>List</span></label>
+									<label><input type="radio" name="a-layout"><span>Cards</span></label>
+								</div>
+							</div>
+							<label class="components-toggle-control">
+								<span class="components-form-toggle"><input type="checkbox" checked><span class="components-form-toggle__track"></span><span class="components-form-toggle__thumb"></span></span>
+								<span class="components-toggle-control__label">Show match reason</span>
+							</label>
+							<label class="components-toggle-control">
+								<span class="components-form-toggle"><input type="checkbox" checked><span class="components-form-toggle__track"></span><span class="components-form-toggle__thumb"></span></span>
+								<span class="components-toggle-control__label">Show confidence score</span>
+							</label>
+							<label class="components-toggle-control">
+								<span class="components-form-toggle"><input type="checkbox"><span class="components-form-toggle__track"></span><span class="components-form-toggle__thumb"></span></span>
+								<span class="components-toggle-control__label">Exclude sponsored posts</span>
+							</label>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<!-- ====================== Variant B: grouped panels ====================== -->
+<section data-screen="grouped" data-title="B — Grouped panels">
+	<div class="interface-interface-skeleton">
+		<div class="editor-header">
+			<button class="components-button is-primary has-icon editor-header__inserter" aria-label="Block inserter"><span class="dashicons dashicons-plus-alt2"></span></button>
+			<button class="components-button has-icon" aria-label="Undo"><span class="dashicons dashicons-undo"></span></button>
+			<button class="components-button has-icon" aria-label="Redo"><span class="dashicons dashicons-redo"></span></button>
+			<div class="editor-header__center"><strong>Why headless CMS hype cooled off</strong> · Draft</div>
+			<div class="editor-header__end">
+				<button class="components-button is-tertiary">Save draft</button>
+				<button class="components-button is-primary">Publish</button>
+				<button class="components-button has-icon" aria-label="Settings"><span class="dashicons dashicons-admin-generic"></span></button>
+			</div>
+		</div>
+		<div class="interface-interface-skeleton__body">
+			<div class="interface-interface-skeleton__content">
+				<div class="editor-canvas__paper">
+					<h1>Why headless CMS hype cooled off</h1>
+					<p>Publishers spent five years being told to decouple everything. The ones who did are now quietly recoupling, and the reasons are more interesting than the original pitch…</p>
+
+					<div class="is-selected-block" style="position: relative; margin: 32px 0; padding: 16px;">
+						<div class="block-editor-block-toolbar">
+							<div class="block-editor-block-toolbar__group">
+								<button class="components-button has-icon" aria-label="Block type"><span class="dashicons dashicons-networking"></span></button>
+								<button class="components-button has-icon" aria-label="Drag"><span class="dashicons dashicons-move"></span></button>
+							</div>
+							<div class="block-editor-block-toolbar__group">
+								<button class="components-button has-icon" aria-label="Options"><span class="dashicons dashicons-ellipsis"></span></button>
+							</div>
+						</div>
+						<div class="related-articles">
+							<h3>Related articles</h3>
+							<article><a href="#">The monolith strikes back: WP 7.0 in production</a><p class="match-reason"><span class="score">92%</span> · shared topic "CMS architecture"</p></article>
+							<article><a href="#">What DataViews means for plugin developers</a><p class="match-reason"><span class="score">87%</span> · same author, related tags</p></article>
+							<article><a href="#">Editorial AI without the slop</a><p class="match-reason"><span class="score">81%</span> · semantic match on intro</p></article>
+						</div>
+					</div>
+
+					<p>The pattern repeats across every mid-size newsroom we talked to.</p>
+				</div>
+			</div>
+			<div class="interface-interface-skeleton__sidebar">
+				<div class="block-editor-block-card">
+					<span class="block-editor-block-card__icon"><span class="dashicons dashicons-networking"></span></span>
+					<div>
+						<h2 class="block-editor-block-card__title">Related Articles (AI)</h2>
+						<p class="block-editor-block-card__description">Suggests related posts using AI semantic matching.</p>
+					</div>
+				</div>
+				<div class="components-panel">
+					<div class="components-panel__body is-opened" data-note="Grouping enables progressive disclosure — AI knobs live in their own panel">
+						<button class="components-panel__body-title">Content</button>
+						<div class="components-panel__body-content">
+							<div class="components-base-control">
+								<label class="components-base-control__label">Articles</label>
+								<div class="components-range-control">
+									<input type="range" min="1" max="6" value="3">
+									<input type="number" class="components-range-control__number" value="3">
+								</div>
+							</div>
+							<div class="components-base-control">
+								<label class="components-base-control__label">Layout</label>
+								<div class="components-toggle-group-control" role="radiogroup" aria-label="Layout">
+									<label><input type="radio" name="b-layout" checked><span>List</span></label>
+									<label><input type="radio" name="b-layout"><span>Cards</span></label>
+								</div>
+							</div>
+							<label class="components-toggle-control">
+								<span class="components-form-toggle"><input type="checkbox" checked><span class="components-form-toggle__track"></span><span class="components-form-toggle__thumb"></span></span>
+								<span class="components-toggle-control__label">Show match reason</span>
+							</label>
+						</div>
+					</div>
+					<div class="components-panel__body">
+						<button class="components-panel__body-title">AI matching</button>
+						<div class="components-panel__body-content">
+							<div class="components-base-control">
+								<label class="components-base-control__label">Source</label>
+								<select><option>AI semantic match</option><option>Same category</option><option>Same tags</option></select>
+							</div>
+							<div class="components-base-control">
+								<label class="components-base-control__label">Minimum confidence</label>
+								<div class="components-range-control">
+									<input type="range" min="50" max="100" value="80">
+									<input type="number" class="components-range-control__number" value="80">
+								</div>
+							</div>
+							<label class="components-toggle-control">
+								<span class="components-form-toggle"><input type="checkbox" checked><span class="components-form-toggle__track"></span><span class="components-form-toggle__thumb"></span></span>
+								<span class="components-toggle-control__label">Show confidence score</span>
+							</label>
+							<label class="components-toggle-control">
+								<span class="components-form-toggle"><input type="checkbox"><span class="components-form-toggle__track"></span><span class="components-form-toggle__thumb"></span></span>
+								<span class="components-toggle-control__label">Exclude sponsored posts</span>
+							</label>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<script>
+/*@inline wpp-runtime.js*/
+</script>
+</body>
+</html>

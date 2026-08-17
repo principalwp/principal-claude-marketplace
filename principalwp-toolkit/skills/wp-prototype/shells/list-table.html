@@ -1,0 +1,182 @@
+<!doctype html>
+<html class="wp-toolbar">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prototype — List Table</title>
+<style>
+/*@inline classic-admin.bundle.min.css*/
+</style>
+<style>
+/*@inline dashicons.min.css*/
+</style>
+<style>
+/*@inline wpp-runtime.css*/
+</style>
+<style>
+/* SLOT:styles — prototype-specific CSS overrides go here. */
+</style>
+</head>
+<body class="wp-admin wp-core-ui js auto-fold">
+<div id="wpwrap">
+
+	<!-- ===== Admin bar ===== -->
+	<div id="wpadminbar" class="nojq nojs">
+		<div class="quicklinks" id="wp-toolbar" role="navigation" aria-label="Toolbar">
+			<ul id="wp-admin-bar-root-default" class="ab-top-menu">
+				<li id="wp-admin-bar-wp-logo" class="menupop"><a class="ab-item" href="#" aria-haspopup="true"><span class="ab-icon" aria-hidden="true"></span></a></li>
+				<li id="wp-admin-bar-site-name" class="menupop"><a class="ab-item" href="#">My Site</a></li>
+				<li id="wp-admin-bar-new-content" class="menupop"><a class="ab-item" href="#" aria-haspopup="true"><span class="ab-icon" aria-hidden="true"></span><span class="ab-label">New</span></a></li>
+			</ul>
+			<ul id="wp-admin-bar-top-secondary" class="ab-top-secondary ab-top-menu">
+				<li id="wp-admin-bar-my-account" class="menupop"><a class="ab-item" href="#">Howdy, <span class="display-name">Admin</span></a></li>
+			</ul>
+		</div>
+	</div>
+
+	<!-- ===== Admin menu (SLOT:menu — current item is the list screen's menu) ===== -->
+	<div id="adminmenumain" role="navigation" aria-label="Main menu">
+		<div id="adminmenuback"></div>
+		<div id="adminmenuwrap">
+			<ul id="adminmenu">
+				<li class="wp-first-item menu-top menu-top-first menu-icon-dashboard" id="menu-dashboard"><a href="#" class="wp-first-item menu-top menu-top-first menu-icon-dashboard"><div class="wp-menu-arrow"><div></div></div><div class="wp-menu-image dashicons-before dashicons-dashboard" aria-hidden="true"><br></div><div class="wp-menu-name">Dashboard</div></a></li>
+				<li class="wp-menu-separator" aria-hidden="true"><div class="separator"></div></li>
+				<li class="wp-has-submenu wp-has-current-submenu wp-menu-open menu-top menu-icon-post" id="menu-posts">
+					<a href="#" class="wp-has-submenu wp-has-current-submenu wp-menu-open menu-top menu-icon-post"><div class="wp-menu-arrow"><div></div></div><div class="wp-menu-image dashicons-before dashicons-admin-post" aria-hidden="true"><br></div><div class="wp-menu-name">Posts</div></a>
+					<ul class="wp-submenu wp-submenu-wrap">
+						<li class="wp-submenu-head" aria-hidden="true">Posts</li>
+						<li class="wp-first-item current"><a href="#" class="current" aria-current="page">All Posts</a></li>
+						<li><a href="#">Add New Post</a></li>
+						<li><a href="#">Categories</a></li>
+					</ul>
+				</li>
+				<li class="menu-top menu-icon-media" id="menu-media"><a href="#" class="menu-top menu-icon-media"><div class="wp-menu-arrow"><div></div></div><div class="wp-menu-image dashicons-before dashicons-admin-media" aria-hidden="true"><br></div><div class="wp-menu-name">Media</div></a></li>
+				<li class="menu-top menu-icon-page" id="menu-pages"><a href="#" class="menu-top menu-icon-page"><div class="wp-menu-arrow"><div></div></div><div class="wp-menu-image dashicons-before dashicons-admin-page" aria-hidden="true"><br></div><div class="wp-menu-name">Pages</div></a></li>
+				<li class="menu-top menu-icon-comments" id="menu-comments"><a href="#" class="menu-top menu-icon-comments"><div class="wp-menu-arrow"><div></div></div><div class="wp-menu-image dashicons-before dashicons-admin-comments" aria-hidden="true"><br></div><div class="wp-menu-name">Comments</div></a></li>
+				<li class="wp-menu-separator" aria-hidden="true"><div class="separator"></div></li>
+				<li class="menu-top menu-icon-appearance" id="menu-appearance"><a href="#" class="menu-top menu-icon-appearance"><div class="wp-menu-arrow"><div></div></div><div class="wp-menu-image dashicons-before dashicons-admin-appearance" aria-hidden="true"><br></div><div class="wp-menu-name">Appearance</div></a></li>
+				<li class="menu-top menu-icon-plugins" id="menu-plugins"><a href="#" class="menu-top menu-icon-plugins"><div class="wp-menu-arrow"><div></div></div><div class="wp-menu-image dashicons-before dashicons-admin-plugins" aria-hidden="true"><br></div><div class="wp-menu-name">Plugins</div></a></li>
+				<li class="menu-top menu-icon-users" id="menu-users"><a href="#" class="menu-top menu-icon-users"><div class="wp-menu-arrow"><div></div></div><div class="wp-menu-image dashicons-before dashicons-admin-users" aria-hidden="true"><br></div><div class="wp-menu-name">Users</div></a></li>
+				<li class="menu-top menu-icon-settings" id="menu-settings"><a href="#" class="menu-top menu-icon-settings"><div class="wp-menu-arrow"><div></div></div><div class="wp-menu-image dashicons-before dashicons-admin-settings" aria-hidden="true"><br></div><div class="wp-menu-name">Settings</div></a></li>
+				<li id="collapse-menu" class="hide-if-no-js"><button type="button" id="collapse-button" aria-expanded="true"><span class="collapse-button-icon" aria-hidden="true"></span><span class="collapse-button-label">Collapse menu</span></button></li>
+			</ul>
+		</div>
+	</div>
+
+	<!-- ===== Page content ===== -->
+	<div id="wpcontent">
+		<div id="wpbody" role="main">
+			<div id="wpbody-content">
+
+				<!-- SLOT:content — the list screen being prototyped. Duplicate the
+				     <section> with a new data-screen/data-title for design variants. -->
+				<section data-screen="default" data-title="Default">
+					<div class="wrap">
+						<h1 class="wp-heading-inline">Items</h1>
+						<a href="#" class="page-title-action">Add New Item</a>
+						<hr class="wp-header-end">
+
+						<ul class="subsubsub">
+							<li class="all"><a href="#" class="current" aria-current="page">All <span class="count">(3)</span></a> |</li>
+							<li class="publish"><a href="#">Published <span class="count">(2)</span></a> |</li>
+							<li class="draft"><a href="#">Draft <span class="count">(1)</span></a></li>
+						</ul>
+
+						<form method="get">
+							<p class="search-box">
+								<label class="screen-reader-text" for="item-search-input">Search Items:</label>
+								<input type="search" id="item-search-input" name="s">
+								<input type="submit" id="search-submit" class="button" value="Search Items">
+							</p>
+
+							<div class="tablenav top">
+								<div class="alignleft actions bulkactions">
+									<label for="bulk-action-selector-top" class="screen-reader-text">Select bulk action</label>
+									<select name="action" id="bulk-action-selector-top">
+										<option value="-1">Bulk actions</option>
+										<option value="trash">Move to Trash</option>
+									</select>
+									<input type="submit" class="button action" value="Apply">
+								</div>
+								<div class="tablenav-pages">
+									<span class="displaying-num">3 items</span>
+								</div>
+								<br class="clear">
+							</div>
+
+							<table class="wp-list-table widefat fixed striped table-view-list">
+								<thead>
+									<tr>
+										<td id="cb" class="manage-column column-cb check-column"><input id="cb-select-all-1" type="checkbox"><label for="cb-select-all-1"><span class="screen-reader-text">Select All</span></label></td>
+										<th scope="col" class="manage-column column-title column-primary sortable desc"><a href="#"><span>Title</span><span class="sorting-indicators"><span class="sorting-indicator asc" aria-hidden="true"></span><span class="sorting-indicator desc" aria-hidden="true"></span></span></a></th>
+										<th scope="col" class="manage-column">Author</th>
+										<th scope="col" class="manage-column sortable asc"><a href="#"><span>Date</span><span class="sorting-indicators"><span class="sorting-indicator asc" aria-hidden="true"></span><span class="sorting-indicator desc" aria-hidden="true"></span></span></a></th>
+									</tr>
+								</thead>
+								<tbody id="the-list">
+									<tr>
+										<th scope="row" class="check-column"><input type="checkbox"></th>
+										<td class="title column-title has-row-actions column-primary" data-colname="Title">
+											<strong><a class="row-title" href="#">First item</a></strong>
+											<div class="row-actions"><span class="edit"><a href="#">Edit</a> | </span><span class="trash"><a href="#" class="submitdelete">Trash</a> | </span><span class="view"><a href="#">View</a></span></div>
+											<button type="button" class="toggle-row"><span class="screen-reader-text">Show more details</span></button>
+										</td>
+										<td data-colname="Author">Admin</td>
+										<td data-colname="Date">Published<br>2026/07/20</td>
+									</tr>
+									<tr>
+										<th scope="row" class="check-column"><input type="checkbox"></th>
+										<td class="title column-title has-row-actions column-primary" data-colname="Title">
+											<strong><a class="row-title" href="#">Second item</a> — <span class="post-state">Draft</span></strong>
+											<div class="row-actions"><span class="edit"><a href="#">Edit</a> | </span><span class="trash"><a href="#" class="submitdelete">Trash</a></span></div>
+											<button type="button" class="toggle-row"><span class="screen-reader-text">Show more details</span></button>
+										</td>
+										<td data-colname="Author">Admin</td>
+										<td data-colname="Date">Last Modified<br>2026/07/22</td>
+									</tr>
+									<tr>
+										<th scope="row" class="check-column"><input type="checkbox"></th>
+										<td class="title column-title has-row-actions column-primary" data-colname="Title">
+											<strong><a class="row-title" href="#">Third item</a></strong>
+											<div class="row-actions"><span class="edit"><a href="#">Edit</a> | </span><span class="trash"><a href="#" class="submitdelete">Trash</a> | </span><span class="view"><a href="#">View</a></span></div>
+											<button type="button" class="toggle-row"><span class="screen-reader-text">Show more details</span></button>
+										</td>
+										<td data-colname="Author">Admin</td>
+										<td data-colname="Date">Published<br>2026/07/12</td>
+									</tr>
+								</tbody>
+								<tfoot>
+									<tr>
+										<td class="manage-column column-cb check-column"><input type="checkbox"></td>
+										<th scope="col" class="manage-column column-title column-primary">Title</th>
+										<th scope="col" class="manage-column">Author</th>
+										<th scope="col" class="manage-column">Date</th>
+									</tr>
+								</tfoot>
+							</table>
+
+							<div class="tablenav bottom">
+								<div class="alignleft actions bulkactions">
+									<select name="action2"><option value="-1">Bulk actions</option></select>
+									<input type="submit" class="button action" value="Apply">
+								</div>
+								<div class="tablenav-pages"><span class="displaying-num">3 items</span></div>
+								<br class="clear">
+							</div>
+						</form>
+					</div>
+				</section>
+
+				<div class="clear"></div>
+			</div>
+			<div class="clear"></div>
+		</div>
+	</div>
+
+	<div id="wpfooter" role="contentinfo"><p id="footer-left" class="alignleft">Thank you for creating with <a href="#">WordPress</a>.</p><div class="clear"></div></div>
+</div>
+<script>
+/*@inline wpp-runtime.js*/
+</script>
+</body>
+</html>

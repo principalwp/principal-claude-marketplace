@@ -1,0 +1,53 @@
+<!-- DataViews list UI (WP 6.6+/7.0 style; paste inside .wpadmin7-body or any
+     .wpds-root container). Row actions appear on hover. -->
+<div class="dataviews-wrapper">
+	<div class="dataviews__view-actions">
+		<div class="dataviews-search"><input type="search" placeholder="Search"></div>
+		<button class="dataviews-filters__summary-chip is-active">Status: Published</button>
+		<button class="dataviews-filters__button"><span class="dashicons dashicons-plus-alt2" style="font-size:14px;width:14px;height:14px"></span> Add filter</button>
+		<span class="spacer"></span>
+		<button class="components-button has-icon" aria-label="Table view"><span class="dashicons dashicons-list-view"></span></button>
+		<button class="components-button has-icon" aria-label="Grid view"><span class="dashicons dashicons-grid-view"></span></button>
+	</div>
+
+	<table class="dataviews-view-table">
+		<thead>
+			<tr>
+				<th style="width:32px"><input type="checkbox"></th>
+				<th>Title</th>
+				<th>Status</th>
+				<th>Date</th>
+				<th style="width:80px"></th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><input type="checkbox"></td>
+				<td class="dataviews-view-table__primary-field"><a href="#">Row title</a></td>
+				<td><span class="wpds-badge is-success">Published</span></td>
+				<td>Jul 20, 2026</td>
+				<td><span class="dataviews-view-table__actions"><button class="components-button has-icon" aria-label="Edit"><span class="dashicons dashicons-edit"></span></button><button class="components-button has-icon" aria-label="Options"><span class="dashicons dashicons-ellipsis"></span></button></span></td>
+			</tr>
+		</tbody>
+	</table>
+
+	<div class="dataviews-pagination">
+		<span>Showing 1–10 of 42</span>
+		<span class="dataviews-pagination__controls">
+			<button class="components-button has-icon" disabled aria-label="Previous page"><span class="dashicons dashicons-arrow-left-alt2"></span></button>
+			<span>Page 1 of 5</span>
+			<button class="components-button has-icon" aria-label="Next page"><span class="dashicons dashicons-arrow-right-alt2"></span></button>
+		</span>
+	</div>
+</div>
+
+<!-- Grid layout alternative (swap for the <table>) -->
+<div class="dataviews-view-grid">
+	<div class="dataviews-view-grid__card">
+		<div class="dataviews-view-grid__media"><span class="dashicons dashicons-format-image"></span></div>
+		<div class="dataviews-view-grid__fields">
+			<div class="dataviews-view-grid__title">Card title</div>
+			Jul 20, 2026 · <span class="wpds-badge is-success">Published</span>
+		</div>
+	</div>
+</div>

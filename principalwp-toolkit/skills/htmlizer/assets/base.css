@@ -1,0 +1,591 @@
+/* =============================================================================
+   htmlizer — shared house style (base.css)
+   -----------------------------------------------------------------------------
+   These are utility / review tools, NOT a landing page. Clarity and readability
+   win over brand polish. Pages <link> this file and add ONLY page-specific
+   layout on top. The standing rules behind every choice here live in:
+     references/views/PRINCIPLES.md (relative to the skill root)
+
+   Hard rules encoded below (do not re-litigate):
+     - IBM Plex Sans for EVERYTHING (body + headings). NO Instrument Serif.
+     - Base font >= 16px, line-height ~1.55. Headings are just larger/bolder Plex.
+     - Light, high-contrast: near-white bg, dark text. No navy/dark marketing bands.
+     - ONE accent, cranberry #8C3344 — primary buttons + selected state only.
+     - NO eyebrow class. NO decorative pills/badges. Minimal plain .tag only.
+   Fonts are referenced from ../assets/fonts (relative to a page one level below
+   the serve root's assets/).
+   ============================================================================= */
+
+/* ---- fonts: Instrument Serif (H1 ONLY) + Plex Sans (everything else) + Plex Mono (code/ids) -- *
+ * Instrument Serif = H1 only. Do NOT use it below H1. */
+@font-face{font-family:'Instrument Serif';src:url('../assets/fonts/InstrumentSerif-Regular.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Instrument Serif';src:url('../assets/fonts/InstrumentSerif-Italic.woff2') format('woff2');font-weight:400;font-style:italic;font-display:swap}
+@font-face{font-family:'IBM Plex Sans';src:url('../assets/fonts/IBMPlexSans-Variable.woff2') format('woff2');font-weight:100 700;font-style:normal;font-display:swap}
+@font-face{font-family:'IBM Plex Sans';src:url('../assets/fonts/IBMPlexSans-VariableItalic.woff2') format('woff2');font-weight:100 700;font-style:italic;font-display:swap}
+@font-face{font-family:'IBM Plex Mono';src:url('../assets/fonts/IBMPlexMono-Regular.woff2') format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:'IBM Plex Mono';src:url('../assets/fonts/IBMPlexMono-Medium.woff2') format('woff2');font-weight:500;font-display:swap}
+
+/* ---- design tokens --------------------------------------------------------- */
+:root{
+  /* text: dark on light, high contrast */
+  --ink:#1B2A4A;          /* headings / strongest text */
+  --text:#1B2A4A;         /* body text */
+  --text-muted:#3D4965;   /* secondary / captions */
+  --text-faint:#5A6678;   /* line refs, timestamps */
+
+  /* surfaces */
+  --bg:#FBFBFC;           /* near-white page background */
+  --surface:#FFFFFF;      /* cards / sections */
+  --surface-2:#F4F6FA;    /* subtle inset / code wells / table stripes */
+
+  /* borders */
+  --border:#DCDFE3;       /* default 1px hairline (hr, code wells, insets) */
+  --border-strong:#C2C7D0;/* box outline + hover/emphasis — a step darker on the scale */
+  /* on navy/dark surfaces the scale is REVERSED: a LIGHTER line, not a darker one
+     (a darker border vanishes on dark). Use this for box outlines on a navy panel. */
+  --border-on-dark:#46546E;
+
+  /* the ONE accent — cranberry. Decoration must NOT use this. */
+  --accent:#8C3344;
+  --accent-hover:#6D2735;
+  --accent-fg:#FFFFFF;
+  --accent-wash:#F3EBF0;  /* faint cranberry tint for selected-row backgrounds */
+
+  /* status — functional state only, never decoration */
+  --success:#4F7A12;
+  --warning:#8A6A00;      /* gold-amber: dark enough to read as small text */
+  --error:#C0392B;
+  --error-hover:#A5301F;  /* darker error for hover/pressed states */
+
+  /* type */
+  --font-display:'Instrument Serif',Georgia,'Times New Roman',serif;  /* H1 only */
+  --font-sans:'IBM Plex Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,'Courier New',monospace;
+  --fs-body:16.5px;       /* >= 16px floor */
+  --lh-body:1.55;
+
+  /* shape + rhythm */
+  --r-sm:5px;
+  --r-md:8px;
+  --r-lg:10px;
+  --space-1:8px;          /* tight: inside controls / chip gaps */
+  --space-2:12px;         /* between related rows */
+  --space:20px;           /* base layout unit */
+  --space-3:20px;
+  --space-4:32px;         /* between sections */
+  --space-5:48px;         /* section -> next major block */
+  --maxw:1040px;          /* comfortable reading/measure width */
+
+  /* elevation — subtle upward shadow for a fixed bottom bar */
+  --shadow-bar:0 -2px 12px color-mix(in srgb, var(--ink) 10%, transparent);
+}
+
+/* ---- reset / base ---------------------------------------------------------- */
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}   /* smooth in-page "Read more" jumps; the reduced-motion block below forces it back to auto */
+/* Any anchor target (a "Read more" destination) lands with a little breathing room, not jammed against the viewport top. */
+[id]{scroll-margin-top:20px}
+/* Respect a user's reduced-motion preference globally. A page whose artifact-under-test
+   IS an animation (e.g. prototype.html's preview stage) can opt that one element back in
+   with its own scoped rule. */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms!important;animation-iteration-count:1!important;
+    transition-duration:.01ms!important;scroll-behavior:auto!important;
+  }
+}
+body{
+  margin:0;
+  font-family:var(--font-sans);
+  font-size:var(--fs-body);
+  line-height:var(--lh-body);
+  color:var(--text);
+  background:var(--bg);
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  /* room for the fixed capture action bar (capture.js) so it never covers content */
+  padding-bottom:84px;
+}
+img,svg{max-width:100%}
+::selection{background:var(--accent-wash)}
+
+/* TEXT IS ALWAYS SELECTABLE — everywhere, at all times. Browsers apply
+   user-select:none to <button>/<summary> by default, which silently makes any
+   readable label inside a control unselectable; this reset overrides that so a
+   human can always highlight any text. The ONLY sanctioned exception is a
+   line-number gutter, which a view opts out locally (.ln{user-select:none}).
+   NEVER add user-select:none to readable content. */
+*,*::before,*::after{-webkit-user-select:text;user-select:text}
+
+/* ---- type scale: headings are just larger/bolder Plex Sans ----------------- */
+h1,h2,h3,h4,h5,h6{font-family:var(--font-sans);color:var(--ink);margin:0 0 .5em;line-height:1.2;font-weight:800}
+h1{font-family:var(--font-display);font-size:35px;font-weight:400;letter-spacing:0;line-height:1.12}   /* L — Instrument Serif display */
+h2{font-size:22px;letter-spacing:-.01em}                     /* M — distinct step down from L */
+h3{font-size:18px;font-weight:600}                           /* S — PRINCIPLES pins h3 at 600, not the blanket 800 */
+h4{font-size:16.5px;font-weight:800}                         /* heavy label, body size */
+p{margin:0 0 1em}
+p:last-child{margin-bottom:0}
+strong,b{font-weight:600;color:var(--ink)}
+small{font-size:13px;color:var(--text-muted)}
+ul,ol{margin:0 0 1em;padding-left:1.4em}
+li{margin:.25em 0}
+hr{border:0;border-top:1px solid var(--border);margin:var(--space-5) 0}   /* generous breathing room around rules */
+
+/* links: plain accent, underline on hover. NOT a button. */
+a{color:var(--accent);text-decoration:none}
+a:hover{color:var(--accent-hover);text-decoration:underline;text-underline-offset:2px}
+
+/* monospace ONLY for code, identifiers, file:line refs */
+code,kbd,samp,.mono{font-family:var(--font-mono);font-size:.92em}
+:not(pre) > code{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-sm);padding:.08em .38em}
+pre{margin:0 0 1em;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 16px;overflow:auto;font-size:13.5px;line-height:1.55}
+pre code{background:none;border:0;padding:0;font-size:inherit}
+/* inline code inside a CONTROL is part of the label, not a standalone token — drop
+   the grey well + border and inherit the control's color, or it renders as an
+   unreadable pill (e.g. white-on-grey on a selected button). */
+.btn code,.tab code,a code,button code,[role="button"] code,label code{
+  background:none;border:0;padding:0;color:inherit
+}
+/* file / path reference — distinct from inline code (no grey well; a dotted underline
+   marks it as a referenceable file). Use EVERYWHERE a real file/path is named, including
+   mid-prose. When the file is in a resolvable repo, render it as a link
+   <a class="file" href="<SHA-pinned github blob#Lx-Ly>">…</a> — it then takes the accent
+   color + a trailing ↗. Unlinked (synthetic/no-repo) it still reads as a file. */
+/* A long path must WRAP, not push the page sideways. `white-space:nowrap` here used to send
+   a `repo/skills/x/references/y.md:9-17` ref 418px wide inside a 324px phone column, which
+   scrolled the whole document horizontally — and a page-local `overflow-wrap` override could
+   not fix it, because nowrap suppresses the soft-break opportunities overflow-wrap adds. */
+.file{font-family:var(--font-mono);font-size:.92em;color:var(--ink);
+      background:none;border:0;padding:0;white-space:normal;overflow-wrap:anywhere;
+      text-decoration:underline;text-decoration-style:dotted;
+      text-decoration-color:var(--border-strong);text-underline-offset:3px}
+a.file{color:var(--accent);text-decoration-color:var(--accent);cursor:pointer}
+a.file:hover{text-decoration-style:solid}
+a.file::after{content:"\2197";font-size:.8em;margin-left:1px;text-decoration:none}
+
+/* ---- layout helpers -------------------------------------------------------- */
+/* .wrap is the STANDARD body-content container and the PAIR to .page-header: both
+   are max-width:var(--maxw), centered, with 24px horizontal padding, so header text
+   and body content share one measure and left-align. Every page is
+   <header class="page-header">…</header> then <main class="wrap">…</main>. Content
+   placed bare in <body> (no .wrap) goes full-bleed and misaligns with the header —
+   see references/views/PRINCIPLES.md → "Page layout". Keep them SIBLINGS: nesting the
+   header inside a .wrap doubles the 24px padding and breaks the alignment. */
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+.stack > * + *{margin-top:var(--space)}
+
+/* page header: a clearly-separated heading + one line of context. A bottom rule
+   + generous space below set it apart from the body so it is not scanned past.
+   NO colored band, NO eyebrow. Instrument-Serif H1 gives it presence. */
+.page-header{max-width:var(--maxw);margin:0 auto var(--space-4);padding:46px 24px 24px;border-bottom:1px solid var(--border)}
+.page-header h1{margin:0 0 10px}
+.page-header .lede{margin:0;font-size:var(--fs-body);font-weight:600;color:var(--text);max-width:70ch}
+
+/* ---- cards / sections ------------------------------------------------------ */
+.card,.section{
+  background:var(--surface);
+  border:1px solid var(--border-strong);   /* primary box outline — a step darker than a hairline */
+  border-radius:var(--r-lg);
+  padding:24px;
+}
+.card{transition:border-color 120ms ease}
+.card.is-selected{border-color:var(--accent);background:var(--accent-wash)}
+.section-title{font-size:18px;font-weight:600;color:var(--ink);margin:0 0 12px}
+
+/* ---- callout / live status: a visually distinct box, NOT a plain section ---- *
+ * Use for content that is dynamic (reacts to the reader's input) or that the    *
+ * reader MUST notice: a live selection status, a design QUESTION, a required    *
+ * instruction. The left accent bar + tint make it read as "pay attention here". */
+.callout{
+  background:var(--surface-2);border:1px solid var(--border-strong);border-left:4px solid var(--accent);
+  border-radius:var(--r-md);padding:16px 18px;margin:0 0 var(--space);
+}
+.callout.is-live{background:var(--accent-wash)}              /* state that changes with selection */
+.callout-label{display:block;font-family:var(--font-mono);font-size:12.5px;font-weight:600;color:var(--accent);margin:0 0 6px;text-transform:none}
+.callout-q{font-size:19px;font-weight:400;color:var(--ink);line-height:1.35;margin:0}  /* the question/prompt — normal-weight prose; the box gives it prominence */
+.callout-q strong{font-weight:700}   /* the "Question:" lead-in is the only bold part of a question line */
+
+/* valence indicators — make a sign UNAMBIGUOUS (a bare "-" reads as neutral).
+   Functional glyphs/arrows are allowed (not decoration); pair them with color. */
+.neg{color:var(--error);font-weight:600}     /* a real negative: con, removed, blocker */
+.pos{color:var(--success);font-weight:600}   /* a real positive: pro, added, pass */
+.neutral{color:var(--text-muted)}            /* genuinely neutral / unchanged */
+
+/* ---- recommendation / why / read-more (decision affordances) --------------- *
+ * A recommendation ALWAYS sits on its OWN line (never trailing a paragraph) and
+ * ends with a (why) whose rationale shows in the styled popover below. A long
+ * root-cause explanation lives ONCE on the page; link to it with a "Read more"
+ * in-page anchor, don't restate it. */
+.reco{display:block;margin:.6em 0 0;font-weight:600;color:var(--ink)}
+/* (why): a styled hover/focus popover — NOT a native title tooltip. It's readable
+   (styled, wraps), stays open when you move into it, and its text is selectable.
+   Pure CSS, no JS. Markup: <span class="why" tabindex="0">(why)<span class="why-pop">…</span></span> */
+.why{position:relative;font-weight:400;font-size:.9em;color:var(--accent);cursor:help;
+     text-decoration:underline dotted;text-underline-offset:2px;white-space:nowrap;outline:none}
+.why:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+/* invisible bridge so moving up into the popover keeps it open. ::before, NOT ::after —
+   .file.planned::after already carries the " · planned" suffix, and a span that is both
+   .planned and .has-pop had the bridge's position/width/height cascade into the suffix,
+   lifting it out of the line and clipping it to 8px. */
+.why::before{content:"";position:absolute;left:0;bottom:100%;width:100%;height:8px}
+.why-pop{
+  position:absolute;left:0;bottom:calc(100% + 6px);z-index:60;
+  width:max-content;max-width:min(320px,calc(100vw - 40px));white-space:normal;text-align:left;
+  background:var(--surface);color:var(--text);
+  border:1px solid var(--border-strong);border-radius:var(--r-md);
+  box-shadow:0 8px 28px color-mix(in srgb, var(--ink) 20%, transparent);
+  padding:10px 12px;font-size:14px;font-weight:400;line-height:1.5;
+  text-decoration:none;cursor:auto;user-select:text;
+  /* display:none, not visibility:hidden alone — a hidden-but-laid-out 320px box on a
+     right-half trigger extends the DOCUMENT and scrolls every page sideways on a phone,
+     with nothing hovered. Costs the fade-in; worth it. */
+  display:none;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .12s ease;
+}
+.why:hover .why-pop,.why:focus-within .why-pop{display:block;opacity:1;visibility:visible;pointer-events:auto}
+/* an in-page anchor to the detail section (accent link via the base `a` rule). One per
+   target — repeat inline to build a "Read more: <a class=readmore>…</a> · <a class=readmore>…</a>"
+   cross-reference line (named, self-describing labels, never bare [1]/[3] numbers). */
+.readmore{font-size:.9em}   /* no nowrap: a long label used to overflow the page on a phone */
+
+/* ---- file-reference popover (SHORT GLOSSES ONLY — see PRINCIPLES → "Source information") -- *
+ * For a .file that can't link (no resolvable repo, no fs-link target): a hover/focus popover
+ * holding what the file/term IS. Load-bearing source (what a decision actually rests on) does
+ * NOT belong here — it goes in a visible on-page section linked via .readmore instead; a hover
+ * box is unreachable on touch and invisible in print. Markup:
+ * <span class="file has-pop" tabindex="0">name<span class="file-pop">…</span></span> —
+ * tabindex="0" on the trigger is REQUIRED (keyboard/touch reachability); this file only styles
+ * it, it does not add it. Deliberately its OWN block, not grouped with .why-pop, even though the
+ * box look is the same today — duplicating means a future edit to one can't silently resize or
+ * refont the other; keep values in sync by hand if the shared look changes. */
+.file.has-pop{position:relative;cursor:help}
+.file.has-pop::before{content:"";position:absolute;left:0;bottom:100%;width:100%;height:8px} /* hover bridge, same trick as .why::before — ::before because .file.planned::after is the suffix */
+.file.has-pop:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+.file-pop{
+  position:absolute;left:0;bottom:calc(100% + 6px);z-index:60;
+  width:max-content;max-width:min(320px,calc(100vw - 40px));white-space:normal;text-align:left;
+  background:var(--surface);color:var(--text);
+  border:1px solid var(--border-strong);border-radius:var(--r-md);
+  box-shadow:0 8px 28px color-mix(in srgb, var(--ink) 20%, transparent);
+  padding:10px 12px;font-size:14px;font-weight:400;line-height:1.5;
+  text-decoration:none;cursor:auto;user-select:text;
+  /* display:none for the same reason as .why-pop above — see the note there. */
+  display:none;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .12s ease;
+}
+.file.has-pop:hover .file-pop,.file.has-pop:focus-within .file-pop{display:block;opacity:1;visibility:visible;pointer-events:auto}
+/* planned / not-yet-created artifact: reads as a file but visibly marked (dashed underline +
+   a plain " · planned" suffix). Its content lives in a .file-pop (short gloss) or an on-page
+   section (load-bearing) per PRINCIPLES. Deliberately NO color override here: a.file.planned
+   (a planned artifact that IS also linked) must keep the accent link color — the dashed
+   underline + suffix alone carry the "planned" marker, so there is no specificity fight with
+   a.file's accent color. */
+.file.planned{text-decoration-style:dashed}
+.file.planned::after{content:" · planned";font-family:var(--font-sans);font-size:.8em;
+  color:var(--text-muted);text-decoration:none;white-space:nowrap}
+
+/* ---- diagram reference links (SVG) — PRINCIPLES → "Diagrams link their references" -------- *
+ * A diagram node wrapped in <a href> (inline SVG) reads as clickable + accent-colored, same
+ * affordance as a prose .file link. No shipped view currently puts an <a> inside an <svg> for
+ * any other purpose (checked across every view prompt in references/views/) — if that ever changes,
+ * scope these two rules under a diagram-container class instead of broadening this exception. */
+svg a{cursor:pointer}
+svg a text{fill:var(--accent);text-decoration:underline}
+
+/* ---- buttons: obviously clickable, high contrast --------------------------- *
+ * Primary = solid cranberry. Secondary = 1px outline. Min height 38px,         *
+ * label >= 15px, visible hover + selected states. Use FEWER buttons.           */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:38px;padding:0 18px;
+  font-family:var(--font-sans);font-size:15px;font-weight:600;line-height:1;
+  border:1px solid transparent;border-radius:var(--r-md);
+  cursor:pointer;text-decoration:none;white-space:nowrap;
+  transition:background-color 120ms ease,border-color 120ms ease,color 120ms ease;
+}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn[disabled],.btn:disabled{opacity:.55;cursor:not-allowed}
+
+.btn-primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn-primary:hover{background:var(--accent-hover);border-color:var(--accent-hover);color:var(--accent-fg);text-decoration:none}
+
+.btn-secondary{background:var(--surface);color:var(--ink);border-color:var(--border-strong)}
+.btn-secondary:hover{border-color:var(--ink);color:var(--ink);text-decoration:none}
+
+/* selected state for choose-ONE controls (pick one, never multi-select/rank) */
+.btn[aria-pressed="true"],.btn.is-selected{
+  background:var(--accent);color:var(--accent-fg);border-color:var(--accent);
+}
+
+/* compact variant for in-row controls — still >= 34px touch height */
+.btn-sm{min-height:34px;padding:0 12px;font-size:14px}
+
+/* ---- tabs: ALWAYS read as clickable tabs; selected is unmistakable --------- *
+ * Every tab is a visible bordered box, so an UNSELECTED tab still looks like a  *
+ * tab. Selected = solid cranberry; unselected = light but clearly a clickable box. */
+.tabs{display:flex;flex-wrap:wrap;gap:6px;border-bottom:2px solid var(--border-strong);margin:0 0 var(--space)}
+.tab{
+  appearance:none;cursor:pointer;
+  font-family:var(--font-sans);font-size:15px;font-weight:600;line-height:1;color:var(--ink);
+  background:var(--surface-2);
+  border:1px solid var(--border-strong);border-bottom:none;
+  border-radius:var(--r-sm) var(--r-sm) 0 0;
+  padding:10px 16px;margin-bottom:-2px;
+  display:inline-flex;align-items:center;gap:8px;
+  transition:background-color 120ms ease,color 120ms ease,border-color 120ms ease;
+}
+.tab:hover{background:var(--surface);border-color:var(--ink)}
+.tab .count,.tab .meta{font-family:var(--font-mono);font-size:12.5px;font-weight:500;color:var(--text-muted)}
+.tab[aria-selected="true"],.tab.is-selected{
+  background:var(--accent);color:var(--accent-fg);border-color:var(--accent);
+}
+.tab[aria-selected="true"] .count,.tab.is-selected .count,
+.tab[aria-selected="true"] .meta,.tab.is-selected .meta{color:rgba(255,255,255,.82)}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tabpanel{outline:none}
+
+/* ---- form controls --------------------------------------------------------- */
+label{font-size:15px;font-weight:600;color:var(--ink);display:inline-block;margin-bottom:6px}
+input[type=text],input[type=search],input[type=email],input[type=number],select,textarea{
+  width:100%;font-family:var(--font-sans);font-size:15.5px;color:var(--text);
+  background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--r-md);
+  padding:9px 12px;min-height:38px;line-height:1.4;
+}
+textarea{min-height:96px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-wash)}
+input::placeholder,textarea::placeholder{color:var(--text-faint)}
+/* radios/checkboxes use the accent (the human picks ONE — prefer radios) */
+input[type=radio],input[type=checkbox]{accent-color:var(--accent);width:17px;height:17px;cursor:pointer}
+
+/* ---- minimal plain tag (NOT a colored pill) -------------------------------- *
+ * Only for necessary inline live state (e.g. a selection count). Plain text,   *
+ * no fill, no rounded "badge" look. Do NOT use for decoration.                 */
+.tag{font-family:var(--font-mono);font-size:13px;color:var(--text-muted);font-weight:500}
+.tag b{color:var(--ink);font-weight:600}
+
+/* ---- Shared components (compose; do not reimplement per page) --------------- *
+ * Cross-page UI utilities. Compose these via                                    *
+ * class names rather than copying their declarations. Each is additive and uses  *
+ * the tokens above. Reduced motion is handled by the global guard near the top.  */
+
+/* fixed bottom action bar. z-index sits ONE BELOW capture.js's .cap-bar
+   (2147483000) so capture's bar always stacks above any page bar. Pages still
+   set their own body{padding-bottom} to clear whatever height this ends up. */
+.fixed-actionbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:2147482999;
+  display:flex;align-items:center;gap:12px;
+  padding:12px 24px;
+  background:var(--surface);border-top:1px solid var(--border);
+  box-shadow:var(--shadow-bar);box-sizing:border-box;
+}
+
+/* transient toast — hidden by default, .is-show fades/slides it in. Sits above
+   the fixed action bar (bottom:76px clears a ~60px bar). */
+.toast{
+  position:fixed;left:50%;bottom:76px;transform:translate(-50%,12px);opacity:0;
+  background:var(--ink);color:var(--accent-fg);
+  padding:10px 16px;border-radius:var(--r-md);
+  font-size:14px;line-height:1.4;
+  box-shadow:0 6px 24px color-mix(in srgb, var(--ink) 22%, transparent);
+  pointer-events:none;
+  transition:opacity .2s ease, transform .2s ease;
+  z-index:2147483100;
+}
+.toast.is-show{opacity:1;transform:translate(-50%,0)}
+
+/* progressive disclosure (escape-hatch / reason-box). .reveal is collapsed
+   until .is-open; .reveal-box is a full-width textarea — a thin layer over the
+   global textarea styling above (it already sets font/border/radius/padding). */
+.reveal{display:none}
+/* modest gap around the revealed box; the trailing space AFTER an option box is the
+   option CONTAINER's job (margin-bottom), not the reveal's — see PRINCIPLES escape-hatch */
+.reveal.is-open{display:block;margin:8px 0}
+.reveal-box{width:100%;min-height:64px}
+
+/* ---- accordion: multi-item progressive disclosure, in the spirit of .reveal/.is-open ------ *
+ * Native <details>/<summary> — keyboard-focusable, no JS. Compose via:
+ *   <div class="accordion">
+ *     <details class="accordion-item"><summary class="accordion-trigger">…</summary>
+ *       <div class="accordion-panel">…</div>
+ *     </details>
+ *   </div>
+ * See references/components/accordion.html (copy-me fragment). Do NOT wrap prose in a bare
+ * <button> instead of <summary> — the global *{user-select:text} reset above still applies to
+ * <summary>, but a <button> loses the native disclosure semantics/keyboard handling for free. */
+.accordion{display:flex;flex-direction:column;gap:var(--space-2)}
+.accordion-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden}
+.accordion-trigger{
+  cursor:pointer;padding:12px 16px;font-size:var(--fs-body);font-weight:600;color:var(--ink);
+  list-style:none;display:flex;align-items:center;gap:8px;
+}
+.accordion-trigger::-webkit-details-marker{display:none}
+.accordion-trigger::before{content:"▸";color:var(--accent);display:inline-block;transition:transform 120ms ease}
+.accordion-item[open] > .accordion-trigger::before{transform:rotate(90deg)}
+.accordion-trigger:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+.accordion-panel{padding:0 16px 16px;border-top:1px solid var(--border);font-size:var(--fs-body)}
+.accordion-panel > *:first-child{margin-top:12px}
+
+/* ---- grid: responsive card layout — tested values promoted from board-template.html's .grid - *
+ * min(340px,100%) so the column floor collapses on a narrow phone instead of forcing the page
+ * wider. See references/components/card-grid.html (copy-me fragment; wraps .card boxes). */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(340px,100%),1fr));gap:var(--space)}
+
+/* ---- table: base.css previously had ZERO table styling — this fills that gap ------------- *
+ * Scoped to `.wrap table` so a copied fragment (references/components/table.html) needs no
+ * extra class, as long as it sits inside <main class="wrap"> like every page's content does. */
+.wrap table{width:100%;border-collapse:collapse;font-size:var(--fs-body);margin:0 0 1em}
+.wrap table:last-child{margin-bottom:0}
+.wrap th,.wrap td{padding:10px 14px;border:1px solid var(--border);text-align:left;vertical-align:top}
+.wrap thead th{background:var(--surface-2);color:var(--ink);font-weight:600}
+
+/* =============================================================================
+   Capture action bar theming (capture.js injects a fixed .cap-bar)
+   -----------------------------------------------------------------------------
+   capture.js sets its own defaults on :root and ships a navy bar. We re-theme
+   it to the light house style. Two specificity facts drive the selectors here:
+     - capture.js appends its <style> AFTER this linked file, so equal-specificity
+       rules would lose. We bump specificity to win:
+         * variables: ':root:root' (0,2,0) beats capture's ':root' (0,1,0)
+         * class rules: '.cap-bar .x' (0,2,0) beats capture's '.x' (0,1,0)
+     - Properties capture never sets (box-shadow, min-height) can be added at
+       normal specificity and simply apply.
+   ============================================================================= */
+:root:root{
+  --cap-bg:var(--surface);
+  --cap-fg:var(--ink);
+  --cap-muted:var(--text-muted);
+  --cap-accent:var(--accent);
+  --cap-accent-hover:var(--accent-hover);
+  --cap-accent-fg:var(--accent-fg);
+  --cap-border:var(--border);
+  --cap-ok:var(--success);
+  --cap-radius:var(--r-md);
+  --cap-maxw:var(--maxw);   /* general-comments block tracks the page measure */
+}
+/* prominence for the fixed bar (additive — capture sets neither property) */
+.cap-bar{box-shadow:0 -2px 12px rgba(27,42,74,.10);min-height:60px;font-family:var(--font-sans)}
+/* buttons: enforce >= 15px label + 38px height inside the bar */
+.cap-bar .cap-btn{font-family:var(--font-sans);font-size:15px;font-weight:600;min-height:38px;padding:0 18px}
+/* Copy fallback as a clear outline secondary (override capture's underlined link look) */
+.cap-bar .cap-copy{background:var(--surface);color:var(--ink);border-color:var(--border-strong);text-decoration:none}
+.cap-bar .cap-copy:hover{border-color:var(--ink)}
+/* manual-copy textarea: capture hardcodes a dark translucent bg — make it light */
+.cap-bar .cap-fallback{background:var(--surface-2);color:var(--text);border-color:var(--border-strong);font-family:var(--font-mono)}
+
+/* The bar's own row must wrap, or "Submit to Claude" goes off-screen and becomes
+   unreachable on a phone. capture.js lays out its attribution and its actions as two
+   non-shrinking flex items (~520px together), so below ~560px the actions are pushed
+   past the right edge with no way to scroll to them. */
+.cap-bar{flex-wrap:wrap}
+.cap-bar .cap-actions{flex:1 0 auto;justify-content:flex-end}
+
+/* ---- responsive ------------------------------------------------------------ *
+ * `(hover:none)` is in the condition for the popover rules at the end of this block:
+ * a floating gloss anchored to an inline trigger clips against the right edge, and a
+ * mouse user can scroll to the clipped part (a stale :hover keeps the box open) while a
+ * touch user cannot. iPad portrait is exactly 768px, so a width breakpoint alone would
+ * leave the widest touch case floating and unreadable. */
+@media (max-width:560px), (hover:none){
+  .page-header{padding:28px 18px 6px}
+  .wrap{padding:0 18px}
+  .card,.section{padding:18px}
+  h1{font-size:25px}
+  h2{font-size:20px}
+  /* the attribution is the least load-bearing thing in the bar — drop it before Submit */
+  .cap-bar .cap-attribution{display:none}
+  /* the general-comments block keeps the body's 18px inset rather than 24px, so it lines up
+     with .wrap instead of drifting 6px. Class doubled deliberately: capture.js injects its own
+     `.cap-comments{padding:0 24px}` into <head> AFTER this file's <link>, so at equal
+     specificity capture wins on source order. */
+  .cap-comments.cap-comments{padding:0 18px}
+
+  /* A 320px floating popover anchored to a 37px inline trigger cannot fit on a phone from
+     either side: off the right edge it is at least scrollable, off the left it is
+     unreachable. So below 560px the popover stops floating and opens IN FLOW, directly
+     under its trigger's line, full content width — the text reflows down while it is open,
+     which is the right trade on a touch screen where it is the only way to read the gloss.
+     Above 560px it stays a floating overlay (see .why-pop / .file-pop above).
+     Do NOT "fix" this by making an ancestor position:relative and keeping the box floating:
+     bottom:calc(100% + 6px) then measures from that ancestor, and a gloss in a long section
+     opens thousands of pixels above its own line. Measured; that is how this rule was
+     arrived at. The hover bridge is dropped here — there is no hover on touch. */
+  .why,.file.has-pop{position:static}
+  .why-pop,.file-pop{
+    position:static;left:auto;right:auto;bottom:auto;width:auto;max-width:none;
+    margin:6px 0;box-shadow:0 2px 10px color-mix(in srgb, var(--ink) 12%, transparent);
+  }
+  .why::before,.file.has-pop::before{display:none}
+}
+
+/* =============================================================================
+   Diff rendering — shared by every diff-shaped view (code-review-pr-diff, etc.)
+   -----------------------------------------------------------------------------
+   Behavioural rules (context floor, del/add pairing, intra-line word highlight)
+   live in references/views/code-review-pr-diff.md → "Diff rendering". Appended
+   here as ONE self-contained block at the end of the file so it never collides
+   with unrelated in-flight edits earlier in base.css. `gallery/review.html` is
+   the worked reference for these class names — match them, don't reinvent.
+   ============================================================================= */
+
+/* row grid: two line-number gutters + a change marker + content that WRAPS.
+   Long lines wrap; the diff never scrolls sideways. PRINCIPLES.md → "Diff
+   rendering" allows either wrapping or content-sized rows and says to pick one —
+   this is the pick, and it is not optional. Sizing rows to their content is
+   right for short code lines and wrong for everything else: a diff of prose,
+   markdown, or config puts several-hundred-character lines in a row, and the
+   reader gets a horizontal scroller they must drag to read a sentence. Wrapping
+   with a minmax(0,1fr) content column also keeps the row full-width, so the
+   add/remove tint always covers the whole line instead of stopping short. */
+.drow{display:grid;grid-template-columns:44px 44px 18px minmax(0,1fr);
+      white-space:pre-wrap;overflow-wrap:anywhere;
+      border-left:3px solid transparent}
+.drow .ln{color:var(--text-faint);text-align:right;padding:1px 8px 1px 0;user-select:none;font-size:11px}
+.drow .gut{color:var(--text-faint);text-align:center;user-select:none}
+.drow .txt{padding-right:14px;min-width:0}
+
+/* whole-row tints — functional color only (add=success, del=error), never decoration */
+.drow.add{background:color-mix(in srgb, var(--success) 10%, transparent);border-left-color:var(--success)}
+.drow.add .gut{color:var(--success);font-weight:700}
+.drow.del{background:color-mix(in srgb, var(--error) 8%, transparent);border-left-color:var(--error)}
+.drow.del .gut{color:var(--error);font-weight:700}
+.drow.hunk{background:var(--surface-2);color:var(--text-muted)}
+
+/* dim context rows via a muted text color, never opacity (opacity would also wash
+   out text selection) — gated behind a page-local "dim context" checkbox that
+   toggles this class; the checkbox itself is page JS, not part of this file. */
+.drow.ctx.dim .txt{color:var(--text-faint)}
+
+/* intra-line word diff: a STRONGER shade of the row's own color, layered over the
+   lighter whole-row tint above. Background only — never opacity — so the text
+   underneath stays full-ink, selectable, and in the row's normal font. Apply
+   ONLY to a del/add pair whose token-level similarity clears the ~0.35 floor;
+   below that floor, skip these classes entirely and leave the plain row tints
+   above to carry the "this line changed" signal on their own. */
+.tk-del{background:color-mix(in srgb, var(--error) 40%, transparent)}
+.tk-add{background:color-mix(in srgb, var(--success) 40%, transparent)}
+
+/* =============================================================================
+   Build-time syntax highlighting — token colors for code blocks ONLY
+   -----------------------------------------------------------------------------
+   The agent tokenizes source at GENERATION time and writes <span class="tok-*">
+   directly into the page's HTML — there is no runtime highlighter, no CDN
+   script, nothing loaded in the browser to do this job. The generation rule
+   (escape the source first, then wrap token spans) lives in
+   references/views/PRINCIPLES.md → "Build-time syntax highlighting".
+
+   DELIBERATE, SCOPED EXCEPTION to the house "one accent (cranberry)" rule:
+   these five muted colors exist ONLY to distinguish token kinds inside
+   <pre><code>. Every selector below is scoped under `pre code` so a `.tok-*`
+   class has no effect anywhere else on the page — it must never leak into
+   page chrome (headings, buttons, links, callouts, decoration).
+
+   This is a DIFFERENT mechanism from the diff add/remove + intra-line word
+   diff above (.drow / .tk-del / .tk-add) — do not conflate the two. Diff
+   classes mark WHAT CHANGED between two versions of a line (background
+   tints); .tok-* classes mark WHAT KIND OF TOKEN a piece of code is,
+   independent of any diff (foreground text color). Both may legitimately
+   appear together in the same block (a syntax-highlighted diff).
+   ============================================================================= */
+pre code .tok-kw{color:#6F42C1}                     /* keyword */
+pre code .tok-str{color:#2F7C4D}                    /* string literal */
+pre code .tok-num{color:#1B6B93}                    /* number literal */
+pre code .tok-com{color:#6B7280;font-style:italic}  /* comment */
+pre code .tok-fn{color:#965A15}                     /* function / method name */

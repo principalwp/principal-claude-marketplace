@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{TITLE}}</title>
+<!-- Principal "P" mark as the tab favicon — copied VERBATIM from SKILL.md step 2. Inlined
+     as a data: URI on purpose: asset refs are root-absolute under /assets/ so page depth
+     doesn't matter, but the img/*.svg copy step is still conditional — a linked favicon
+     would silently 404 if that step didn't run. This never does. Don't "tidy" it into a
+     linked /assets/*.svg. -->
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzhDMzM0NCIvPjxwYXRoIGQ9Ik0zMCAyMiBINTggYTE4IDE4IDAgMCAxIDAgMzYgSDQyIFY3OCBIMzAgWiBNNDIgMzMgVjQ3IEg1NiBhNyA3IDAgMCAwIDAgLTE0IFoiIGZpbGw9IiNmZmYiLz48L3N2Zz4=">
+<link rel="stylesheet" href="/assets/base.css">
+</head>
+<body>
+  <!-- .page-header and .wrap are a PAIR — keep them siblings, never nest one inside the
+       other (base.css centers both to the same measure independently). -->
+  <header class="page-header">
+    <h1>{{TITLE}}</h1>
+    <p class="lede">{{LEDE}}</p>
+  </header>
+
+  <main class="wrap">
+    <!-- CONTENT: sections/callouts/cards go here, never bare in <body>.
+         Compose references/components/ (accordion/table/card-grid) + base.css classes
+         BEFORE writing any page-local CSS — a hand-rolled component is the step-2 failure. -->
+  </main>
+
+  <script>
+    window.CAPTURE_SUBMIT_URL = "/?t={{TOKEN}}";
+    window.CAPTURE_CHANNEL = "{{CHANNEL}}";
+  </script>
+  <script src="/assets/capture.js"></script>
+  <script>
+    /* Capture skeleton — replace with real wiring per the view's prompt +
+       references/views/_capture.md. Keep this shape, born correct:
+         - init() once, with the real feedback-bearing element count.
+         - setGate() is a PURE READ — never call mark/unmark/rollup from inside it.
+         - EVERY path — including default-accept, "reader picked nothing explicit" —
+           ends in a real Capture.rollup(verdict) call, so Submit can never POST a
+           null verdict.
+
+    Capture.init({ view: "…", total: N });                 // N = feedback-bearing elements present
+
+    Capture.setGate(function () {                          // pure read only — no mark/unmark/rollup here
+      if (!verdictPicked()) return { ok:false, reason:"Pick a verdict to submit.", focus:"#verdict-controls" };
+      return { ok:true };
+    });
+
+    function commitVerdict(verdict) {                      // the ONE place rollup is called
+      Capture.rollup(verdict);                              // "approve" | "request_changes" — always a real value
+    }
+    */
+  </script>
+</body>
+</html>

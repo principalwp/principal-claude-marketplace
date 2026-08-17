@@ -1,0 +1,24 @@
+{
+  "wordpress_ref": "7.0.2",
+  "wordpress_theme_package": "1.0.0",
+  "harvested_at": "2026-07-24T19:20:52Z",
+  "sources": {
+    "wordpress_css": "https://raw.githubusercontent.com/WordPress/WordPress/7.0.2/",
+    "design_tokens": "https://unpkg.com/@wordpress/theme@1.0.0/design-tokens.css"
+  },
+  "license": "Harvested files are WordPress core / @wordpress/theme, GPL-2.0-or-later — not covered by this repo's license.",
+  "note": "Covers harvested assets only; regenerate with scripts/harvest.sh <wp-tag> [<theme-version>]. Hand-authored assets (admin-theme-vars.css, wpds-components.css, wpp-runtime.*) are not listed — review them against Gutenberg Storybook after a major WP bump. classic-admin.bundle.min.css also embeds admin-theme-vars.css.",
+  "files": {
+    "buttons.min.css": { "sha256": "dd8f0d50298e6c2498535cc891a7b5459971471eab331700af766c2f5ead2e7f", "bytes": 8152 },
+    "common.min.css": { "sha256": "1f9bcaa77aebe3c79c26ca6ec07fc55e9253e0ac373f4f946380e09e4163048a", "bytes": 61526 },
+    "forms.min.css": { "sha256": "0cd1ac9e871de2e392e06038f109659092069ae30404e8d58fa3fe34e74535b6", "bytes": 30917 },
+    "admin-menu.min.css": { "sha256": "6be1dd07f3371c294eab0e0413a614b09f9e055d0b766caf64eecb4632f73565", "bytes": 15151 },
+    "dashboard.min.css": { "sha256": "3fa76b561347943d3d9b3d677266cb1f045930da8eb2fdc2e57922179a5c1ef1", "bytes": 23372 },
+    "list-tables.min.css": { "sha256": "5f01224cddb9e519451f2b4c24132cb069618376f5ff5f85768153cd7db6b1aa", "bytes": 37012 },
+    "edit.min.css": { "sha256": "fa1623599a47c4f595277ba7881ef86552dca2b347829464acd37ca96503b803", "bytes": 30578 },
+    "admin-bar.min.css": { "sha256": "96fd40fad8d03bf7b1ffb0ebdcb6e8053ba8ccf9dd8918706b06c210f663e564", "bytes": 20781 },
+    "dashicons.min.css": { "sha256": "26a7e7b9d4bb9948771c126085b99fba6546af4399e6263e8a69a3e33f6271cb", "bytes": 59004 },
+    "wpds-tokens.css": { "sha256": "26d91e15961fee8240c7d7f6a39d86772f88d69fc4d571c59bde02b11807644b", "bytes": 23725 },
+    "classic-admin.bundle.min.css": { "sha256": "2574eb258dbba02804c5dd79771af8a2d01aa40bfe25cef802bdfdd5dfb7431d", "bytes": 228762 }
+  }
+}

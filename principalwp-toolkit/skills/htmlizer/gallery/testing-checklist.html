@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<!--
+  Example page built from invented data (a fictional Northwind checkout API QA pass) for the
+  Principal WP htmlizer gallery — a showcase of the testing-checklist view type. No real
+  commits, tickets, or people are represented. House style via base.css.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QA smoke test — Northwind checkout (happy path and declined card)</title>
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzhDMzM0NCIvPjxwYXRoIGQ9Ik0zMCAyMiBINTggYTE4IDE4IDAgMCAxIDAgMzYgSDQyIFY3OCBIMzAgWiBNNDIgMzMgVjQ3IEg1NiBhNyA3IDAgMCAwIDAgLTE0IFoiIGZpbGw9IiNmZmYiLz48L3N2Zz4=">
+<link rel="stylesheet" href="base.css">
+<style>
+/* ---- page-specific layout on top of base.css (house style) ---- */
+
+/* page-owned sticky progress bar — distinct from capture.js's fixed BOTTOM bar.
+   Shows overall resolved/total. Per-flow breakdowns render inline in each flow head. */
+.progress-sticky{position:sticky;top:0;z-index:40;background:var(--surface);
+  border-bottom:1px solid var(--border);padding:10px 0}
+.progress-inner{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.progress-label{font-family:var(--font-mono);font-size:13px;color:var(--text-muted);white-space:nowrap}
+.progress-bar,.subbar{flex:1 1 auto;min-width:120px;height:8px;border-radius:4px;
+  background:var(--surface-2);border:1px solid var(--border);overflow:hidden;display:flex}
+.progress-bar .seg,.subbar .seg{height:100%}
+.seg-pass{background:var(--success)}
+.seg-fail{background:var(--error)}
+.seg-blocked{background:var(--warning)}
+.seg-skipped{background:var(--text-muted)}
+
+.framing{color:var(--text);margin:0 0 var(--space-4);max-width:78ch}
+
+.flow{margin-bottom:var(--space-4)}
+.flow-head{display:flex;align-items:center;justify-content:space-between;gap:16px;
+  margin-bottom:var(--space-2);flex-wrap:wrap}
+.flow-head h2{margin:0}
+.flow-subbar-wrap{display:flex;align-items:center;gap:8px}
+.flow-subbar-wrap .progress-label{font-size:12px}
+.flow-subbar{width:160px}
+
+.step{background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--r-lg);
+  padding:22px;margin-bottom:var(--space-2)}
+.step[data-state="pass"]{border-color:var(--success)}
+.step[data-state="fail"]{border-color:var(--error)}
+.step[data-state="blocked"]{border-color:var(--warning)}
+.step-num{font-family:var(--font-mono);font-size:12.5px;color:var(--text-muted);margin-bottom:2px}
+.step h3{margin:0 0 14px}
+.step-block{margin-bottom:14px}
+.step-block:last-of-type{margin-bottom:0}
+.step-label{font-family:var(--font-mono);font-size:12.5px;font-weight:600;color:var(--text-muted);
+  margin-bottom:4px}
+.step-block.watch{border-left:3px solid var(--warning);padding:2px 0 2px 12px;
+  background:color-mix(in srgb, var(--warning) 6%, transparent)}
+.step-block.watch .step-label{color:var(--warning)}
+
+.snippet{position:relative;margin-top:8px}
+.snippet .copy-btn{position:absolute;top:8px;right:8px;padding:0 10px;min-height:28px;font-size:12.5px}
+.snippet pre{padding-right:76px}
+
+.step-ctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:18px;
+  padding-top:14px;border-top:1px solid var(--border)}
+.step-ctl-lab{font-family:var(--font-mono);font-size:12.5px;color:var(--text-muted);margin-right:4px}
+.state-btn[data-state="pass"].is-selected{background:var(--success);border-color:var(--success);color:#fff}
+.state-btn[data-state="fail"].is-selected{background:var(--error);border-color:var(--error);color:#fff}
+.state-btn[data-state="blocked"].is-selected{background:var(--warning);border-color:var(--warning);color:#fff}
+.state-btn[data-state="skipped"].is-selected{background:var(--text-muted);border-color:var(--text-muted);color:#fff}
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <h1>Checkout smoke test — happy path and declined card</h1>
+  <p class="lede">Run each step below against the Northwind checkout API on staging, then record what happened underneath it.</p>
+</header>
+
+<div class="progress-sticky" id="progress-sticky">
+  <div class="wrap progress-inner">
+    <span class="progress-label" id="progress-label">Resolved 0 / 8</span>
+    <div class="progress-bar" id="progress-bar" aria-hidden="true"></div>
+  </div>
+</div>
+
+<main class="wrap">
+
+<p class="framing">This covers two paths through <code>/v1/checkout</code>: a card that succeeds, and one Stripe declines. For each step, run the Action below it — copy the snippet where there is one — and compare the result to Pass. Watch calls out a specific known failure sign to look for, where one exists; not every step has one. Mark each step Pass, Fail, Blocked, or Skipped underneath it — a Fail or Blocked needs a short note on what happened. A step you haven't run yet stays pending, which is fine to submit partway through, but at least one step needs a result before you can submit.</p>
+
+<section class="flow" id="flow-checkout-happy" data-flow-id="checkout-happy">
+  <div class="flow-head">
+    <h2>Checkout — happy path</h2>
+    <div class="flow-subbar-wrap">
+      <span class="progress-label" id="flowlabel-checkout-happy">0 / 4</span>
+      <div class="subbar" id="subbar-checkout-happy" aria-hidden="true"></div>
+    </div>
+  </div>
+
+  <article class="step" data-step-id="checkout-happy:s1">
+    <div class="step-num">Step 1</div>
+    <h3>Add the backpack to a fresh cart</h3>
+    <div class="step-block">
+      <div class="step-label">Action</div>
+      <p>Add 1 unit of the Trailrunner Backpack (<code>sku_2291</code>) to a new cart via the API.</p>
+      <div class="snippet">
+        <button type="button" class="copy-btn btn btn-secondary btn-sm">Copy</button>
+        <pre><code><span class="tok-com"># add 1x Trailrunner Backpack (sku_2291) to a fresh cart</span>
+<span class="tok-fn">curl</span> -X <span class="tok-kw">POST</span> https://api.northwind-shop.com/v1/cart/add \
+  -H <span class="tok-str">"Content-Type: application/json"</span> \
+  -d '{"product_id": <span class="tok-str">"sku_2291"</span>, "qty": <span class="tok-num">1</span>}'</code></pre>
+      </div>
+    </div>
+    <div class="step-block">
+      <div class="step-label">Pass</div>
+      <p><code>201</code> with a <code>cart_id</code> and one line item at <code>qty: 1</code>.</p>
+    </div>
+    <div class="step-block watch">
+      <div class="step-label">Watch</div>
+      <p>Adding the same SKU a second time should merge into the existing line item (<code>qty: 2</code>), not create a second line — a duplicate line is the most common cart bug here.</p>
+    </div>
+    <div class="step-ctl">
+      <span class="step-ctl-lab">Result</span>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="pass" aria-pressed="false">Pass</button>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="fail" aria-pressed="false">Fail</button>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="blocked" aria-pressed="false">Blocked</button>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="skipped" aria-pressed="false">Skipped</button>
+    </div>
+    <div class="reveal"><textarea class="reveal-box step-note" rows="2" placeholder="What happened? (required)"></textarea></div>
+  </article>
+
+  <article class="step" data-step-id="checkout-happy:s2">
+    <div class="step-num">Step 2</div>
+    <h3>Apply a valid promo code</h3>
+    <div class="step-block">
+      <div class="step-label">Action</div>
+      <p>Apply the promo code <code>SUMMER10</code> to the cart from step 1.</p>
+      <div class="snippet">
+        <button type="button" class="copy-btn btn btn-secondary btn-sm">Copy</button>
+        <pre><code><span class="tok-com"># promo codes are case-insensitive; SUMMER10 takes 10% off the subtotal</span>
+<span class="tok-fn">curl</span> -X <span class="tok-kw">POST</span> https://api.northwind-shop.com/v1/cart/8f61c2/promo \
+  -H <span class="tok-str">"Content-Type: application/json"</span> \
+  -d '{"code": <span class="tok-str">"SUMMER10"</span>}'</code></pre>
+      </div>
+    </div>
+    <div class="step-block">
+      <div class="step-label">Pass</div>
+      <p><code>200</code> with <code>discount_total</code> reduced by 10% of the pre-discount subtotal; <code>subtotal</code> itself is unchanged.</p>
+    </div>
+    <div class="step-block watch">
+      <div class="step-label">Watch</div>
+      <p>A stale <code>cart_total</code> that doesn't recompute after the promo applies is the most common regression here — reload the cart and check the total actually changed, don't trust the promo response alone.</p>
+    </div>
+    <div class="step-ctl">
+      <span class="step-ctl-lab">Result</span>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="pass" aria-pressed="false">Pass</button>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="fail" aria-pressed="false">Fail</button>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="blocked" aria-pressed="false">Blocked</button>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="skipped" aria-pressed="false">Skipped</button>
+    </div>
+    <div class="reveal"><textarea class="reveal-box step-note" rows="2" placeholder="What happened? (required)"></textarea></div>
+  </article>
+
+  <article class="step" data-step-id="checkout-happy:s3">
+    <div class="step-num">Step 3</div>
+    <h3>Pay with a card that succeeds</h3>
+    <div class="step-block">
+      <div class="step-label">Action</div>
+      <p>Submit payment with a Stripe test card that succeeds, using a fresh idempotency key.</p>
+      <div class="snippet">
+        <button type="button" class="copy-btn btn btn-secondary btn-sm">Copy</button>
+        <pre><code><span class="tok-com">// idempotencyKey must stay identical across retries of the same attempt</span>
+<span class="tok-kw">const</span> res = <span class="tok-kw">await</span> <span class="tok-fn">fetch</span>(<span class="tok-str">"/api/checkout/pay"</span>, {
+  method: <span class="tok-str">"POST"</span>,
+  headers: {
+    <span class="tok-str">"Idempotency-Key"</span>: idempotencyKey,
+    <span class="tok-str">"Content-Type"</span>: <span class="tok-str">"application/json"</span>
+  },
+  body: <span class="tok-fn">JSON.stringify</span>({ cart_id: cartId, payment_token: <span class="tok-str">"tok_visa_debit_4242"</span> })
+});
+<span class="tok-kw">const</span> data = <span class="tok-kw">await</span> res.<span class="tok-fn">json</span>();
+<span class="tok-fn">console.log</span>(data.order_id, data.status);</code></pre>
+      </div>
+    </div>
+    <div class="step-block">
+      <div class="step-label">Pass</div>
+      <p><code>200</code> with an <code>order_id</code> and <code>status: "paid"</code>.</p>
+    </div>
+    <div class="step-block watch">
+      <div class="step-label">Watch</div>
+      <p>Resubmit the exact same request (same <code>Idempotency-Key</code>, simulating a retry) — it must return the same <code>order_id</code>, not create a second order. Check the orders table for a duplicate row before marking this Pass.</p>
+    </div>
+    <div class="step-ctl">
+      <span class="step-ctl-lab">Result</span>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="pass" aria-pressed="false">Pass</button>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="fail" aria-pressed="false">Fail</button>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="blocked" aria-pressed="false">Blocked</button>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="skipped" aria-pressed="false">Skipped</button>
+    </div>
+    <div class="reveal"><textarea class="reveal-box step-note" rows="2" placeholder="What happened? (required)"></textarea></div>
+  </article>
+
+  <article class="step" data-step-id="checkout-happy:s4">
+    <div class="step-num">Step 4</div>
+    <h3>Confirm the order-confirmed event fired</h3>
+    <div class="step-block">
+      <div class="step-label">Action</div>
+      <p>Check the event log for an <code>order.confirmed</code> event tied to the order from step 3.</p>
+      <div class="snippet">
+        <button type="button" class="copy-btn btn btn-secondary btn-sm">Copy</button>
+        <pre><code><span class="tok-com"># ord_8842 is the order created in step 3</span>
+<span class="tok-fn">curl</span> -s <span class="tok-str">"https://api.northwind-shop.com/v1/events?order_id=ord_8842"</span> | <span class="tok-fn">jq</span> <span class="tok-str">'.[] | select(.type=="order.confirmed")'</span></code></pre>
+      </div>
+    </div>
+    <div class="step-block">
+      <div class="step-label">Pass</div>
+      <p>Exactly one event with <code>"type": "order.confirmed"</code> and a <code>payload.order_id</code> matching <code>ord_8842</code>.</p>
+    </div>
+    <div class="step-ctl">
+      <span class="step-ctl-lab">Result</span>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="pass" aria-pressed="false">Pass</button>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="fail" aria-pressed="false">Fail</button>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="blocked" aria-pressed="false">Blocked</button>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="skipped" aria-pressed="false">Skipped</button>
+    </div>
+    <div class="reveal"><textarea class="reveal-box step-note" rows="2" placeholder="What happened? (required)"></textarea></div>
+  </article>
+</section>
+
+<section class="flow" id="flow-checkout-declined" data-flow-id="checkout-declined">
+  <div class="flow-head">
+    <h2>Checkout — declined card</h2>
+    <div class="flow-subbar-wrap">
+      <span class="progress-label" id="flowlabel-checkout-declined">0 / 4</span>
+      <div class="subbar" id="subbar-checkout-declined" aria-hidden="true"></div>
+    </div>
+  </div>
+
+  <article class="step" data-step-id="checkout-declined:s1">
+    <div class="step-num">Step 1</div>
+    <h3>Add a different item to a fresh cart</h3>
+    <div class="step-block">
+      <div class="step-label">Action</div>
+      <p>Add 1 unit of the Rain Shell Jacket (<code>sku_1187</code>) to a new cart via the API.</p>
+      <div class="snippet">
+        <button type="button" class="copy-btn btn btn-secondary btn-sm">Copy</button>
+        <pre><code><span class="tok-com"># add 1x Rain Shell Jacket (sku_1187) to a fresh cart</span>
+<span class="tok-fn">curl</span> -X <span class="tok-kw">POST</span> https://api.northwind-shop.com/v1/cart/add \
+  -H <span class="tok-str">"Content-Type: application/json"</span> \
+  -d '{"product_id": <span class="tok-str">"sku_1187"</span>, "qty": <span class="tok-num">1</span>}'</code></pre>
+      </div>
+    </div>
+    <div class="step-block">
+      <div class="step-label">Pass</div>
+      <p><code>201</code> with a <code>cart_id</code> and one line item at <code>qty: 1</code>.</p>
+    </div>
+    <div class="step-ctl">
+      <span class="step-ctl-lab">Result</span>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="pass" aria-pressed="false">Pass</button>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="fail" aria-pressed="false">Fail</button>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="blocked" aria-pressed="false">Blocked</button>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="skipped" aria-pressed="false">Skipped</button>
+    </div>
+    <div class="reveal"><textarea class="reveal-box step-note" rows="2" placeholder="What happened? (required)"></textarea></div>
+  </article>
+
+  <article class="step" data-step-id="checkout-declined:s2">
+    <div class="step-num">Step 2</div>
+    <h3>Pay with a card that declines</h3>
+    <div class="step-block">
+      <div class="step-label">Action</div>
+      <p>Submit payment with a Stripe test card that always triggers a decline.</p>
+      <div class="snippet">
+        <button type="button" class="copy-btn btn btn-secondary btn-sm">Copy</button>
+        <pre><code><span class="tok-com">// tok_chargeDeclined always triggers a hard decline in Stripe's test mode</span>
+<span class="tok-kw">const</span> res = <span class="tok-kw">await</span> <span class="tok-fn">fetch</span>(<span class="tok-str">"/api/checkout/pay"</span>, {
+  method: <span class="tok-str">"POST"</span>,
+  headers: { <span class="tok-str">"Content-Type"</span>: <span class="tok-str">"application/json"</span> },
+  body: <span class="tok-fn">JSON.stringify</span>({ cart_id: cartId, payment_token: <span class="tok-str">"tok_chargeDeclined"</span> })
+});
+<span class="tok-kw">const</span> data = <span class="tok-kw">await</span> res.<span class="tok-fn">json</span>();
+<span class="tok-fn">console.log</span>(res.status === <span class="tok-num">402</span>, data.decline_code);</code></pre>
+      </div>
+    </div>
+    <div class="step-block">
+      <div class="step-label">Pass</div>
+      <p><code>402</code> with a <code>decline_code</code> (e.g. <code>"generic_decline"</code>); no <code>order_id</code> in the response.</p>
+    </div>
+    <div class="step-block watch">
+      <div class="step-label">Watch</div>
+      <p>A decline that still creates a row in the orders table — even unpaid — is a data-integrity bug worth flagging on its own; check the orders table directly, don't just trust this response.</p>
+    </div>
+    <div class="step-ctl">
+      <span class="step-ctl-lab">Result</span>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="pass" aria-pressed="false">Pass</button>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="fail" aria-pressed="false">Fail</button>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="blocked" aria-pressed="false">Blocked</button>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="skipped" aria-pressed="false">Skipped</button>
+    </div>
+    <div class="reveal"><textarea class="reveal-box step-note" rows="2" placeholder="What happened? (required)"></textarea></div>
+  </article>
+
+  <article class="step" data-step-id="checkout-declined:s3">
+    <div class="step-num">Step 3</div>
+    <h3>Confirm the cart stays open</h3>
+    <div class="step-block">
+      <div class="step-label">Action</div>
+      <p>Check the cart from step 1 after the decline in step 2.</p>
+      <div class="snippet">
+        <button type="button" class="copy-btn btn btn-secondary btn-sm">Copy</button>
+        <pre><code><span class="tok-com"># cart should still read "open" with the same 1 line item as step 1</span>
+<span class="tok-fn">curl</span> -s https://api.northwind-shop.com/v1/cart/8f61c2 | <span class="tok-fn">jq</span> <span class="tok-str">'.status, (.line_items | length)'</span></code></pre>
+      </div>
+    </div>
+    <div class="step-block">
+      <div class="step-label">Pass</div>
+      <p><code>"open"</code> and <code>1</code> — the same cart, same single line item; nothing was cleared or converted to an order.</p>
+    </div>
+    <div class="step-ctl">
+      <span class="step-ctl-lab">Result</span>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="pass" aria-pressed="false">Pass</button>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="fail" aria-pressed="false">Fail</button>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="blocked" aria-pressed="false">Blocked</button>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="skipped" aria-pressed="false">Skipped</button>
+    </div>
+    <div class="reveal"><textarea class="reveal-box step-note" rows="2" placeholder="What happened? (required)"></textarea></div>
+  </article>
+
+  <article class="step" data-step-id="checkout-declined:s4">
+    <div class="step-num">Step 4</div>
+    <h3>Confirm no confirmation event fired</h3>
+    <div class="step-block">
+      <div class="step-label">Action</div>
+      <p>Check the event log for an <code>order.confirmed</code> event tied to this cart's declined attempt.</p>
+      <div class="snippet">
+        <button type="button" class="copy-btn btn btn-secondary btn-sm">Copy</button>
+        <pre><code><span class="tok-com"># no event should exist for this cart_id — the payment never succeeded</span>
+<span class="tok-fn">curl</span> -s <span class="tok-str">"https://api.northwind-shop.com/v1/events?cart_id=8f61c2&amp;type=order.confirmed"</span> | <span class="tok-fn">jq</span> <span class="tok-str">'length'</span></code></pre>
+      </div>
+    </div>
+    <div class="step-block">
+      <div class="step-label">Pass</div>
+      <p><code>0</code> — the events array is empty.</p>
+    </div>
+    <div class="step-block watch">
+      <div class="step-label">Watch</div>
+      <p>A delayed webhook retry firing the confirmation email after the fact would show up here as a late <code>1</code> — if the count is <code>0</code> now but you're unsure, re-run this check a minute later before marking Pass.</p>
+    </div>
+    <div class="step-ctl">
+      <span class="step-ctl-lab">Result</span>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="pass" aria-pressed="false">Pass</button>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="fail" aria-pressed="false">Fail</button>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="blocked" aria-pressed="false">Blocked</button>
+      <button type="button" class="btn btn-secondary btn-sm state-btn" data-state="skipped" aria-pressed="false">Skipped</button>
+    </div>
+    <div class="reveal"><textarea class="reveal-box step-note" rows="2" placeholder="What happened? (required)"></textarea></div>
+  </article>
+</section>
+
+</main>
+
+<div class="toast" id="copy-toast">Copied to clipboard</div>
+
+<script src="capture.js"></script>
+<script>
+window.CAPTURE_SUBMIT_URL = ""; /* static example page - feedback falls back to the clipboard */
+
+(function () {
+  'use strict';
+
+  var FLOWS = [
+    { id: 'checkout-happy', steps: ['checkout-happy:s1', 'checkout-happy:s2', 'checkout-happy:s3', 'checkout-happy:s4'] },
+    { id: 'checkout-declined', steps: ['checkout-declined:s1', 'checkout-declined:s2', 'checkout-declined:s3', 'checkout-declined:s4'] }
+  ];
+  var ALL_IDS = FLOWS.reduce(function (a, f) { return a.concat(f.steps); }, []);
+  var TOTAL = ALL_IDS.length;
+
+  Capture.init({ view: 'testing-checklist', total: TOTAL });
+
+  function stepEl(id) { return document.querySelector('[data-step-id="' + id + '"]'); }
+
+  function currentItem(id) {
+    var items = Capture.payload().items;
+    for (var i = 0; i < items.length; i++) { if (items[i].id === id) { return items[i]; } }
+    return null;
+  }
+
+  function setStepUI(id) {
+    var card = stepEl(id);
+    if (!card) { return; }
+    var item = currentItem(id);
+    var val = item ? item.value : null;
+
+    var btns = card.querySelectorAll('.state-btn');
+    for (var i = 0; i < btns.length; i++) {
+      var isSel = btns[i].getAttribute('data-state') === val;
+      btns[i].classList.toggle('is-selected', isSel);
+      btns[i].setAttribute('aria-pressed', isSel ? 'true' : 'false');
+    }
+
+    var revealWrap = card.querySelector('.reveal');
+    var noteBox = card.querySelector('.step-note');
+    var showNote = (val === 'fail' || val === 'blocked' || val === 'skipped');
+    revealWrap.classList.toggle('is-open', showNote);
+    if (val === 'fail' || val === 'blocked') {
+      noteBox.placeholder = 'What happened? (required)';
+    } else if (val === 'skipped') {
+      noteBox.placeholder = 'Optional — why was this skipped?';
+    }
+
+    card.setAttribute('data-state', val || 'pending');
+  }
+
+  function countsFor(stepIds) {
+    var c = { pass: 0, fail: 0, blocked: 0, skipped: 0, pending: 0 };
+    stepIds.forEach(function (id) {
+      var item = currentItem(id);
+      var v = item ? item.value : 'pending';
+      c[v] = (c[v] || 0) + 1;
+    });
+    return c;
+  }
+
+  function renderSegments(el, counts, total) {
+    el.innerHTML = '';
+    ['pass', 'fail', 'blocked', 'skipped'].forEach(function (k) {
+      if (!counts[k]) { return; }
+      var seg = document.createElement('span');
+      seg.className = 'seg seg-' + k;
+      seg.style.width = (counts[k] / total * 100) + '%';
+      el.appendChild(seg);
+    });
+  }
+
+  function renderAll() {
+    ALL_IDS.forEach(setStepUI);
+
+    var overall = countsFor(ALL_IDS);
+    var resolved = TOTAL - overall.pending;
+    document.getElementById('progress-label').textContent = 'Resolved ' + resolved + ' / ' + TOTAL;
+    renderSegments(document.getElementById('progress-bar'), overall, TOTAL);
+
+    FLOWS.forEach(function (f) {
+      var c = countsFor(f.steps);
+      var flowResolved = f.steps.length - c.pending;
+      var lab = document.getElementById('flowlabel-' + f.id);
+      if (lab) { lab.textContent = flowResolved + ' / ' + f.steps.length; }
+      var el = document.getElementById('subbar-' + f.id);
+      if (el) { renderSegments(el, c, f.steps.length); }
+    });
+
+    var vals = ALL_IDS.map(function (id) { var it = currentItem(id); return it ? it.value : null; });
+    var engaged = vals.filter(Boolean).length;
+    var verdict = null;
+    if (engaged > 0) {
+      verdict = vals.some(function (v) { return v === 'fail' || v === 'blocked'; }) ? 'request_changes' : 'approve';
+    }
+    Capture.rollup(verdict);
+  }
+
+  function wireStep(id) {
+    var card = stepEl(id);
+    if (!card) { return; }
+    var noteBox = card.querySelector('.step-note');
+
+    var btns = card.querySelectorAll('.state-btn');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].addEventListener('click', function (e) {
+        var state = e.currentTarget.getAttribute('data-state');
+        var item = currentItem(id);
+        if (item && item.value === state) {
+          Capture.unmark(id);
+        } else {
+          var opts = {};
+          if (state === 'fail' || state === 'blocked' || state === 'skipped') {
+            opts.note = noteBox.value || undefined;
+          }
+          Capture.mark(id, state, opts);
+        }
+      });
+    }
+
+    noteBox.addEventListener('input', function () {
+      var item = currentItem(id);
+      if (item && item.value) { Capture.mark(id, item.value, { note: noteBox.value }); }
+    });
+  }
+
+  ALL_IDS.forEach(wireStep);
+
+  Capture.onChange(renderAll);
+  renderAll();
+
+  function firstFailOrBlockedWithEmptyNote() {
+    for (var i = 0; i < ALL_IDS.length; i++) {
+      var item = currentItem(ALL_IDS[i]);
+      if (item && (item.value === 'fail' || item.value === 'blocked') && !(item.note && item.note.trim())) {
+        return stepEl(ALL_IDS[i]).querySelector('.step-note');
+      }
+    }
+    return null;
+  }
+
+  Capture.setGate(function () {
+    var missing = firstFailOrBlockedWithEmptyNote();
+    if (missing) { return { ok: false, reason: 'Add a note to each Fail / Blocked step.', focus: missing }; }
+    if (Capture.payload().coverage.engaged === 0) {
+      return { ok: false, reason: 'Run at least one step before submitting.', focus: stepEl(ALL_IDS[0]) };
+    }
+    return { ok: true };
+  });
+
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (e) { /* best-effort */ }
+    document.body.removeChild(ta);
+  }
+
+  function showCopyToast() {
+    var t = document.getElementById('copy-toast');
+    t.classList.add('is-show');
+    setTimeout(function () { t.classList.remove('is-show'); }, 1400);
+  }
+
+  var copyBtns = document.querySelectorAll('.copy-btn');
+  for (var c = 0; c < copyBtns.length; c++) {
+    copyBtns[c].addEventListener('click', function (e) {
+      var pre = e.currentTarget.closest('.snippet').querySelector('pre code');
+      var text = pre.textContent;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(showCopyToast).catch(function () {
+          fallbackCopy(text);
+          showCopyToast();
+        });
+      } else {
+        fallbackCopy(text);
+        showCopyToast();
+      }
+    });
+  }
+})();
+</script>
+</body>
+</html>

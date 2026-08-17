@@ -1,0 +1,43 @@
+<!-- Classic settings form rows (paste inside .wrap > form). One <tr> per field.
+     th = label column, td = control. p.description for help text. -->
+<table class="form-table" role="presentation">
+	<tr>
+		<th scope="row"><label for="field-text">Text field</label></th>
+		<td>
+			<input name="field-text" id="field-text" type="text" value="" class="regular-text">
+			<p class="description">Help text under the field.</p>
+		</td>
+	</tr>
+	<tr>
+		<th scope="row"><label for="field-select">Select</label></th>
+		<td>
+			<select name="field-select" id="field-select">
+				<option>Option one</option>
+				<option>Option two</option>
+			</select>
+		</td>
+	</tr>
+	<tr>
+		<th scope="row">Checkbox</th>
+		<td><label><input type="checkbox" checked> Enable this behavior</label></td>
+	</tr>
+	<tr>
+		<th scope="row">Radio group</th>
+		<td>
+			<fieldset>
+				<legend class="screen-reader-text"><span>Radio group</span></legend>
+				<label><input type="radio" name="field-radio" checked> First choice</label><br>
+				<label><input type="radio" name="field-radio"> Second choice</label>
+			</fieldset>
+		</td>
+	</tr>
+	<tr>
+		<th scope="row"><label for="field-textarea">Textarea</label></th>
+		<td><textarea name="field-textarea" id="field-textarea" rows="5" cols="50" class="large-text"></textarea></td>
+	</tr>
+	<tr>
+		<th scope="row"><label for="field-number">Number</label></th>
+		<td><input name="field-number" id="field-number" type="number" value="10" class="small-text"> items</td>
+	</tr>
+</table>
+<p class="submit"><input type="submit" class="button button-primary" value="Save Changes"></p>

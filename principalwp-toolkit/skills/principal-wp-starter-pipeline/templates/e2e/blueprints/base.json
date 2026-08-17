@@ -1,0 +1,24 @@
+{
+	"$schema": "https://playground.wordpress.net/blueprint-schema.json",
+	"preferredVersions": {
+		"php": "8.4",
+		"wp": "latest"
+	},
+	"login": true,
+	"landingPage": "/wp-admin/",
+	"steps": [
+		{
+			"step": "setSiteOptions",
+			"options": {
+				"blogname": "E2E Test Site",
+				"permalink_structure": "/%postname%/"
+			}
+		},
+		{
+			"step": "defineWpConfigConsts",
+			"consts": {
+				"WP_DEBUG": true
+			}
+		}
+	]
+}

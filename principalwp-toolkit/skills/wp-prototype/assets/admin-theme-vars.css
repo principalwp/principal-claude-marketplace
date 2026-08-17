@@ -1,0 +1,15 @@
+/* Hand-authored (not harvested): the --wp-admin-theme-color custom properties.
+ * Real WordPress emits these inline from PHP for the active admin color scheme,
+ * so they exist in no harvestable CSS file — but several core rules (e.g. checked
+ * checkboxes in forms.css) use them WITHOUT fallbacks. Values below are the
+ * WP 7.0 default-scheme values, taken from the fallbacks core's own buttons.css
+ * uses. Re-check after a harvest against a new major version. */
+:root {
+	--wp-admin-theme-color: #3858e9;
+	--wp-admin-theme-color--rgb: 56, 88, 233;
+	--wp-admin-theme-color-darker-10: #2145e6;
+	--wp-admin-theme-color-darker-10--rgb: 33, 69, 230;
+	--wp-admin-theme-color-darker-20: #183ad6;
+	--wp-admin-theme-color-darker-20--rgb: 24, 58, 214;
+	--wp-admin-border-width-focus: 2px;
+}

@@ -1,0 +1,54 @@
+<!-- Side-by-side compare screen.
+
+     Add this as the LAST screen whenever the prototype has two or more
+     directions. Flipping between full-screen mockups one at a time is a poor
+     way to choose between them — this is the view where someone actually
+     decides, so it earns its place.
+
+     Rules that make it work:
+       - No editor chrome. The question here is about the block, not wp-admin.
+       - All variants stay on ONE row — seeing them at once is the whole point.
+         A direction that genuinely needs more room gets a min-width on its
+         column and the row scrolls sideways rather than wrapping.
+       - Each copy keeps its own state, so a reviewer can park them on
+         different scenarios and compare like for like.
+       - One honest sentence per column. Say the cost, not just the appeal. -->
+
+<section data-screen="compare" data-title="Compare all three"
+         data-subtitle="Front-end only, no editor chrome — each at the width it would really get.">
+	<div class="wpp-compare">
+		<div class="wpp-compare__grid">
+
+			<div class="wpp-compare__col">
+				<div class="wpp-compare__head">
+					<h3>A — Compact card</h3>
+					<p>Fits a narrow column. One answer, on demand.</p>
+				</div>
+				<div class="wpp-compare__body">
+					<!-- paste variant A's block markup here, without the editor shell -->
+				</div>
+			</div>
+
+			<div class="wpp-compare__col">
+				<div class="wpp-compare__head">
+					<h3>B — Live explorer</h3>
+					<p>Most engaging, but tall, and the defaults are the editor's problem.</p>
+				</div>
+				<div class="wpp-compare__body">
+					<!-- variant B -->
+				</div>
+			</div>
+
+			<div class="wpp-compare__col" style="min-width:520px">
+				<div class="wpp-compare__head">
+					<h3>C — Two-column panel</h3>
+					<p>Needs more room, so this column keeps a minimum width.</p>
+				</div>
+				<div class="wpp-compare__body">
+					<!-- variant C -->
+				</div>
+			</div>
+
+		</div>
+	</div>
+</section>

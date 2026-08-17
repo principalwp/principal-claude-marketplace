@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<!--
+  Gallery example for the htmlizer doc-review view: a five-section README draft for a
+  fictional Postgres snapshot CLI ("pgsnap"). The reviewer edits the document directly
+  in place; edits render as a live inline diff (green added, red struck out), and the
+  built-in General comments field is the "describe it instead of typing it" path.
+  Invented content built for the gallery — no real product, company, or release is
+  represented. House style via base.css.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>README review — pgsnap v0.9 (doc-review example)</title>
+<link rel="stylesheet" href="base.css">
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzhDMzM0NCIvPjxwYXRoIGQ9Ik0zMCAyMiBINTggYTE4IDE4IDAgMCAxIDAgMzYgSDQyIFY3OCBIMzAgWiBNNDIgMzMgVjQ3IEg1NiBhNyA3IDAgMCAwIDAgLTE0IFoiIGZpbGw9IiNmZmYiLz48L3N2Zz4=">
+<script src="capture.js"></script>
+<script>
+window.CAPTURE_SUBMIT_URL = ""; /* static example page - feedback falls back to the clipboard */
+</script>
+<style>
+/* ---- page-specific layout on top of base.css (house style) ---- */
+.intro-callout{margin-bottom:var(--space-4)}
+.intro-callout .lead{font-weight:600;color:var(--ink);margin:0 0 8px}
+.intro-callout p:last-child{margin-bottom:0}
+
+.editor-card{margin-bottom:var(--space)}
+.ed-toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.ed-status{font-size:14px;color:var(--text-muted)}
+.ed-actions{display:flex;gap:8px}
+
+#editor{min-height:440px;resize:vertical;font-family:var(--font-sans);font-size:15.5px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
+
+.preview-wrap{margin-top:var(--space)}
+.preview-head{display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;justify-content:space-between;margin:0 0 8px}
+.preview-head .h{font-size:14px;font-weight:600;color:var(--ink)}
+.preview-legend{font-size:13px;color:var(--text-muted)}
+.doc-preview{
+  background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);
+  padding:16px 18px;white-space:pre-wrap;overflow-wrap:anywhere;
+  font-size:15.5px;line-height:1.65;color:var(--text);min-height:120px;
+}
+
+/* diff marks — functional status colors (added=success, removed=error), the same
+   deliberate exception the code-review diff makes; never used for decoration. */
+ins.d-ins{background:color-mix(in srgb,var(--success) 16%,transparent);color:var(--ink);text-decoration:none;border-radius:2px}
+del.d-del{background:color-mix(in srgb,var(--error) 12%,transparent);color:var(--error);text-decoration:line-through;border-radius:2px}
+
+.preview-note{color:var(--text-muted);font-style:italic}
+#reveal-original{margin-top:var(--space)}
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <h1>README review — pgsnap v0.9</h1>
+  <p class="lede">Edit the document in place, or describe a change — whatever you touch comes back to Claude as tracked edits.</p>
+</header>
+
+<main class="wrap">
+
+  <div class="callout intro-callout">
+    <p class="lead">Edit the README directly in the box below. Your changes show up highlighted in the live preview underneath — green for added text, red struck-through for removed.</p>
+    <p>Would you rather describe a change than type it? Write it in the <b>General comments</b> box at the bottom of the page instead. You can do either, or both. Leave the text untouched and it's accepted as written. Submitting sends your edited document, the highlighted changes, and any comment back to Claude in one batch.</p>
+  </div>
+
+  <section class="editor-card card">
+    <div class="ed-toolbar">
+      <span class="ed-status" id="ed-status" aria-live="polite">No changes yet — leave it untouched to accept as written.</span>
+      <div class="ed-actions">
+        <button class="btn btn-secondary btn-sm" type="button" id="show-original" aria-pressed="false">Show original</button>
+        <button class="btn btn-secondary btn-sm" type="button" id="reset-doc">Reset to original</button>
+      </div>
+    </div>
+
+    <label for="editor">Edit the document</label>
+    <textarea id="editor" spellcheck="false">
+# pgsnap — Postgres snapshot CLI (v0.9)
+
+## Overview
+
+pgsnap takes a consistent, point-in-time snapshot of a Postgres database and uploads it straight to S3-compatible object storage, without holding a long-running transaction open on the source database. It wraps pg_dump's custom format with a manifest file — schema version, row counts per table, and the WAL position at the moment the snapshot started — so a snapshot can be checked and compared against an earlier one without restoring it first.
+
+It's meant to replace the ad hoc cron job most services run today: a raw `pg_dump | gzip | aws s3 cp` pipeline with no retry, no manifest, and no reliable way to tell whether last night's snapshot actually finished.
+
+## Install
+
+Two ways to install:
+
+- Homebrew: `brew install principalwp/tap/pgsnap`
+- Direct binary: download the release for your platform from the releases page and put it on your PATH.
+
+Requires Postgres 13 or newer on the source database, and the REPLICATION privilege on the connecting role — pgsnap opens a replication slot for the duration of the snapshot so it can capture a consistent WAL position without holding a long transaction open. No client-side dependencies beyond the binary itself; it statically links libpq.
+
+## Usage
+
+Three commands cover the whole workflow:
+
+```
+pgsnap take --db postgres://... --bucket s3://backups/prod
+pgsnap list --bucket s3://backups/prod
+pgsnap restore &lt;snapshot-id&gt; --db postgres://...
+```
+
+`take` streams straight to the bucket — it never writes the dump to local disk first, so a snapshot larger than the machine's free disk space still completes. `restore` requires an empty target database; it refuses to restore over one that already has tables, to avoid silently merging two schemas.
+
+## Security
+
+Credentials are read from the standard Postgres environment variables (PGPASSWORD, or a .pgpass file) and from the normal AWS credential chain (environment variables, shared config, or an instance role). pgsnap never accepts a password or access key on the command line, so neither one shows up in shell history or in ps output.
+
+Snapshots are encrypted at rest using the bucket's own server-side encryption — SSE-S3 or SSE-KMS, whichever the bucket is configured for. pgsnap does not add a second, client-side encryption layer on top. In transit, both the Postgres connection and the upload to S3 use TLS by default; --insecure turns off certificate verification for local testing only, and prints a warning every time it's used.
+
+## Limitations
+
+Known gaps in this release:
+
+- No support for snapshotting through a read replica — take must connect to the primary, because that's where it opens the replication slot.
+- Table-level snapshots aren't supported yet; every take captures the whole database. Scoping to a subset of tables is planned for a later release.
+- Large objects (pg_largeobject) are included in the dump but aren't covered by the manifest's row-count check, so a corrupted large object won't be caught by pgsnap verify — only a full restore will surface it.
+</textarea>
+
+    <div class="preview-wrap">
+      <div class="preview-head">
+        <span class="h">Inline changes</span>
+        <span class="preview-legend"><ins class="d-ins">added</ins> &middot; <del class="d-del">removed</del></span>
+      </div>
+      <div id="doc-preview" class="doc-preview"></div>
+    </div>
+
+    <div class="reveal" id="reveal-original">
+      <div class="preview-head"><span class="h">Original (read-only)</span></div>
+      <div id="original-view" class="doc-preview"></div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+"use strict";
+
+var editor = document.getElementById("editor");
+var preview = document.getElementById("doc-preview");
+var originalView = document.getElementById("original-view");
+var statusEl = document.getElementById("ed-status");
+var showBtn = document.getElementById("show-original");
+var resetBtn = document.getElementById("reset-doc");
+var origReveal = document.getElementById("reveal-original");
+
+var ORIGINAL = editor.value;
+var DOC_ID = "doc-body";
+
+Capture.init({ view: "doc-review", total: 1 });
+Capture.setMeta({ original: ORIGINAL });
+
+// The "describe it instead of editing" path is the built-in General comments field
+// (injected by Capture.init). We do NOT hand-add a second box; we just read it here so
+// a comment alone still derives request_changes.
+var commentsEl = document.getElementById("cap-comments-input");
+
+/* ---- word-level diff: vanilla LCS, no library ------------------------------- */
+function tokenize(s) { return s.match(/\s+|\S+/g) || []; }
+function isWs(t) { return /^\s+$/.test(t); }
+
+function diffTokens(a, b) {
+  var n = a.length, m = b.length, i, j;
+  var dp = new Array(n + 1);
+  for (i = 0; i <= n; i++) { dp[i] = new Array(m + 1); dp[i][m] = 0; }
+  for (j = 0; j <= m; j++) { dp[n][j] = 0; }
+  for (i = n - 1; i >= 0; i--) {
+    for (j = m - 1; j >= 0; j--) {
+      if (a[i] === b[j]) dp[i][j] = dp[i + 1][j + 1] + 1;
+      else dp[i][j] = dp[i + 1][j] >= dp[i][j + 1] ? dp[i + 1][j] : dp[i][j + 1];
+    }
+  }
+  var ops = [], x = 0, y = 0;
+  while (x < n && y < m) {
+    if (a[x] === b[y]) { ops.push({ t: "eq", s: a[x] }); x++; y++; }
+    else if (dp[x + 1][y] >= dp[x][y + 1]) { ops.push({ t: "del", s: a[x] }); x++; }
+    else { ops.push({ t: "ins", s: b[y] }); y++; }
+  }
+  while (x < n) { ops.push({ t: "del", s: a[x] }); x++; }
+  while (y < m) { ops.push({ t: "ins", s: b[y] }); y++; }
+  return ops;
+}
+
+// A lone whitespace-only change wedged between two unchanged runs is noise — fold it
+// back to unchanged so the preview doesn't sprout highlighted single spaces.
+function foldWs(ops) {
+  for (var i = 1; i < ops.length - 1; i++) {
+    if (ops[i].t !== "eq" && isWs(ops[i].s) && ops[i - 1].t === "eq" && ops[i + 1].t === "eq") {
+      if (ops[i].t === "del") { ops.splice(i, 1); i--; }
+      else { ops[i].t = "eq"; }
+    }
+  }
+  return ops;
+}
+
+function esc(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+// Merge adjacent same-type ops, then render. Reconstructs each side byte-for-byte.
+function render(ops) {
+  var html = "", i = 0;
+  while (i < ops.length) {
+    var t = ops[i].t, buf = "";
+    while (i < ops.length && ops[i].t === t) { buf += ops[i].s; i++; }
+    if (t === "eq") html += esc(buf);
+    else if (t === "del") html += '<del class="d-del">' + esc(buf) + "</del>";
+    else html += '<ins class="d-ins">' + esc(buf) + "</ins>";
+  }
+  return html;
+}
+
+// Compact change list for the payload: merged del/ins runs only (drops the unchanged text).
+function changedOps(ops) {
+  var out = [], i = 0;
+  while (i < ops.length) {
+    var t = ops[i].t, buf = "";
+    while (i < ops.length && ops[i].t === t) { buf += ops[i].s; i++; }
+    if (t !== "eq") out.push({ op: t, text: buf });
+  }
+  return out;
+}
+
+function counts(ops) {
+  var ins = 0, del = 0;
+  ops.forEach(function (o) {
+    if (isWs(o.s)) return;
+    if (o.t === "ins") ins++;
+    else if (o.t === "del") del++;
+  });
+  return { ins: ins, del: del };
+}
+
+/* ---- recompute: diff -> preview -> capture, on every (debounced) change ------ */
+var DIFF_BUDGET = 6000000;   // max LCS cells (tokensA * tokensB); above this, skip the live diff
+
+// Non-whitespace token sequence: used to decide "edited" so a whitespace-only change
+// (a stray trailing space, an extra blank line) does NOT flip the verdict or get captured.
+function nonWs(s) { return tokenize(s).filter(function (t) { return !isWs(t); }); }
+function sameSeq(a, b) {
+  if (a.length !== b.length) return false;
+  for (var i = 0; i < a.length; i++) { if (a[i] !== b[i]) return false; }
+  return true;
+}
+
+function recompute() {
+  var hasComment = !!(commentsEl && commentsEl.value.trim() !== "");
+  var edited = !sameSeq(nonWs(ORIGINAL), nonWs(editor.value));
+
+  if (!edited) {
+    // no change, or whitespace-only (ignored): show the text plain, capture nothing
+    preview.innerHTML = esc(editor.value);
+    Capture.unmark(DOC_ID);
+    statusEl.textContent = hasComment
+      ? "Comment added — submitting will request changes."
+      : "No changes yet — leave it untouched to accept as written.";
+  } else {
+    var a = tokenize(ORIGINAL), b = tokenize(editor.value);
+    if (a.length * b.length > DIFF_BUDGET) {
+      // large document: the live diff would freeze the tab — skip it, still capture the edit
+      preview.innerHTML = '<span class="preview-note">This document is large, so live change-highlighting is off — your edits are still captured and sent to Claude.</span>';
+      Capture.mark(DOC_ID, { status: "edited", text: editor.value, ops: [] },
+        { note: "edited (large document — inline diff not computed)" });
+      statusEl.textContent = "Edited — large document, live highlighting off; changes captured.";
+    } else {
+      var ops = foldWs(diffTokens(a, b));
+      preview.innerHTML = render(ops);
+      var c = counts(ops);
+      Capture.mark(DOC_ID, { status: "edited", text: editor.value, ops: changedOps(ops) },
+        { note: c.ins + " words added, " + c.del + " removed" });
+      statusEl.textContent = c.ins + " added · " + c.del + " removed — submitting will request changes.";
+    }
+  }
+
+  Capture.rollup((edited || hasComment) ? "request_changes" : "approve");
+}
+
+var timer = null;
+function schedule() {
+  if (timer) clearTimeout(timer);
+  timer = setTimeout(recompute, 180);
+}
+editor.addEventListener("input", schedule);
+if (commentsEl) commentsEl.addEventListener("input", schedule);
+
+showBtn.addEventListener("click", function () {
+  var on = showBtn.getAttribute("aria-pressed") !== "true";
+  showBtn.setAttribute("aria-pressed", String(on));
+  origReveal.classList.toggle("is-open", on);
+  showBtn.textContent = on ? "Hide original" : "Show original";
+  if (on) originalView.textContent = ORIGINAL;
+});
+
+resetBtn.addEventListener("click", function () {
+  editor.value = ORIGINAL;
+  recompute();
+  editor.focus();
+});
+
+// The one gate: a fully emptied editor is almost always an accidental wipe — UNLESS the
+// reviewer chose to describe the rewrite in the comment box instead (the offered recovery),
+// so an empty editor blocks only when there is also no comment. Pure read — no marks here.
+Capture.setGate(function () {
+  var hasComment = !!(commentsEl && commentsEl.value.trim() !== "");
+  if (editor.value.trim() === "" && !hasComment) {
+    return { ok: false, reason: "The document is empty — restore it or add a comment instead.", focus: editor };
+  }
+  return { ok: true };
+});
+
+recompute();
+</script>
+</body>
+</html>

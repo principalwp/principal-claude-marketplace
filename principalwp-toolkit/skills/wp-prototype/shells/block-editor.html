@@ -1,0 +1,167 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prototype — Block + Inspector</title>
+<style>
+/*@inline wpds-tokens.css*/
+</style>
+<style>
+/*@inline wpds-components.css*/
+</style>
+<style>
+/*@inline dashicons.min.css*/
+</style>
+<style>
+/*@inline wpp-runtime.css*/
+</style>
+<style>
+/* Editor-chrome sizing tweaks that only make sense in this shell */
+.editor-header .components-button.has-icon { width: 36px; }
+.editor-header .editor-header__inserter { width: 32px; height: 32px; min-width: 32px; margin-right: 8px; }
+.editor-header .dashicons { font-size: 20px; width: 20px; height: 20px; }
+/* SLOT:styles — block-specific CSS (how the block itself looks on the canvas). */
+</style>
+</head>
+<body class="wpds-root">
+
+<!-- For design variants, duplicate the whole <section data-screen> (chrome included)
+     and change the inspector/canvas inside it. The switcher bar appears automatically.
+     IMPORTANT: give each variant's radio inputs unique name= values (e.g. a-layout /
+     b-layout) — there are no <form>s here, so same-name radios group document-wide
+     and checked state leaks between screens. -->
+<section data-screen="default" data-title="Default">
+	<div class="interface-interface-skeleton">
+
+		<!-- ===== Editor top bar (chrome — usually leave as is) ===== -->
+		<div class="editor-header">
+			<button class="components-button is-primary has-icon editor-header__inserter" aria-label="Block inserter"><span class="dashicons dashicons-plus-alt2"></span></button>
+			<button class="components-button has-icon" aria-label="Undo"><span class="dashicons dashicons-undo"></span></button>
+			<button class="components-button has-icon" aria-label="Redo"><span class="dashicons dashicons-redo"></span></button>
+			<button class="components-button has-icon" aria-label="Document overview"><span class="dashicons dashicons-editor-ul"></span></button>
+			<div class="editor-header__center"><strong>Sample post</strong> · Draft</div>
+			<div class="editor-header__end">
+				<button class="components-button is-tertiary">Save draft</button>
+				<!-- Viewport preview: narrows .editor-canvas__paper, like Gutenberg's
+				     View menu. Delete if the prototype has nothing width-sensitive. -->
+				<button class="components-button is-tertiary is-pressed" data-viewport="desktop">Desktop</button>
+				<button class="components-button is-tertiary" data-viewport="tablet">Tablet</button>
+				<button class="components-button is-tertiary" data-viewport="mobile">Mobile</button>
+				<button class="components-button is-primary">Publish</button>
+				<button class="components-button has-icon" aria-label="Settings"><span class="dashicons dashicons-admin-generic"></span></button>
+				<button class="components-button has-icon" aria-label="Options"><span class="dashicons dashicons-ellipsis"></span></button>
+			</div>
+		</div>
+
+		<div class="interface-interface-skeleton__body">
+
+			<!-- ===== Canvas (SLOT:canvas — the block being prototyped, shown selected) ===== -->
+			<div class="interface-interface-skeleton__content">
+				<div class="editor-canvas__paper">
+					<h1>Sample post</h1>
+					<p>Some surrounding paragraph content so the block sits in a realistic page. The block below is selected, so its toolbar and inspector controls are visible.</p>
+
+					<!-- The block toolbar floats ABOVE this box and overlaps whatever sits
+					     above it. Keep ~48px of top margin, or put a paragraph there —
+					     otherwise the toolbar lands on the heading and the screenshot
+					     looks broken. -->
+					<div class="is-selected-block" style="position: relative; margin: 48px 0 32px; padding: 24px;">
+						<div class="block-editor-block-toolbar">
+							<div class="block-editor-block-toolbar__group">
+								<button class="components-button has-icon" aria-label="Block type"><span class="dashicons dashicons-block-default"></span></button>
+								<button class="components-button has-icon" aria-label="Drag"><span class="dashicons dashicons-move"></span></button>
+							</div>
+							<div class="block-editor-block-toolbar__group">
+								<button class="components-button has-icon" aria-label="Align"><span class="dashicons dashicons-align-center"></span></button>
+							</div>
+							<div class="block-editor-block-toolbar__group">
+								<button class="components-button has-icon" aria-label="Options"><span class="dashicons dashicons-ellipsis"></span></button>
+							</div>
+						</div>
+						<!-- The block's front-end appearance goes here -->
+						<p style="margin: 0; font-size: 18px;">My block preview</p>
+					</div>
+
+					<p>Another paragraph after the block to complete the picture.</p>
+				</div>
+			</div>
+
+			<!-- ===== Inspector sidebar (SLOT:inspector — the controls being prototyped) ===== -->
+			<div class="interface-interface-skeleton__sidebar">
+				<div class="block-editor-block-card">
+					<span class="block-editor-block-card__icon"><span class="dashicons dashicons-block-default"></span></span>
+					<div>
+						<h2 class="block-editor-block-card__title">My Block</h2>
+						<p class="block-editor-block-card__description">One sentence on what this block does.</p>
+					</div>
+				</div>
+
+				<div data-tab-group>
+					<div class="components-tab-panel__tabs">
+						<button class="components-tab-panel__tabs-item is-active" data-tab="settings">Settings</button>
+						<button class="components-tab-panel__tabs-item" data-tab="styles">Styles</button>
+					</div>
+
+					<div data-tab-panel="settings">
+						<div class="components-panel">
+							<div class="components-panel__body is-opened">
+								<button class="components-panel__body-title">Display</button>
+								<div class="components-panel__body-content">
+									<label class="components-toggle-control">
+										<span class="components-form-toggle"><input type="checkbox" checked><span class="components-form-toggle__track"></span><span class="components-form-toggle__thumb"></span></span>
+										<span class="components-toggle-control__label">Show title</span>
+									</label>
+									<div class="components-base-control">
+										<label class="components-base-control__label">Layout</label>
+										<div class="components-toggle-group-control" role="radiogroup" aria-label="Layout">
+											<label><input type="radio" name="layout" checked><span>List</span></label>
+											<label><input type="radio" name="layout"><span>Grid</span></label>
+											<label><input type="radio" name="layout"><span>Carousel</span></label>
+										</div>
+									</div>
+									<div class="components-base-control">
+										<label class="components-base-control__label">Items</label>
+										<div class="components-range-control">
+											<input type="range" min="1" max="10" value="3">
+											<input type="number" class="components-range-control__number" value="3">
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="components-panel__body">
+								<button class="components-panel__body-title">Advanced</button>
+								<div class="components-panel__body-content">
+									<div class="components-base-control">
+										<label class="components-base-control__label">HTML anchor</label>
+										<input type="text" class="components-text-control__input">
+										<p class="components-base-control__help">Add an anchor to link directly to this block.</p>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div data-tab-panel="styles" style="display: none">
+						<div class="components-panel">
+							<div class="components-panel__body is-opened">
+								<button class="components-panel__body-title">Color</button>
+								<div class="components-panel__body-content">
+									<div class="components-color-list-picker__row"><span class="components-color-indicator" style="background:#1e1e1e"></span> Text</div>
+									<div class="components-color-list-picker__row"><span class="components-color-indicator" style="background:#fff"></span> Background</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+		</div>
+	</div>
+</section>
+
+<script>
+/*@inline wpp-runtime.js*/
+</script>
+</body>
+</html>

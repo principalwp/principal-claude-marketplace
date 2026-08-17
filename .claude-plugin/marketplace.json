@@ -1,0 +1,19 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "principalwp",
+  "description": "Principal WP's public Claude Code toolkit.",
+  "owner": {
+    "name": "Principal WP",
+    "url": "https://principalwp.com"
+  },
+  "plugins": [
+    {
+      "name": "principalwp-toolkit",
+      "source": "./principalwp-toolkit",
+      "description": "Three Principal WP tools in one install: htmlizer (render a plan, review, or design into an interactive local HTML page and get the reader's feedback back into the session), wp-prototype (clickable single-file mockups of WordPress admin UI), and the WordPress Starter Pipeline (turn one component change into a reviewed, tested PR through gated agent phases).",
+      "author": { "name": "Principal WP", "url": "https://principalwp.com" },
+      "category": "development",
+      "keywords": ["wordpress", "prototype", "review", "html", "pipeline", "gutenberg", "wp-admin"]
+    }
+  ]
+}

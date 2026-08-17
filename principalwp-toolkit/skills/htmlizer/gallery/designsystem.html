@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<!-- Example page built from invented data for the htmlizer public gallery.
+     No real client, project, or repository is represented. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design system — Principal WP</title>
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzhDMzM0NCIvPjxwYXRoIGQ9Ik0zMCAyMiBINTggYTE4IDE4IDAgMCAxIDAgMzYgSDQyIFY3OCBIMzAgWiBNNDIgMzMgVjQ3IEg1NiBhNyA3IDAgMCAwIDAgLTE0IFoiIGZpbGw9IiNmZmYiLz48L3N2Zz4=">
+<link rel="stylesheet" href="base.css">
+<style>
+  /* live-tunable demo tokens (component-variants writes these onto the picked preview) */
+  :root{--demo-pad:28px;--demo-radius:var(--r-md);--demo-accent:var(--accent);--demo-border:1px}
+
+  /* ---------- tab nav: sticky chrome wrapping the shared .tabs/.tab component ---------- */
+  .tabbar{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--border)}
+  .tabbar .tabs{margin:0;border-bottom:none}
+
+  main{padding:var(--space-1) 0 var(--space-5)}
+  .view{display:none}
+  .view.active{display:block}
+  .view-head{max-width:72ch;margin:var(--space-4) 0}
+  .view-head h2{margin:0 0 var(--space-1)}
+  .view-head p{margin:0;color:var(--text)}
+  .tally{display:block;font-size:16px;color:var(--text)}
+
+  .block{margin:0 0 var(--space-5)}
+  .block-title{margin:0 0 var(--space-3);padding-bottom:var(--space-2);border-bottom:1px solid var(--border)}
+  .block-title h3{margin:0 0 4px}
+  .block-title .hint{font-size:14px;color:var(--text)}
+
+  /* ---------- color swatches (large, readable, mono hex) ---------- */
+  .swatch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(196px,1fr));gap:var(--space-3)}
+  .swatch{border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;background:var(--surface);display:flex;flex-direction:column}
+  .swatch .chip{height:88px;border-bottom:1px solid color-mix(in srgb, var(--ink) 8%, transparent)}
+  .swatch .info{padding:var(--space-2) var(--space-2) 0;display:flex;flex-direction:column;gap:3px}
+  .swatch .name{font-family:var(--font-mono);font-size:14px;font-weight:600;color:var(--ink)}
+  .swatch .hex{font-family:var(--font-mono);font-size:13.5px;color:var(--text);text-transform:uppercase;letter-spacing:.02em}
+  .swatch-group-label{grid-column:1/-1;font-size:15px;font-weight:600;color:var(--ink);margin:var(--space-3) 0 0}
+
+  /* ---------- type scale: samples render at the REAL base heading sizes ---------- */
+  .type-row{display:flex;align-items:baseline;gap:var(--space-3);padding:var(--space-3) 0;border-bottom:1px solid var(--border);flex-wrap:wrap}
+  .type-meta{flex:0 0 190px;font-family:var(--font-mono);font-size:14.5px;color:var(--text);line-height:1.5}
+  .type-meta b{display:block;color:var(--ink);font-weight:600;font-size:14.5px;font-family:var(--font-sans)}
+  .type-sample{color:var(--ink);margin:0;line-height:1.25;min-width:0}
+
+  /* ---------- spacing ruler ---------- */
+  .ruler{display:flex;flex-direction:column;gap:var(--space-2)}
+  .ruler-row{display:flex;align-items:center;gap:var(--space-3);flex-wrap:wrap}
+  .ruler-row .lbl{flex:0 0 116px;font-family:var(--font-mono);font-size:14px;color:var(--text)}
+  .ruler-row .bar{height:18px;background:var(--border-strong);border-radius:var(--r-sm)}
+  .ruler-row .px{font-family:var(--font-mono);font-size:14px;color:var(--text)}
+
+  /* ---------- radii ---------- */
+  .radii{display:flex;gap:var(--space-4);flex-wrap:wrap}
+  .radii .r{min-width:160px}
+  .radii .r .box{width:104px;height:74px;background:var(--surface);border:1px solid var(--border-strong)}
+  .radii .r .cap{margin-top:var(--space-2);font-family:var(--font-mono);font-size:14px;color:var(--text)}
+  .radii .r .cap b{display:block;color:var(--ink);font-weight:600}
+
+  /* ---------- per-token capture: one Keep / Flag toggle + optional note ---------- */
+  .tok-cap{border-top:1px solid var(--border);margin-top:var(--space-2);padding-top:var(--space-2)}
+  .swatch .tok-cap{margin-top:var(--space-2);padding:var(--space-2);border-top:1px solid var(--border)}
+  .type-row .tok-cap,.ruler-row .tok-cap,.radii .r .tok-cap{flex-basis:100%;width:100%}
+
+  /* ---------- component variants: pick one, optionally tune ---------- */
+  .variants{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:var(--space-3);align-items:start}
+  .vcard-head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-2);margin-bottom:var(--space-2)}
+  .vcard-name{font-size:18px;font-weight:600;color:var(--ink)}
+  .vpick{display:flex;align-items:center;gap:var(--space-2);font-size:16px;font-weight:600;color:var(--ink);cursor:pointer;margin-bottom:var(--space-3)}
+  .vtune[hidden]{display:none}
+  /* escape hatch: "none of these" pick spans the gallery and reveals a free-text box */
+  .vcard-other{grid-column:1/-1}
+  .vtune{border-top:1px solid var(--border);margin-top:var(--space-3);padding-top:var(--space-3)}
+  .control{margin-bottom:var(--space-3)}
+  .control .clabel{display:flex;justify-content:space-between;align-items:baseline;font-size:15px;font-weight:600;color:var(--ink);margin-bottom:var(--space-1)}
+  .control .val{font-family:var(--font-mono);font-size:14px;font-weight:600;color:var(--accent)}
+  input[type=range]{width:100%;accent-color:var(--accent);margin:0}
+  .radios{display:flex;gap:var(--space-1);flex-wrap:wrap}
+  .radios label{display:inline-flex;align-items:center;gap:7px;font-weight:500;font-size:16px;color:var(--text);
+                border:1px solid var(--border-strong);border-radius:var(--r-md);padding:8px 12px;cursor:pointer;margin:0;min-height:38px}
+  .radios label:hover{border-color:var(--ink)}
+  .demo-card{background:var(--surface);border:var(--demo-border) solid var(--border);border-radius:var(--demo-radius);padding:var(--demo-pad);
+             transition:padding 120ms ease,border-radius 120ms ease,border-width 120ms ease}
+  .demo-card h3{margin:0 0 var(--space-1)}
+  .demo-card p{margin:0 0 var(--space-3);color:var(--text)}
+  .demo-btn{background:var(--demo-accent);color:var(--accent-fg);border:none;border-radius:var(--demo-radius);padding:9px 16px;
+            font-family:var(--font-sans);font-size:16px;font-weight:600;cursor:pointer;
+            transition:border-radius 120ms ease,padding 120ms ease}
+
+  /* ---------- visual designs: surface toggle + per-surface verdict ---------- */
+  .seg{display:inline-flex;border:1px solid var(--border-strong);border-radius:var(--r-md);overflow:hidden}
+  .seg button{appearance:none;border:none;background:var(--surface);font-family:var(--font-sans);font-size:16px;font-weight:600;
+              color:var(--text);padding:9px 18px;cursor:pointer;min-height:38px}
+  .seg button + button{border-left:1px solid var(--border-strong)}
+  .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+  .stage{margin-top:var(--space-3);border-radius:var(--r-lg);padding:var(--space-4);border:1px solid var(--border)}
+  .stage.light{background:var(--surface-2)}
+  /* Navy here is the surface UNDER REVIEW (the dark-mode preview), not page chrome —
+     the whole point of this view is to check the tokens read on a dark surface. */
+  .stage.dark{background:var(--ink);border-color:var(--border-on-dark)}
+  .comp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:var(--space-3)}
+  .comp{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px}
+  .stage.dark .comp{background:#1f3052;border-color:var(--border-on-dark)}
+  .comp h3{margin:0 0 var(--space-2)}
+  .comp p{margin:0;font-size:16px;color:var(--text)}
+  .comp .stat{font-family:var(--font-sans);font-size:42px;font-weight:600;color:var(--ink);line-height:1;margin:0 0 var(--space-1)}
+  .comp .stat .unit{font-size:16px;font-weight:500;color:var(--text)}
+  .comp .steps{list-style:none;margin:var(--space-2) 0 0;padding:0;display:flex;flex-direction:column;gap:9px}
+  .comp .steps li{display:flex;gap:10px;align-items:baseline;font-size:16px;color:var(--text)}
+  .comp .steps .n{font-family:var(--font-mono);font-size:13px;color:var(--text-muted);flex:0 0 auto}
+  .comp .clink{display:inline-block;margin-top:var(--space-2);font-size:16px;font-weight:600}
+  /* dark-surface text */
+  .stage.dark .comp h3,.stage.dark .comp .stat{color:#fff}
+  .stage.dark .comp p,.stage.dark .comp .steps li{color:#C7D4E6}
+  .stage.dark .comp .stat .unit,.stage.dark .comp .steps .n{color:#A8C0CF}
+  .stage.dark .comp .clink{color:#C7D4E6}
+
+  /* verdict panel reuses the shared .callout (accent bar + tint); only layout here */
+  .vpanel{margin-top:var(--space-4)}
+  .vpanel .callout-q{margin:0 0 var(--space-3)}
+  .vpanel .callout-q .vsurface{color:var(--accent)}
+  .vrail{display:flex;gap:var(--space-2);flex-wrap:wrap}
+
+  /* the ask, elevated as the focal point in every view's live callout */
+  .view-head .callout-q{margin:0 0 var(--space-2)}
+
+  /* verdict rail is a radiogroup: selected radio reads as the cranberry pick */
+  .vrail .btn[role="radio"][aria-checked="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+
+  [hidden]{display:none !important}
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <h1>Design system</h1>
+  <p class="lede">The house-style tokens, the component variants, and a light/navy surface check &mdash;
+    each one a quick review pass. Resting state is keep: flag only what is wrong, pick one variant,
+    and give one verdict per surface. Everything routes through a single batched submit.</p>
+</header>
+
+<nav class="tabbar">
+  <div class="wrap">
+    <div class="tabs" role="tablist" aria-label="Design system review views">
+      <button class="tab" role="tab" id="tab-ds" aria-controls="view-ds" aria-selected="true" tabindex="0" data-view="ds">Tokens</button>
+      <button class="tab" role="tab" id="tab-cv" aria-controls="view-cv" aria-selected="false" tabindex="-1" data-view="cv">Component variants</button>
+      <button class="tab" role="tab" id="tab-vd" aria-controls="view-vd" aria-selected="false" tabindex="-1" data-view="vd">Visual designs</button>
+    </div>
+  </div>
+</nav>
+
+<main class="wrap">
+
+  <!-- ========================= VIEW A: DESIGN SYSTEM ========================= -->
+  <section class="view active" id="view-ds" role="tabpanel" aria-labelledby="tab-ds" tabindex="0">
+    <div class="view-head">
+      <h2>Color, type, space, and radius</h2>
+      <p>The token inventory behind this gallery, rendered at size. Most are correct &mdash; leave them.
+        Flag any token that is wrong and add a one-line note saying what it should be. A flag is the only
+        signal you need; silence means keep.</p>
+      <div class="callout is-live">
+        <p class="callout-q"><strong>Question:</strong> Which tokens are wrong? Flag them &mdash; silence keeps the rest.</p>
+      </div>
+    </div>
+
+    <section class="block">
+      <div class="block-title"><h3>Color</h3><span class="hint">15 tokens &mdash; flag any that drift from the brand or fail contrast</span></div>
+      <div class="swatch-grid" id="swatchGrid"></div>
+    </section>
+
+    <section class="block">
+      <div class="block-title"><h3>Type scale</h3><span class="hint">H1 is Instrument Serif (the display heading); h2&ndash;h4 are IBM Plex Sans, just larger and bolder. Small is the 13px caption size. Mono for code and identifiers only.</span></div>
+      <div id="typeScale"></div>
+    </section>
+
+    <section class="block">
+      <div class="block-title"><h3>Spacing</h3><span class="hint">A 4px base step</span></div>
+      <div class="ruler" id="ruler"></div>
+    </section>
+
+    <section class="block">
+      <div class="block-title"><h3>Radii</h3><span class="hint">Only 5 / 8 / 10</span></div>
+      <div class="radii" id="radii"></div>
+    </section>
+  </section>
+
+  <!-- ========================= VIEW B: COMPONENT VARIANTS ========================= -->
+  <section class="view" id="view-cv" role="tabpanel" aria-labelledby="tab-cv" tabindex="0">
+    <div class="view-head">
+      <h2>Pick the variant that should ship</h2>
+      <p>One order-summary card, styled three ways. The agent recommends one of them; pick the single winner.
+        Picking opens a tune panel on that card so you can optionally adjust its tokens &mdash; the
+        preview updates live and the submit records your pick plus any value you changed.</p>
+      <p class="reco">Recommended: <strong>Balanced</strong> <span class="why" tabindex="0">(why)<span class="why-pop">Uses the house defaults (28px padding, 8px / --r-md radius, a 1px border, the cranberry accent), so it matches the rest of the system without retuning.</span></span></p>
+      <div class="callout is-live">
+        <p class="callout-q"><strong>Question:</strong> Which single variant should ship?</p>
+      </div>
+    </div>
+
+    <div class="variants" id="variants" role="radiogroup" aria-label="Component variants — pick the winner"></div>
+  </section>
+
+  <!-- ========================= VIEW C: VISUAL DESIGNS ========================= -->
+  <section class="view" id="view-vd" role="tabpanel" aria-labelledby="tab-vd" tabindex="0">
+    <div class="view-head">
+      <h2>Does the system read on either surface</h2>
+      <p>Four compositions drawn from Northwind's storefront checkout flow &mdash; the cart-to-receipt path a
+        shopper walks, not the order-fulfilment pipeline that starts after payment &mdash; shown on a light
+        surface and a navy one. Flip the surface and give one clear verdict for what you see; a design can
+        ship in light and fail in navy. Each surface gets its own verdict, and an un-rated surface counts as Ship.</p>
+      <div class="callout is-live">
+        <span class="callout-label">Verdicts so far</span>
+        <span class="tally" id="vdTally"></span>
+      </div>
+    </div>
+
+    <div class="seg" role="group" aria-label="Surface">
+      <button data-surface="light" aria-pressed="true">Light</button>
+      <button data-surface="dark" aria-pressed="false">Navy</button>
+    </div>
+
+    <div class="stage light" id="stage">
+      <div class="comp-grid">
+
+        <div class="comp">
+          <h3>Cart to receipt</h3>
+          <p>Six screens sit between a full cart and a receipt. None of them reaches into the warehouse &mdash;
+            everything after the money moves belongs to fulfilment, which is a separate story.</p>
+          <a class="clink" href="#" data-specimen>Open the screen inventory →</a>
+        </div>
+
+        <div class="comp">
+          <div class="stat">2.4<span class="unit">s median</span></div>
+          <p>Measured from the moment a shopper taps Place order to the receipt painting, on the slowest of the
+            three payment providers Northwind accepts.</p>
+        </div>
+
+        <div class="comp">
+          <h3>What the review screen owes the shopper</h3>
+          <p>The last screen before payment repeats every number the shopper is about to agree to, in the
+            order they will look for it.</p>
+          <ul class="steps">
+            <li><span class="n">1</span>Line items, at the price the cart showed</li>
+            <li><span class="n">2</span>Shipping, named and dated</li>
+            <li><span class="n">3</span>Tax, broken out rather than folded in</li>
+            <li><span class="n">4</span>The card, last four digits only</li>
+          </ul>
+        </div>
+
+        <div class="comp">
+          <h3>Guest checkout is the default</h3>
+          <p>Nobody is asked to make an account to buy something. The offer comes on the receipt screen,
+            after the charge has cleared, with the order already attached to it.</p>
+          <a class="clink" href="#" data-specimen>Guest and signed-in, side by side</a>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="callout is-live vpanel">
+      <p class="callout-q"><strong>Question:</strong> Does the system read on the <span class="vsurface" id="vdSurfaceLabel">Light</span> surface?</p>
+      <div class="vrail" id="vdRail" role="radiogroup" aria-label="Verdict for the current surface"></div>
+      <textarea class="reveal reveal-box" id="vdNote" placeholder="What needs fixing on this surface? (optional)"></textarea>
+    </div>
+  </section>
+
+</main>
+
+<footer style="border-top:1px solid var(--border);padding:24px;color:var(--text-muted);font-size:14px">
+  <div class="wrap" style="padding:0">
+    Principal WP design system &mdash; review reference. Tokens documented from
+    <code class="file">gallery/base.css</code>. Every line of sample copy on this page is invented to fill
+    the specimens, and describes Northwind's storefront checkout flow.
+  </div>
+</footer>
+
+<!-- shared capture primitive (same-origin) + page-level submit endpoint -->
+<script src="capture.js"></script>
+<script>window.CAPTURE_SUBMIT_URL = ""; /* static example page - feedback falls back to the clipboard */</script>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============================================================
+     CAPTURE BOOTSTRAP
+     One singleton Capture for the whole page; ids are namespaced
+     per view (ds:/cv:/vd:) so one batched submit carries all three.
+     ============================================================ */
+  var DS_TOTAL = 33;        // 15 colors + 7 type + 8 space + 3 radii
+  var CV_TOTAL = 1;         // one winner pick across the variant gallery
+  var VD_TOTAL = 2;         // one verdict per surface (light + navy)
+  var PAGE_TOTAL = DS_TOTAL + CV_TOTAL + VD_TOTAL;
+  var hasCapture = !!window.Capture;
+  if (hasCapture) { window.Capture.init({ view: 'design-system-gallery', total: PAGE_TOTAL }); }
+  function mark(id, value, opts){ if(hasCapture) window.Capture.mark(id, value, opts); }
+  function unmark(id){ if(hasCapture) window.Capture.unmark(id); }
+  function setMeta(obj){ if(hasCapture && window.Capture.setMeta) window.Capture.setMeta(obj); }
+
+  var lastVerdicts = { ds:'approve', cv:'approve', vd:'approve' };
+  var VERDICT_ORDER = { approve:0, request_changes:1 };
+
+  var CV_RECOMMENDED = 'balanced';   // the variant the agent recommends (delta-vs-proposal baseline)
+
+  /* ============================================================
+     VIEW A — design-system: per-token Keep / Flag (+ optional note)
+     ============================================================ */
+  var cardState = {};   // tokenId -> { flagged, note }
+
+  function applyToken(id){
+    var s = cardState[id], key = "ds:"+id;
+    if(!s || !s.flagged){ unmark(key); return; }
+    mark(key, "flag", { note: s.note || undefined, anchor: id });
+  }
+
+  function dsVerdict(){
+    // Token flags are FEEDBACK — they ride along in the payload items and never
+    // change the verdict. This view has no blocking gesture, so it is always approve.
+    return "approve";
+  }
+
+  function attachCapture(host, opts){
+    var id = opts.id;
+    cardState[id] = { flagged:false, note:"" };
+
+    var wrap = document.createElement("div"); wrap.className = "tok-cap";
+
+    var btn = document.createElement("button");
+    btn.type = "button"; btn.className = "btn btn-secondary";
+    btn.setAttribute("aria-pressed","false");
+    btn.setAttribute("aria-label","Flag "+id);
+    btn.textContent = "Flag";
+
+    var note = document.createElement("textarea");
+    note.className = "reveal reveal-box";
+    note.placeholder = "What's wrong with this token, and what should it be? (optional)";
+    note.addEventListener("input", function(){ cardState[id].note = note.value; applyToken(id); });
+
+    btn.addEventListener("click", function(){
+      var s = cardState[id];
+      s.flagged = !s.flagged;
+      btn.setAttribute("aria-pressed", s.flagged ? "true" : "false");
+      btn.textContent = s.flagged ? "Flagged" : "Flag";
+      note.classList.toggle("is-open", s.flagged);
+      if(!s.flagged){ s.note = ""; note.value = ""; }
+      applyToken(id); recompute();
+    });
+
+    wrap.appendChild(btn); wrap.appendChild(note); host.appendChild(wrap);
+  }
+
+  /* ---------- data: house-style token inventory (from base.css) ---------- */
+  var COLORS = [
+    {g:"Text"},
+    {n:"ink",h:"#1B2A4A"},{n:"text",h:"#1B2A4A"},{n:"text-muted",h:"#3D4965"},{n:"text-faint",h:"#5A6678"},
+    {g:"Surfaces"},
+    {n:"bg",h:"#FBFBFC"},{n:"surface",h:"#FFFFFF"},{n:"surface-2",h:"#F4F6FA"},
+    {g:"Borders"},
+    {n:"border",h:"#DCDFE3"},{n:"border-strong",h:"#C2C7D0"},
+    {g:"Accent — cranberry"},
+    {n:"accent",h:"#8C3344"},{n:"accent-hover",h:"#6D2735"},{n:"accent-wash",h:"#F3EBF0"},
+    {g:"Status — functional only"},
+    {n:"success",h:"#4F7A12"},{n:"warning",h:"#8A5800"},{n:"error",h:"#C0392B"}
+  ];
+
+  var grid = document.getElementById("swatchGrid");
+  COLORS.forEach(function(c){
+    if(c.g){
+      var lab = document.createElement("div");
+      lab.className = "swatch-group-label"; lab.textContent = c.g;
+      grid.appendChild(lab); return;
+    }
+    var el = document.createElement("div");
+    el.className = "swatch";
+    el.innerHTML =
+      '<div class="chip" style="background:'+c.h+'"></div>'+
+      '<div class="info"><span class="name">--'+c.n+'</span><span class="hex">'+c.h+'</span></div>';
+    attachCapture(el, { id:"color."+c.n });
+    grid.appendChild(el);
+  });
+
+  /* ---------- type scale ----------
+     Heading rows render the ACTUAL base h1–h4 elements, so the demo always
+     mirrors base.css exactly. H1 is now Instrument Serif (var(--font-display),
+     35px) — the display heading; it reads clearly different and larger than
+     M (h2, Plex Sans 22px). S is h3 (18px) and XS is h4 (16.5px). Body, Small
+     and Mono are spans rendered at their literal px size. */
+  var TYPE = [
+    {b:"Heading L (H1)", tag:"h1", d:"Instrument Serif 400 · 35px · display", t:"Your order, before you pay"},
+    {b:"Heading M",  tag:"h2", d:"Plex Sans 600 · 22px",  t:"Shipping and delivery"},
+    {b:"Heading S",  tag:"h3", d:"Plex Sans 600 · 18px",  t:"Saved addresses"},
+    {b:"Heading XS", tag:"h4", d:"Plex Sans 600 · 16.5px",t:"Promo code"},
+    {b:"Body",       d:"Plex Sans · 16.5px", px:16.5, t:"Totals refresh whenever the cart changes, so the review screen and the receipt never disagree."},
+    {b:"Small",      d:"Plex Sans · 13px · muted", px:13, c:"var(--text-muted)", t:"Prices include VAT where the delivery address requires it."},
+    {b:"Mono",       d:"Plex Mono · 14px",   px:14, mono:true, t:"checkout/review-screen.tsx:118"}
+  ];
+  var ts = document.getElementById("typeScale");
+  TYPE.forEach(function(t){
+    var row = document.createElement("div");
+    row.className = "type-row";
+    var sample;
+    if(t.tag){
+      sample = '<'+t.tag+' class="type-sample">'+t.t+'</'+t.tag+'>';
+    } else {
+      var style = "font-size:"+t.px+"px;"+(t.mono ? "font-family:var(--font-mono);" : "font-family:var(--font-sans);")
+                + (t.c ? "color:"+t.c+";" : "");
+      sample = '<div class="type-sample" style="'+style+'">'+t.t+'</div>';
+    }
+    row.innerHTML =
+      '<div class="type-meta"><b>'+t.b+'</b>'+t.d+'</div>'+ sample;
+    var slug = t.b.toLowerCase().replace(/\s+/g,"-").replace(/\./g,"");
+    attachCapture(row, { id:"type."+slug });
+    ts.appendChild(row);
+  });
+
+  /* ---------- spacing ruler ---------- */
+  var SPACE = [4,8,12,16,24,32,48,64];
+  var ruler = document.getElementById("ruler");
+  SPACE.forEach(function(s){
+    var row = document.createElement("div");
+    row.className = "ruler-row";
+    row.innerHTML =
+      '<span class="lbl">space-'+s+'</span>'+
+      '<span class="bar" style="width:'+s+'px"></span>'+
+      '<span class="px">'+s+'px</span>';
+    attachCapture(row, { id:"space."+s });
+    ruler.appendChild(row);
+  });
+
+  /* ---------- radii ---------- */
+  var RADII = [
+    {k:"--r-sm",v:5,id:"radius.sm"},
+    {k:"--r-md",v:8,id:"radius.md"},
+    {k:"--r-lg",v:10,id:"radius.lg"}
+  ];
+  var rad = document.getElementById("radii");
+  RADII.forEach(function(r){
+    var el = document.createElement("div");
+    el.className = "r";
+    el.innerHTML =
+      '<div class="box" style="border-radius:'+r.v+'px"></div>'+
+      '<div class="cap"><b>'+r.k+'</b>'+r.v+'px</div>';
+    attachCapture(el, { id:r.id });
+    rad.appendChild(el);
+  });
+
+  /* ---------- tab switching (click + roving-focus arrow keys) ---------- */
+  var tabs = Array.prototype.slice.call(document.querySelectorAll(".tab"));
+  var views = {
+    ds:document.getElementById("view-ds"),
+    cv:document.getElementById("view-cv"),
+    vd:document.getElementById("view-vd")
+  };
+  function activateTab(tab, focus){
+    tabs.forEach(function(t){
+      var on = (t===tab);
+      t.setAttribute("aria-selected", on?"true":"false");
+      t.setAttribute("tabindex", on?"0":"-1");
+    });
+    Object.keys(views).forEach(function(k){ views[k].classList.remove("active"); });
+    views[tab.getAttribute("data-view")].classList.add("active");
+    if(focus) tab.focus();
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+  tabs.forEach(function(tab,i){
+    tab.addEventListener("click", function(){ activateTab(tab,false); });
+    tab.addEventListener("keydown", function(e){
+      var idx = null;
+      if(e.key==="ArrowRight"||e.key==="ArrowDown") idx=(i+1)%tabs.length;
+      else if(e.key==="ArrowLeft"||e.key==="ArrowUp") idx=(i-1+tabs.length)%tabs.length;
+      else if(e.key==="Home") idx=0;
+      else if(e.key==="End") idx=tabs.length-1;
+      if(idx!==null){ e.preventDefault(); activateTab(tabs[idx],true); }
+    });
+  });
+
+  /* ============================================================
+     VIEW B — component-variants: pick ONE, optionally tune.
+     The pick (diffed vs the agent's recommendation) plus any
+     from->to token deltas are the captured decision.
+     ============================================================ */
+  var CV_VARIANTS = [
+    { id:"compact",  name:"Compact",  pad:16, radius:5,  border:"1px", accent:"#8C3344", accentName:"--accent" },
+    { id:"balanced", name:"Balanced", pad:28, radius:8,  border:"1px", accent:"#8C3344", accentName:"--accent" },
+    { id:"soft",     name:"Soft",     pad:36, radius:14, border:"0px", accent:"#1B2A4A", accentName:"--ink" }
+  ];
+  var CV_BY_ID = {};
+  var CV_ACCENTS = [["#8C3344","Cranberry","--accent"],["#1B2A4A","Navy","--ink"]];
+  var CV_BORDERS = [["0px","0"],["1px","1px"],["2px","2px"]];
+  var variantsHost = document.getElementById("variants");
+  var cvPicked = null;     // picked variant id (null = accept the agent's recommendation; 'other' = escape hatch)
+  var cvTune = {};         // variant id -> { pad, radius, border, accent, accentName }
+  var cvOtherText = "";    // free text for the "none of these" escape hatch
+
+  CV_VARIANTS.forEach(function(v){
+    CV_BY_ID[v.id] = v;
+    cvTune[v.id] = { pad:v.pad, radius:v.radius, border:v.border, accent:v.accent, accentName:v.accentName };
+  });
+
+  function cvOverrides(id){
+    var t = cvTune[id], v = CV_BY_ID[id], out = [];
+    if(t.pad!==v.pad) out.push({ token:"--demo-pad", from:v.pad+"px", to:t.pad+"px" });
+    if(t.radius!==v.radius) out.push({ token:"--demo-radius", from:v.radius+"px", to:t.radius+"px" });
+    if(t.border!==v.border) out.push({ token:"--demo-border", from:v.border, to:t.border });
+    if(String(t.accent).toLowerCase()!==String(v.accent).toLowerCase())
+      out.push({ token:"--demo-accent", from:v.accent, to:t.accent });
+    return out;
+  }
+
+  function cvVerdict(){
+    if(!cvPicked) return "approve";
+    if(cvPicked==="other") return "request_changes";   // rejecting the whole set is the blocking gesture
+    // A non-recommended pick or tuned overrides are FEEDBACK — they ride along
+    // in the payload items; the verdict stays approve.
+    return "approve";
+  }
+
+  function cvCommit(){
+    if(!cvPicked){ unmark("cv:pick"); return; }
+    if(cvPicked==="other"){
+      mark("cv:pick", {
+        picked: "other",
+        recommended: CV_RECOMMENDED,
+        matchedRecommendation: false,
+        note: cvOtherText || undefined
+      }, { anchor: "other" });
+      return;
+    }
+    var t = cvTune[cvPicked];
+    mark("cv:pick", {
+      picked: cvPicked,
+      recommended: CV_RECOMMENDED,
+      matchedRecommendation: cvPicked===CV_RECOMMENDED,
+      overrides: cvOverrides(cvPicked),
+      resolved: {
+        "--demo-pad": t.pad+"px", "--demo-radius": t.radius+"px",
+        "--demo-border": t.border, "--demo-accent": String(t.accent).toUpperCase()
+      }
+    }, { anchor: cvPicked });
+  }
+
+  function cvSync(id){
+    var card = variantsHost.querySelector('.vcard[data-variant="'+id+'"]'); if(!card) return;
+    var t = cvTune[id], preview = card.querySelector(".demo-card"), tune = card.querySelector(".vtune");
+    preview.style.setProperty("--demo-pad", t.pad+"px");
+    preview.style.setProperty("--demo-radius", t.radius+"px");
+    preview.style.setProperty("--demo-border", t.border);
+    preview.style.setProperty("--demo-accent", t.accent);
+    var set = function(sel,txt){ var e = tune.querySelector(sel); if(e) e.textContent = txt; };
+    set('[data-val="pad"]', t.pad+"px");
+    set('[data-val="radius"]', t.radius+"px");
+    set('[data-val="border"]', t.border);
+    set('[data-val="accent"]', t.accentName);
+    if(cvPicked===id){ cvCommit(); recompute(); }
+  }
+
+  function cvUpdatePickedUI(){
+    Array.prototype.forEach.call(variantsHost.querySelectorAll(".vcard"), function(card){
+      var on = card.dataset.variant===cvPicked;
+      card.classList.toggle("is-selected", on);
+      var tune = card.querySelector(".vtune"); if(tune) tune.hidden = !on;
+      var otherNote = card.querySelector(".cv-other-note"); if(otherNote) otherNote.classList.toggle("is-open", on);
+      var input = card.querySelector('input[name="cv-pick"]'); if(input) input.checked = on;
+    });
+  }
+
+  function radioHtml(name,value,label,current){
+    return '<label><input type="radio" name="'+name+'" value="'+value+'"'+
+           (value===current?' checked':'')+'>'+label+'</label>';
+  }
+  function accentRadioHtml(name,value,label,dataName,current){
+    return '<label><input type="radio" name="'+name+'" value="'+value+'" data-name="'+dataName+'"'+
+           (String(value).toLowerCase()===String(current).toLowerCase()?' checked':'')+'>'+label+'</label>';
+  }
+
+  CV_VARIANTS.forEach(function(v){
+    var card = document.createElement("div");
+    card.className = "card vcard"; card.dataset.variant = v.id;
+
+    var head = document.createElement("div"); head.className = "vcard-head";
+    var nm = document.createElement("span"); nm.className = "vcard-name"; nm.textContent = v.name;
+    head.appendChild(nm);
+    card.appendChild(head);
+
+    var pickLabel = document.createElement("label"); pickLabel.className = "vpick";
+    var pick = document.createElement("input");
+    pick.type = "radio"; pick.name = "cv-pick"; pick.value = v.id;
+    pick.setAttribute("aria-label","Pick the "+v.name+" variant as the winner");
+    pickLabel.appendChild(pick);
+    pickLabel.appendChild(document.createTextNode("Pick this variant"));
+    card.appendChild(pickLabel);
+
+    var preview = document.createElement("div"); preview.className = "demo-card";
+    preview.style.setProperty("--demo-pad", v.pad+"px");
+    preview.style.setProperty("--demo-radius", v.radius+"px");
+    preview.style.setProperty("--demo-border", v.border);
+    preview.style.setProperty("--demo-accent", v.accent);
+    preview.innerHTML =
+      '<h3>Order summary</h3>'+
+      '<p>Three items, one promo code, and shipping to a saved address. Whatever the total says here is '+
+      'exactly what the card is charged.</p>'+
+      '<button class="demo-btn" type="button">Place order</button>';
+    card.appendChild(preview);
+
+    var tune = document.createElement("div"); tune.className = "vtune"; tune.hidden = true;
+    tune.innerHTML =
+      '<div class="control"><div class="clabel">Card padding <span class="val" data-val="pad">'+v.pad+'px</span></div>'+
+        '<input type="range" data-k="pad" min="12" max="48" step="2" value="'+v.pad+'"></div>'+
+      '<div class="control"><div class="clabel">Corner radius <span class="val" data-val="radius">'+v.radius+'px</span></div>'+
+        '<input type="range" data-k="radius" min="0" max="16" step="1" value="'+v.radius+'"></div>'+
+      '<div class="control"><div class="clabel">Border weight <span class="val" data-val="border">'+v.border+'</span></div>'+
+        '<div class="radios" data-k="border">'+
+          CV_BORDERS.map(function(b){return radioHtml("bd-"+v.id,b[0],b[1],v.border);}).join("")+
+        '</div></div>'+
+      '<div class="control"><div class="clabel">Accent <span class="val" data-val="accent">'+v.accentName+'</span></div>'+
+        '<div class="radios" data-k="accent">'+
+          CV_ACCENTS.map(function(a){return accentRadioHtml("ac-"+v.id,a[0],a[1],a[2],v.accent);}).join("")+
+        '</div></div>'+
+      '<button class="btn btn-secondary" type="button" data-k="reset">Reset to preset</button>';
+    card.appendChild(tune);
+
+    variantsHost.appendChild(card);
+
+    pick.addEventListener("click", function(){
+      if(cvPicked===v.id){               // re-tap the winner to revert to "accept recommendation"
+        cvPicked = null; pick.checked = false; cvUpdatePickedUI(); unmark("cv:pick"); recompute();
+      } else {
+        cvPicked = v.id; cvUpdatePickedUI(); cvCommit(); recompute();
+      }
+    });
+
+    tune.addEventListener("input", function(e){
+      var inp = e.target; if(inp.type!=="range") return;
+      cvTune[v.id][inp.dataset.k] = Number(inp.value); cvSync(v.id);
+    });
+    tune.addEventListener("change", function(e){
+      var inp = e.target; if(inp.type!=="radio") return;
+      var grp = inp.closest(".radios"), k = grp && grp.dataset.k; if(!k) return;
+      if(k==="border"){ cvTune[v.id].border = inp.value; }
+      else if(k==="accent"){ cvTune[v.id].accent = inp.value; cvTune[v.id].accentName = inp.getAttribute("data-name"); }
+      cvSync(v.id);
+    });
+    tune.addEventListener("click", function(e){
+      if(!e.target.closest('[data-k="reset"]')) return;
+      cvTune[v.id] = { pad:v.pad, radius:v.radius, border:v.border, accent:v.accent, accentName:v.accentName };
+      tune.querySelector('input[data-k="pad"]').value = v.pad;
+      tune.querySelector('input[data-k="radius"]').value = v.radius;
+      var bd = tune.querySelector('.radios[data-k="border"] input[value="'+v.border+'"]'); if(bd) bd.checked = true;
+      var ac = tune.querySelector('.radios[data-k="accent"] input[value="'+v.accent+'"]'); if(ac) ac.checked = true;
+      cvSync(v.id);
+    });
+  });
+
+  /* ---------- escape hatch: "none of these" pick + reason box ----------
+     PRINCIPLES.md: a closed disposition set traps the reviewer. The variant
+     pick is a single-select of N cards, so it carries an "Other…" radio that
+     reveals a free-text box for what should ship instead. Single-select is
+     preserved: picking Other clears any variant, picking a variant clears Other
+     (shared radio name + cvUpdatePickedUI). */
+  var otherCard = document.createElement("div");
+  otherCard.className = "card vcard vcard-other"; otherCard.dataset.variant = "other";
+  var otherPickLabel = document.createElement("label"); otherPickLabel.className = "vpick";
+  var otherPick = document.createElement("input");
+  otherPick.type = "radio"; otherPick.name = "cv-pick"; otherPick.value = "other";
+  otherPick.setAttribute("aria-label","None of these — describe what should ship instead");
+  otherPickLabel.appendChild(otherPick);
+  otherPickLabel.appendChild(document.createTextNode("Other — none of these"));
+  otherCard.appendChild(otherPickLabel);
+  var otherNote = document.createElement("textarea");
+  otherNote.className = "reveal reveal-box cv-other-note";
+  otherNote.placeholder = "None of these variants is right — describe what should ship instead";
+  otherCard.appendChild(otherNote);
+  variantsHost.appendChild(otherCard);
+
+  otherPick.addEventListener("click", function(){
+    if(cvPicked==="other"){            // re-tap to revert to "accept recommendation"
+      cvPicked = null; otherPick.checked = false; cvUpdatePickedUI(); unmark("cv:pick"); recompute();
+    } else {
+      cvPicked = "other"; cvUpdatePickedUI(); cvCommit(); recompute();
+    }
+  });
+  otherNote.addEventListener("input", function(){
+    cvOtherText = otherNote.value;
+    if(cvPicked==="other"){ cvCommit(); recompute(); }
+  });
+
+  /* ============================================================
+     VIEW C — visual-designs: one clear verdict per surface.
+     Flip Light / Navy; rate the surface you see. Two cells total.
+     ============================================================ */
+  var stage = document.getElementById("stage");
+  // Specimen links exist only to show link styling; the target view doesn't
+  // exist as a separate page, so keep them non-navigational (no dead jump).
+  stage.addEventListener("click", function(e){
+    if(e.target.closest("a[data-specimen]")) e.preventDefault();
+  });
+  var curSurface = "light";
+  var vdState = { light:{status:null,note:""}, dark:{status:null,note:""} };
+  // Escape hatch (PRINCIPLES.md): a closed verdict set traps the reviewer, so
+  // "Other…" is always available and reveals the free-text box on selection.
+  var VERDICTS = [["ship","✓ Ship"],["needs_work","⚠ Needs work"],["reject","✗ Reject"],["other","Other…"]];
+  var vdRail = document.getElementById("vdRail");
+  var vdNote = document.getElementById("vdNote");
+  var vdSurfaceLabel = document.getElementById("vdSurfaceLabel");
+  var vdButtons = [];
+
+  VERDICTS.forEach(function(p,i){
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "btn btn-secondary"; b.dataset.v = p[0];
+    b.textContent = p[1];
+    // single-select decision → expose the same model as the variant picker:
+    // a radiogroup of radios (was a group of aria-pressed toggles).
+    b.setAttribute("role","radio");
+    b.setAttribute("aria-checked","false");
+    b.setAttribute("tabindex", i===0 ? "0" : "-1");
+    vdRail.appendChild(b);
+    vdButtons.push(b);
+  });
+
+  function vdMark(surface){
+    var cell = vdState[surface], key = "vd:"+surface;
+    if(!cell.status){ unmark(key); return; }
+    mark(key, cell.status, { note: cell.note || undefined, anchor: surface });
+  }
+
+  function vdVerdict(){
+    var v = "approve";
+    ["light","dark"].forEach(function(s){
+      var st = vdState[s].status;
+      // "reject" and "other" decline the surface — blocking gestures → request_changes.
+      // "needs_work" is FEEDBACK: it rides along in the payload items; the verdict stays approve.
+      if(st==="reject"||st==="other") v = "request_changes";
+    });
+    return v;
+  }
+
+  function vdRenderRail(){
+    var cell = vdState[curSurface];
+    var checkedIdx = -1;
+    vdButtons.forEach(function(b,i){
+      var on = b.dataset.v===cell.status;
+      b.setAttribute("aria-checked", on ? "true":"false");
+      if(on) checkedIdx = i;
+    });
+    // roving tabindex: the checked radio (or the first, if none) is tabbable.
+    vdButtons.forEach(function(b,i){
+      b.setAttribute("tabindex", i===(checkedIdx<0?0:checkedIdx) ? "0" : "-1");
+    });
+    // Reveal the reason box on any changes-requesting verdict (needs_work / reject)
+    // and on the "Other…" escape hatch, where the box carries the actual verdict.
+    var down = (cell.status==="needs_work"||cell.status==="reject"||cell.status==="other");
+    vdNote.classList.toggle("is-open", down);
+    vdNote.placeholder = (cell.status==="other")
+      ? "Describe your verdict for this surface"
+      : "What needs fixing on this surface? (optional)";
+    vdNote.value = cell.note || "";
+  }
+
+  function vdTally(){
+    var rated = 0;
+    ["light","dark"].forEach(function(s){ if(vdState[s].status) rated++; });
+    document.getElementById("vdTally").textContent =
+      rated===0 ? 'No surfaces rated yet' : rated+' of '+VD_TOTAL+' surfaces rated';
+  }
+
+  function vdSet(v){
+    var cell = vdState[curSurface];
+    cell.status = (cell.status===v) ? null : v;     // tap/space again to clear
+    if(cell.status===null){ cell.note = ""; }
+    vdMark(curSurface); vdRenderRail(); vdTally(); recompute();
+  }
+  vdRail.addEventListener("click", function(e){
+    var b = e.target.closest("button"); if(!b) return;
+    vdSet(b.dataset.v);
+  });
+  vdRail.addEventListener("keydown", function(e){
+    var i = vdButtons.indexOf(document.activeElement);
+    if(i<0) return;
+    var idx = null;
+    if(e.key==="ArrowRight"||e.key==="ArrowDown") idx=(i+1)%vdButtons.length;
+    else if(e.key==="ArrowLeft"||e.key==="ArrowUp") idx=(i-1+vdButtons.length)%vdButtons.length;
+    else if(e.key==="Home") idx=0;
+    else if(e.key==="End") idx=vdButtons.length-1;
+    if(idx===null) return;
+    e.preventDefault();
+    vdSet(vdButtons[idx].dataset.v);   // arrow selects the moved-to radio
+    vdButtons[idx].focus();
+  });
+  vdNote.addEventListener("input", function(){
+    vdState[curSurface].note = vdNote.value; vdMark(curSurface);
+  });
+
+  document.querySelectorAll(".seg button").forEach(function(b){
+    b.addEventListener("click", function(){
+      document.querySelectorAll(".seg button").forEach(function(x){ x.setAttribute("aria-pressed","false"); });
+      b.setAttribute("aria-pressed","true");
+      var s = b.getAttribute("data-surface");
+      stage.classList.remove("light","dark");
+      stage.classList.add(s);
+      curSurface = (s==="dark") ? "dark" : "light";
+      vdSurfaceLabel.textContent = (s==="dark") ? "Navy" : "Light";
+      vdRenderRail(); vdTally();
+    });
+  });
+
+  /* ============================================================
+     RECOMPUTE — per-view verdicts + page rollup + proposal meta
+     ============================================================ */
+  function recompute(){
+    if(!hasCapture){ return; }
+    lastVerdicts.ds = dsVerdict();
+    lastVerdicts.cv = cvVerdict();
+    lastVerdicts.vd = vdVerdict();
+    var page = "approve";
+    [lastVerdicts.ds,lastVerdicts.cv,lastVerdicts.vd].forEach(function(v){
+      if(VERDICT_ORDER[v] > VERDICT_ORDER[page]) page = v;
+    });
+    setMeta({ views: {
+      "design-system":             { verdict:lastVerdicts.ds, total:DS_TOTAL },
+      "component-variants":        { verdict:lastVerdicts.cv, total:CV_TOTAL, recommended:CV_RECOMMENDED },
+      "visual-designs-light-dark": { verdict:lastVerdicts.vd, total:VD_TOTAL }
+    }});
+    window.Capture.rollup(page);
+  }
+
+  /* ---------- initialize tallies + page verdict ---------- */
+  vdTally(); vdRenderRail();
+  recompute();
+
+})();
+</script>
+</body>
+</html>

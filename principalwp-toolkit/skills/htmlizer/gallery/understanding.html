@@ -1,0 +1,1209 @@
+<!doctype html>
+<!--
+  Gallery example: the code-understanding walkthrough view.
+  Subject is invented — Northwind, a fictional online storefront. The repos,
+  files, order ids, ticket keys and commit SHAs below do not exist. Any
+  resemblance to a real system, product or person is coincidental.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Understanding order fulfilment — Principal WP</title>
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzhDMzM0NCIvPjxwYXRoIGQ9Ik0zMCAyMiBINTggYTE4IDE4IDAgMCAxIDAgMzYgSDQyIFY3OCBIMzAgWiBNNDIgMzMgVjQ3IEg1NiBhNyA3IDAgMCAwIDAgLTE0IFoiIGZpbGw9IiNmZmYiLz48L3N2Zz4=">
+<link rel="stylesheet" href="base.css">
+<style>
+/* ── Page-specific layout, on top of base.css ───────────────── */
+
+/* View switcher (single-select, sticky) — base .tabs/.tab in a sticky bar */
+.views{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--border)}
+.views .tabs{margin:0 auto;border-bottom:none;padding-top:var(--space-2);padding-bottom:var(--space-2)}
+
+/* View sections */
+.view{display:none;padding:var(--space-4) 0 var(--space-1)}
+.view.active{display:block}
+.view-head{max-width:72ch;margin-bottom:24px}
+.view-head h2{margin:0 0 8px}
+.view-head p{margin:0;color:var(--text)}
+
+/* Code cards (light, readable) */
+.codecard{border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;background:var(--surface);margin:0}
+.codehead{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 14px;background:var(--surface-2);border-bottom:1px solid var(--border)}
+.codehead .fname{font-family:var(--font-mono);font-size:13px;color:var(--text-muted)}
+.codecard pre{margin:0;border:0;border-radius:0;background:var(--surface)}
+pre .c{color:var(--text-muted)}            /* comments only — aids reading */
+pre .k,pre .s{color:inherit}               /* no decorative syntax coloring */
+
+/* Code with line numbers (walkthrough) */
+pre.codelines{padding:12px 0}
+.cl{display:flex;white-space:pre}
+.cl .ln{flex:0 0 46px;text-align:right;color:var(--text-faint);user-select:none;padding-right:14px}
+.cl .src{flex:1 1 auto;white-space:pre;padding-right:16px}
+
+/* ── (A) Accordion walkthrough ───────────────── */
+.prail{display:flex;gap:6px;margin-bottom:10px}
+.pseg{flex:1;height:8px;border-radius:999px;background:var(--border);transition:background 140ms ease}
+.pseg[data-state="got_it"],.pseg[data-state="confused"]{background:var(--accent)}
+.tally{font-family:var(--font-mono);font-size:15px;color:var(--text);margin-bottom:18px}
+
+.acc{border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;background:var(--surface)}
+.acc-item+.acc-item{border-top:1px solid var(--border)}
+/* trigger is a DIV (not a button) so the title/subtitle prose stays selectable;
+   the small caret button is the keyboard-focusable toggle control. */
+.acc-trigger{width:100%;background:var(--surface);text-align:left;padding:18px 22px;cursor:pointer;display:flex;align-items:flex-start;gap:16px;font-family:var(--font-sans);transition:background 120ms ease}
+.acc-trigger:hover,.acc-trigger.is-open{background:var(--surface-2)}
+.acc-trigger .step{font-family:var(--font-mono);font-size:13px;color:var(--text-muted);min-width:84px;padding-top:2px}
+.acc-trigger .ttl{font-size:17px;font-weight:600;color:var(--ink)}
+.acc-trigger .sub{display:block;font-size:15px;color:var(--text);margin-top:3px;font-weight:400}
+.acc-caret{margin-left:auto;color:var(--text-muted);background:none;border:0;cursor:pointer;flex:none;padding:4px 0 0;font-size:15px;line-height:1;transition:transform 120ms ease}
+.acc-caret:hover{color:var(--ink)}
+.acc-caret:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+.acc-caret[aria-expanded="true"]{transform:rotate(90deg)}
+.acc-panel{display:none;padding:0 22px 24px}
+.acc-panel.open{display:block}
+.acc-panel .note{font-size:16px;color:var(--text);margin:4px 0 16px;max-width:74ch}
+.acc-panel .note b{color:var(--ink)}
+
+/* per-step signal: one simple Got it / Confused (base .btn) + optional question */
+.land{display:flex;align-items:center;gap:var(--space-1);flex-wrap:wrap;margin-top:18px;padding-top:16px;border-top:1px solid var(--border)}
+.land .lab{font-size:15px;font-weight:600;color:var(--ink);margin-right:4px}
+/* per-step reason/question box — revealed when the step is rated (a Confused
+   rating reframes it as the "what's confusing" box). Show/hide via base
+   .reveal/.is-open; the textarea uses base .reveal-box. */
+.askq{max-width:74ch}
+.askq label{display:block}
+
+/* ── (B) Job-record tabs — base .tabs/.tab; panes are page-specific ── */
+.tabpane{display:none;padding-top:var(--space-3)}
+.tabpane.active{display:block}
+.tabpane .blurb{max-width:74ch;font-size:16px;margin-bottom:16px}
+/* per-facet read: a pre-opened callout — single-select + always-visible note */
+.facetask{margin-top:22px}
+.facetask .callout-q{margin:0 0 14px}
+.facetrate{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+/* facet note box — revealed when "Something off" is chosen, via base
+   .reveal/.is-open (its control is a text input, not a .reveal-box textarea) */
+.flagnote{max-width:74ch}
+
+/* ── (C) Sliders / lane assignment ───────────── */
+.concept-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px 24px}
+.panel h3{margin:0 0 4px}
+.panel .hint{font-size:15px;color:var(--text);margin:0 0 4px}
+.ctrl{margin:20px 0 6px}
+.ctrl > label{display:flex;justify-content:space-between;align-items:baseline;font-size:15px;font-weight:600;color:var(--ink);margin-bottom:10px}
+.ctrl .val{font-family:var(--font-mono);font-size:15px;color:var(--accent)}
+input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:5px;border-radius:999px;background:var(--border);outline:none;margin:6px 0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);border:2px solid var(--surface);box-shadow:0 0 0 1px var(--border-strong);cursor:pointer;transition:transform 120ms ease}
+input[type=range]::-webkit-slider-thumb:hover{background:var(--accent-hover)}
+input[type=range]:active::-webkit-slider-thumb{transform:scale(1.15)}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--accent);border:2px solid var(--surface);cursor:pointer}
+/* keyboard focus indicator — outline:none above kills the default ring, restore a visible one */
+input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 1px var(--accent),0 0 0 4px var(--accent-wash)}
+input[type=range]:focus-visible::-moz-range-thumb{box-shadow:0 0 0 1px var(--accent),0 0 0 4px var(--accent-wash)}
+.opts{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.opt{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--text);cursor:pointer}
+.opt.dim{opacity:.5}
+.readout{margin-top:22px;border-top:1px solid var(--border);padding-top:18px}
+.route-now{font-size:16px;color:var(--text)}
+.route-now b{color:var(--ink);font-size:18px}
+.statline{display:flex;justify-content:space-between;gap:16px;font-size:15px;padding:8px 0;border-bottom:1px solid var(--surface-2)}
+.statline:last-child{border-bottom:0}
+.statline .lab{color:var(--text-muted)}
+.statline .v{font-family:var(--font-mono);color:var(--ink);text-align:right}
+.revlist{margin-top:12px;font-family:var(--font-mono);font-size:13px;color:var(--text);line-height:1.8}
+.revlist .cond{color:var(--accent)}
+.sevline{display:flex;gap:16px;margin-top:12px;font-family:var(--font-mono);font-size:14px}
+.sevline span{color:var(--text-faint)}
+.sevline span.live{color:var(--ink);font-weight:600}
+.outcome{margin-top:16px;font-size:15px;color:var(--text);background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);padding:13px 15px}
+.outcome b{color:var(--ink)}
+
+.mapwrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;margin-top:20px}
+.mapwrap h3{margin:0 0 12px}
+.legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:16px;font-size:15px;color:var(--text-muted)}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.stepmap{width:100%;height:auto;display:block;font-family:var(--font-sans)}
+
+/* commit bar — set values, commit once */
+.cfgbar{margin-top:20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px 24px}
+.cfgbar h3{margin:0 0 8px}
+.cfg-readout{margin:8px 0 16px;font-size:15px;color:var(--text)}
+.cfg-readout ul{margin:8px 0 0;padding-left:20px;font-family:var(--font-mono);font-size:14px}
+/* optional free-text escape hatch on the commit — never confine the human to the numbers */
+.cfg-note{margin:4px 0 16px;max-width:74ch}
+.cfg-note label{display:block;font-size:15px;color:var(--text-muted);margin-bottom:6px}
+.cfg-note textarea{min-height:56px}
+
+/* callouts hosting page widgets: tidy the inner spacing */
+.callout .prail{margin-bottom:8px}
+.callout .tally{margin:0}
+.callout .route-now{margin:0 0 4px}
+/* live statlines live INSIDE the lane callout so they read as recomputing */
+.callout .statgroup{margin-top:12px}
+.callout .statline{border-bottom-color:var(--border)}
+.callout-label .ico{font-style:normal}
+
+/* valence inside the mono readouts keeps the mono face */
+.statline .v .neg,.statline .v .pos{font-family:inherit}
+/* track chips carry a marker + a status word — allow them to wrap */
+.sevline{flex-wrap:wrap;row-gap:8px}
+.sevline span{transition:color 120ms ease}
+
+@media (max-width:760px){
+  .concept-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>How a paid order becomes a shipment</h1>
+  <p class="lede">Northwind's fulfilment pipeline picks up a checkout session the moment payment is captured and walks it through seventeen stages grouped into four tracks — intake, reserve, settle, dispatch. Two of those stages need a signature and park the job for a human: a held order's manual review, and the lead sign-off before dispatch. Three ways in below: the lane table that decides how much handling an order earns, the worker functions that drive a job stage to stage, and the four records one job leaves behind.</p>
+</div>
+
+<nav class="views" aria-label="View switcher">
+  <div class="wrap tabs" role="tablist">
+    <button class="viewbtn tab" role="tab" aria-selected="true" data-view="concept">Lanes &amp; stage map</button>
+    <button class="viewbtn tab" role="tab" aria-selected="false" data-view="code">The fulfilment worker</button>
+    <button class="viewbtn tab" role="tab" aria-selected="false" data-view="tabs">One job, four records</button>
+  </div>
+</nav>
+
+<!-- ════════════ VIEW 1 · LANES & STAGE MAP ════════════ -->
+<main class="view active" id="view-concept">
+  <div class="wrap">
+    <div class="view-head">
+      <h2>How much handling does an order earn?</h2>
+      <p>Stage <span class="mono">IN&#183;4</span> reads one cell out of a three-by-three table: order value picks the row, the number of raised risk signals picks the column, and the cell names the lane. There is no score and no tie-break. Two handling flags sit outside the table entirely — they switch extra stages <em>on</em> rather than changing the lane. Set the controls and watch the seventeen-stage map redraw, then commit the operating point you want.</p>
+    </div>
+
+    <div class="concept-grid">
+      <!-- Lane panel -->
+      <div class="panel">
+        <h3>Lane assignment</h3>
+        <p class="hint">What-if explorer — move these freely to watch the map redraw. You commit one configuration below; nothing here is a selection list.</p>
+        <div class="ctrl">
+          <label for="orderval">Order value <span class="val" id="valueVal">$250</span></label>
+          <input type="range" id="orderval" min="0" max="2000" step="50" value="250">
+        </div>
+        <div class="opts" id="riskToggles">
+          <label class="opt"><input type="checkbox" data-risk> billing and shipping regions disagree</label>
+          <label class="opt"><input type="checkbox" data-risk> first order on this account</label>
+          <label class="opt"><input type="checkbox" data-risk> four or more orders in the last hour</label>
+        </div>
+        <div class="opts">
+          <label class="opt"><input type="checkbox" id="cold"> basket contains a cold-chain item</label>
+          <label class="opt"><input type="checkbox" id="split"> ships to more than one address</label>
+        </div>
+
+        <div class="readout">
+          <div class="callout is-live">
+            <span class="callout-label">Live lane &rarr; recomputes as you set the controls</span>
+            <p class="route-now">Lane: <b id="laneName">Express</b></p>
+            <div class="statgroup">
+              <div class="statline"><span class="lab">Table cell</span><span class="v" id="cellRef">low &times; 0</span></div>
+              <div class="statline"><span class="lab">What the customer is told</span><span class="v" id="promise">same-day handoff</span></div>
+              <div class="statline"><span class="lab">Stages off</span><span class="v" id="offCount">6</span></div>
+              <div class="statline"><span class="lab">Service checks</span><span class="v" id="checkCount">3</span></div>
+            </div>
+          </div>
+          <div class="revlist" id="checkList"></div>
+        </div>
+      </div>
+
+      <!-- Clock panel -->
+      <div class="panel">
+        <h3>The 24-hour clock</h3>
+        <p class="hint">Every lane that is actually moving inherits the same promise: the parcel is in a carrier's hands within 24 hours of payment capture. Express beats it by design and Held stops the clock entirely, so the budget below describes the three lanes that run end to end. Each track owns a slice of that budget, and the slices are cumulative deadlines, not durations. Drag to move the clock forward.</p>
+        <div class="ctrl">
+          <label for="clock">Hours since capture <span class="val" id="clockVal">0h</span></label>
+          <input type="range" id="clock" min="0" max="30" step="1" value="0">
+        </div>
+        <div style="font-size:15px;color:var(--ink);font-weight:600;margin-top:18px">Where the job should be at this hour</div>
+        <div class="sevline" id="trackRow">
+          <span class="intake">INTAKE</span>
+          <span class="reserve">RESERVE</span>
+          <span class="settle">SETTLE</span>
+          <span class="dispatch">DISPATCH</span>
+        </div>
+        <div class="callout is-live" id="clockOutcome"></div>
+        <div class="statline" style="margin-top:18px"><span class="lab">Budget left</span><span class="v" id="budgetLeft">24h of 24h</span></div>
+        <div class="statline"><span class="lab">Past the promise (25h+)</span><span class="v">auto credit <span class="neg">10% of basket</span></span></div>
+      </div>
+    </div>
+
+    <!-- SVG stage map -->
+    <div class="mapwrap">
+      <h3>Which stages run in this lane</h3>
+      <svg id="stepmap" class="stepmap" viewBox="0 0 1016 320" role="img" aria-label="Fulfilment stage map: seventeen stages across four tracks. Stages that do not run in the currently selected lane are dimmed and marked off."></svg>
+      <div class="legend">
+        <span><i style="background:#dbe9f9"></i> Intake</span>
+        <span><i style="background:#e2f0d9"></i> Reserve</span>
+        <span><i style="background:#f7e7cf"></i> Settle</span>
+        <span><i style="background:#f0dde2"></i> Dispatch</span>
+        <span><i style="background:var(--surface-2);border:1px solid var(--border)"></i> Off in this lane</span>
+        <span><i style="background:var(--accent)"></i> Parks for a human</span>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ════════════ VIEW 2 · THE FULFILMENT WORKER ════════════ -->
+<main class="view" id="view-code">
+  <div class="wrap">
+    <div class="view-head">
+      <h2>The fulfilment worker, function by function</h2>
+      <p>A captured checkout session lands on the queue and the worker takes it from there: build the job, raise the signals, read the lane, hold the stock, then advance one stage at a time until the carrier has it — with a dedupe wrapper around the whole thing because the payment provider will deliver the same webhook twice. Six functions, six files, all in <span class="file">northwind/storefront</span> at <span class="mono">9c4e1a7</span>. Open each section to read the code with a plain-language note. Sections open and close independently.</p>
+    </div>
+    <div class="acc" id="accordion"><!-- items injected --></div>
+  </div>
+</main>
+
+<!-- ════════════ VIEW 3 · ONE JOB, FOUR RECORDS ════════════ -->
+<main class="view" id="view-tabs">
+  <div class="wrap">
+    <div class="view-head">
+      <h2>One job, four records</h2>
+      <p>A single fulfilment job writes itself down four times, and each record answers a different question. <b>Config</b> says which warehouses and notifiers exist at all. <b>Lane rules</b> is the table, owned by the pricing service rather than by fulfilment. <b>Job record</b> is the append-only document the worker replays to find out where it is. <b>Customer view</b> is the short, filtered list the storefront is allowed to show.</p>
+    </div>
+
+    <div data-tabs>
+      <div class="tabstrip tabs" role="tablist">
+        <button class="tabbtn tab" role="tab" aria-selected="true" data-tab="config">Config<span class="meta">pipeline.config.json</span></button>
+        <button class="tabbtn tab" role="tab" aria-selected="false" data-tab="rules">Lane rules<span class="meta">rules.py</span></button>
+        <button class="tabbtn tab" role="tab" aria-selected="false" data-tab="job">Job record<span class="meta">job.json</span></button>
+        <button class="tabbtn tab" role="tab" aria-selected="false" data-tab="cust">Customer view<span class="meta">timeline.ts</span></button>
+      </div>
+
+      <div class="tabpane active" data-pane="config">
+        <p class="blurb">Read once when the worker boots, never re-read mid-job. <span class="mono">warehouses</span> bounds where a reservation is allowed to land; <span class="mono">coldChain</span> is a subset, so a cold-chain basket that cannot be served from <span class="mono">sea-1</span> fails the reserve track rather than silently shipping warm. <span class="mono">notifiers.disabled</span> drops outbound messages without touching the stage list — the six below are off in staging, so a job that reaches <span class="mono">DP&#183;4</span> there sends nothing to anybody.</p>
+        <div class="codecard">
+          <div class="codehead"><span class="fname">src/fulfilment/pipeline.config.json</span><button class="btn btn-secondary btn-sm copybtn" data-copy="cc-config">Copy</button></div>
+          <pre id="cc-config">{
+  <span class="s">"promiseHours"</span>: 24,
+  <span class="s">"warehouses"</span>: {
+    <span class="s">"primary"</span>: <span class="s">"sea-1"</span>,
+    <span class="s">"overflow"</span>: [<span class="s">"chi-2"</span>, <span class="s">"atl-1"</span>],
+    <span class="s">"coldChain"</span>: [<span class="s">"sea-1"</span>]
+  },
+  <span class="s">"notifiers"</span>: {
+    <span class="s">"disabled"</span>: [
+      <span class="s">"notify-sms-shipped"</span>,
+      <span class="s">"notify-review-request"</span>,
+      <span class="s">"notify-loyalty-points"</span>,
+      <span class="s">"notify-partner-feed"</span>,
+      <span class="s">"notify-warehouse-chat"</span>,
+      <span class="s">"notify-winback"</span>
+    ]
+  },
+  <span class="s">"carriers"</span>: {
+    <span class="s">"default"</span>: <span class="s">"ground"</span>,
+    <span class="s">"express"</span>: <span class="s">"overnight"</span>,
+    <span class="s">"signatureRequired"</span>: [<span class="s">"insured"</span>]
+  }
+}</pre>
+        </div>
+      </div>
+
+      <div class="tabpane" data-pane="rules">
+        <p class="blurb">The table lives in the pricing service, not in fulfilment — pricing already owns value bands for tax and discounting, so putting the lane table anywhere else would mean two definitions of "high value" drifting apart. Fulfilment calls it once at <span class="mono">IN&#183;4</span> and stores the answer. Excerpt from <span class="file">src/pricing/rules.py</span> lines 88&ndash;121.</p>
+        <div class="codecard">
+          <div class="codehead"><span class="fname">src/pricing/rules.py · assign_lane</span><button class="btn btn-secondary btn-sm copybtn" data-copy="cc-rules">Copy</button></div>
+          <pre id="cc-rules"><span class="c"># Row = order value band. Column = how many risk signals were raised,</span>
+<span class="c"># capped at 2. Nine cells, four lane names. No score, no tie-break.</span>
+VALUE_BANDS = ((0, 400, <span class="s">"low"</span>), (400, 1200, <span class="s">"mid"</span>), (1200, None, <span class="s">"high"</span>))
+
+LANE_TABLE = {
+    <span class="c">#          0 signals      1 signal      2+ signals</span>
+    <span class="s">"low"</span>:  (<span class="s">"express"</span>,    <span class="s">"standard"</span>,   <span class="s">"held"</span>),
+    <span class="s">"mid"</span>:  (<span class="s">"standard"</span>,   <span class="s">"standard"</span>,   <span class="s">"held"</span>),
+    <span class="s">"high"</span>: (<span class="s">"insured"</span>,    <span class="s">"insured"</span>,    <span class="s">"held"</span>),
+}
+
+
+<span class="k">def</span> value_band(total_cents: int) -&gt; str:
+    dollars = total_cents / 100
+    <span class="k">for</span> low, high, name <span class="k">in</span> VALUE_BANDS:
+        <span class="k">if</span> dollars &gt;= low <span class="k">and</span> (high <span class="k">is</span> None <span class="k">or</span> dollars &lt; high):
+            <span class="k">return</span> name
+    <span class="k">raise</span> ValueError(f<span class="s">"no band for {total_cents}"</span>)
+
+
+<span class="k">def</span> assign_lane(total_cents: int, signals: list[str]) -&gt; str:
+    <span class="c"># NW-531: a basket with any signal at all must never reach "express",</span>
+    <span class="c"># which is why the low row moves to "standard" at one signal.</span>
+    <span class="k">return</span> LANE_TABLE[value_band(total_cents)][min(len(signals), 2)]</pre>
+        </div>
+      </div>
+
+      <div class="tabpane" data-pane="job">
+        <p class="blurb">One document per job, appended to and never rewritten. The <span class="mono">events</span> array is the whole truth: there is no <span class="mono">currentStage</span> field, because a field can be stale and a replay cannot. <span class="mono">because</span> is written at the same instant as the lane, so a support agent opening this record can see the inputs that produced the decision without reconstructing them.</p>
+        <div class="codecard">
+          <div class="codehead"><span class="fname">jobs/job_8f31c0a/job.json</span><button class="btn btn-secondary btn-sm copybtn" data-copy="cc-job">Copy</button></div>
+          <pre id="cc-job">{
+  <span class="s">"id"</span>: <span class="s">"job_8f31c0a"</span>,
+  <span class="s">"orderId"</span>: <span class="s">"NW-ORD-40812"</span>,
+  <span class="s">"lane"</span>: <span class="s">"standard"</span>,
+  <span class="s">"capturedAt"</span>: <span class="s">"2026-03-04T09:12:44Z"</span>,
+  <span class="s">"promiseAt"</span>: <span class="s">"2026-03-05T09:12:44Z"</span>,
+  <span class="s">"events"</span>: [
+    { <span class="s">"at"</span>: <span class="s">"09:12:45Z"</span>, <span class="s">"stage"</span>: <span class="s">"IN.1"</span>, <span class="s">"result"</span>: <span class="s">"ok"</span> },
+    { <span class="s">"at"</span>: <span class="s">"09:12:47Z"</span>, <span class="s">"stage"</span>: <span class="s">"IN.2"</span>, <span class="s">"result"</span>: <span class="s">"ok"</span>, <span class="s">"normalised"</span>: <span class="k">true</span> },
+    { <span class="s">"at"</span>: <span class="s">"09:12:51Z"</span>, <span class="s">"stage"</span>: <span class="s">"IN.3"</span>, <span class="s">"result"</span>: <span class="s">"ok"</span>, <span class="s">"signals"</span>: [<span class="s">"first_order"</span>] },
+    { <span class="s">"at"</span>: <span class="s">"09:12:51Z"</span>, <span class="s">"stage"</span>: <span class="s">"IN.4"</span>, <span class="s">"result"</span>: <span class="s">"ok"</span>,
+      <span class="s">"lane"</span>: <span class="s">"standard"</span>,
+      <span class="s">"because"</span>: { <span class="s">"band"</span>: <span class="s">"low"</span>, <span class="s">"signals"</span>: [<span class="s">"first_order"</span>] } },
+    { <span class="s">"at"</span>: <span class="s">"09:14:02Z"</span>, <span class="s">"stage"</span>: <span class="s">"RS.1"</span>, <span class="s">"result"</span>: <span class="s">"ok"</span> },
+    { <span class="s">"at"</span>: <span class="s">"09:14:03Z"</span>, <span class="s">"stage"</span>: <span class="s">"RS.2"</span>, <span class="s">"result"</span>: <span class="s">"ok"</span>, <span class="s">"warehouse"</span>: <span class="s">"chi-2"</span> },
+    { <span class="s">"at"</span>: <span class="s">"09:41:18Z"</span>, <span class="s">"stage"</span>: <span class="s">"ST.1"</span>, <span class="s">"result"</span>: <span class="s">"failed"</span>,
+      <span class="s">"error"</span>: <span class="s">"gateway timeout after 30s"</span> },
+    { <span class="s">"at"</span>: <span class="s">"09:43:02Z"</span>, <span class="s">"stage"</span>: <span class="s">"ST.1"</span>, <span class="s">"result"</span>: <span class="s">"ok"</span>, <span class="s">"capturedCents"</span>: 24850 }
+  ]
+}</pre>
+        </div>
+      </div>
+
+      <div class="tabpane" data-pane="cust">
+        <p class="blurb">Three of the seventeen stages are customer-facing. Everything else — warehouse choice, signal names, the failed capture attempt above — stays internal, and the filter is an allow-list rather than a deny-list so a new stage is invisible until somebody deliberately adds it. Excerpt from <span class="file">src/checkout/timeline.ts</span> lines 27&ndash;54.</p>
+        <div class="codecard">
+          <div class="codehead"><span class="fname">src/checkout/timeline.ts · timeline</span><button class="btn btn-secondary btn-sm copybtn" data-copy="cc-cust">Copy</button></div>
+          <pre id="cc-cust"><span class="c">// Allow-list, deliberately. A stage added in NW-530 stayed invisible to</span>
+<span class="c">// customers until it was named here, which is the behaviour we want.</span>
+<span class="k">const</span> CUSTOMER_VISIBLE: Record&lt;string, string&gt; = {
+  <span class="s">"ST.1"</span>: <span class="s">"Payment confirmed"</span>,
+  <span class="s">"DP.2"</span>: <span class="s">"Packed and ready"</span>,
+  <span class="s">"DP.4"</span>: <span class="s">"Handed to the carrier"</span>,
+};
+
+<span class="k">export function</span> timeline(job: Job): TimelineEntry[] {
+  <span class="k">const</span> seen = <span class="k">new</span> Set&lt;string&gt;();
+  <span class="k">return</span> job.events
+    .filter((e) =&gt; e.result === <span class="s">"ok"</span> &amp;&amp; e.stage <span class="k">in</span> CUSTOMER_VISIBLE)
+    .filter((e) =&gt; (seen.has(e.stage) ? <span class="k">false</span> : seen.add(e.stage)))
+    .map((e) =&gt; ({ at: e.at, label: CUSTOMER_VISIBLE[e.stage] }));
+}</pre>
+        </div>
+        <div class="callout" style="margin-top:20px">
+          <span class="callout-label">Rule &mdash; read this</span>
+          <p style="margin:0"><b>Append, never overwrite.</b> No stage outcome is ever edited or deleted, including failures &mdash; the retried <span class="mono">ST&#183;1</span> above sits next to the attempt that timed out, not on top of it. Position in the pipeline is <em>derived</em> by replaying <span class="mono">events</span> against the lane's stage set, so a worker that dies mid-stage costs one replay and nothing else. A job ends in exactly one of three terminal states: <span class="mono pos">&#10003; shipped</span> / <span class="mono neutral">partially_shipped</span> / <span class="mono neg">&#10007; cancelled</span>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="capture.js"></script>
+<script>
+"use strict";
+
+/* ─────────── Capture bootstrap (one batched payload for the whole page) ─────────── */
+window.CAPTURE_SUBMIT_URL = ""; /* static example page - feedback falls back to the clipboard */
+var STEP_COUNT = 6, FACET_COUNT = 4, SLIDER_COUNT = 7;
+// All three views feed ONE Capture instance; ids are namespaced (code:/tabs:/concept:)
+// so the agent can tell them apart, and the single "Submit to Claude" bar posts once.
+Capture.init({ view: "understanding-fulfilment", total: STEP_COUNT + FACET_COUNT + SLIDER_COUNT });
+// The optional commit note (concept:note) is an escape-hatch free-text, not one of
+// the 17 bounded coverage units — exclude it so engaged can never exceed total.
+Capture.setCoverage(function(id){ return id !== "concept:note"; });
+
+// Single page-level routable verdict — exactly TWO values (approve | request_changes).
+// Every signal on this page (a step rating — even "confused"/"off" — a question on a
+// step, a facet note, a committed slider value) is FEEDBACK: it rides along in the
+// payload items and never changes the verdict. There is no blocking gesture here, so:
+//   approve   anything engaged at all
+//   null      until there is any signal
+(function(){
+  var last = null;
+  Capture.onChange(function(p){
+    var verdict = p.items.length ? "approve" : null;
+    if (verdict !== last){ last = verdict; Capture.rollup(verdict); }
+  });
+})();
+
+/* ─────────── View switcher (single-select) ─────────── */
+(function(){
+  const btns = Array.from(document.querySelectorAll(".viewbtn"));
+  const views = {
+    concept: document.getElementById("view-concept"),
+    code: document.getElementById("view-code"),
+    tabs: document.getElementById("view-tabs"),
+  };
+  function show(name){
+    btns.forEach(b => b.setAttribute("aria-selected", String(b.dataset.view === name)));
+    Object.entries(views).forEach(([k,el]) => el.classList.toggle("active", k === name));
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }
+  btns.forEach(b => b.addEventListener("click", () => show(b.dataset.view)));
+})();
+
+/* ─────────── Clipboard helper (file:// fallback) ─────────── */
+function copyText(text, btn){
+  const done = () => { const o = btn.textContent; btn.textContent = "Copied"; setTimeout(() => btn.textContent = o, 1400); };
+  if (navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(text).then(done).catch(() => fallback(text, btn, done));
+  } else { fallback(text, btn, done); }
+}
+function fallback(text, btn, done){
+  const ta = document.createElement("textarea");
+  ta.value = text; ta.setAttribute("readonly", "");
+  ta.style.position = "fixed"; ta.style.left = "-9999px"; ta.style.opacity = "0";
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  let ok = false;
+  try { ok = document.execCommand("copy"); } catch(e){ ok = false; }
+  if (ok){ document.body.removeChild(ta); done(); return; }
+  // execCommand unavailable/blocked: don't fail silently — reveal the textarea,
+  // pre-selected, so the reviewer can copy manually (Ctrl/Cmd+C).
+  ta.style.left = "50%"; ta.style.top = "50%"; ta.style.transform = "translate(-50%,-50%)";
+  ta.style.opacity = "1"; ta.style.zIndex = "200"; ta.style.width = "min(90vw,640px)";
+  ta.style.height = "40vh"; ta.style.padding = "12px"; ta.style.background = "var(--surface)";
+  ta.style.border = "2px solid var(--accent)"; ta.style.borderRadius = "var(--r-md)";
+  ta.focus(); ta.select();
+  const orig = btn.textContent;
+  btn.textContent = (navigator.platform && navigator.platform.indexOf("Mac") >= 0) ? "Press ⌘C to copy" : "Press Ctrl+C to copy";
+  const cleanup = () => { if (ta.parentNode) document.body.removeChild(ta); btn.textContent = orig; };
+  ta.addEventListener("blur", cleanup);
+  ta.addEventListener("keydown", (e) => { if (e.key === "Escape") cleanup(); });
+  setTimeout(cleanup, 8000);
+}
+document.querySelectorAll(".copybtn[data-copy]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const el = document.getElementById(btn.dataset.copy);
+    if (el) copyText(el.innerText, btn);
+  });
+});
+
+/* ─────────── (A) Accordion walkthrough — read, then one signal per step ─────────── */
+(function(){
+  // Six functions from northwind/storefront @ 9c4e1a7, each in its own file.
+  // Line ranges point at the file the excerpt was lifted from.
+  const SECTIONS = [
+    {
+      file: "src/fulfilment/intake.ts", step: "L41–68",
+      title: "Turn a captured session into a job",
+      sub: "fromCheckoutSession — one job per payment intent, id derived not generated",
+      note: "Nothing enters the pipeline until money has actually moved: a session in any state other than <b>captured</b> is rejected here rather than parked, because a job that exists without a capture is a job that can ship for free. The job id is <b>derived from the payment intent</b>, so the provider delivering the same webhook twice builds the same id twice and the second insert loses to a unique index. <code class=\"file\">lane</code> starts as <code class=\"file\">null</code> on purpose — no stage downstream may read it before IN&#183;4 has written it, and a null read is a loud failure instead of a quiet default.",
+      code:
+`export function fromCheckoutSession(session: CheckoutSession): Job {
+  if (session.paymentStatus !== "captured") {
+    throw new NotReadyError(\`session \${session.id} is \${session.paymentStatus}\`);
+  }
+  return {
+    id: jobIdFor(session.paymentIntentId),
+    orderId: session.orderId,
+    lane: null,
+    capturedAt: session.capturedAt,
+    promiseAt: addHours(session.capturedAt, config.promiseHours),
+    lines: session.lines.map((l) => ({
+      sku: l.sku,
+      qty: l.qty,
+      coldChain: COLD_CHAIN_SKUS.has(l.sku),
+    })),
+    addresses: { bill: session.billTo, ship: session.shipTo },
+    events: [],
+  };
+}`
+    },
+    {
+      file: "src/fulfilment/risk.ts", step: "L112–147",
+      title: "Raise signals, don't blend them",
+      sub: "raisedSignals — three yes/no checks that stay named all the way through",
+      note: "Three independent checks, each returning a plain boolean, collected as <b>names rather than a number</b>. A blended score would be shorter and unexplainable; a support agent reading a held order needs to see <code class=\"file\">order_velocity</code>, not <code class=\"file\">0.71</code>. The <code class=\"file\">catch</code> is the interesting line: a check that cannot answer counts as <b>raised</b>, so an outage in the history service pushes orders toward review instead of quietly clearing them into the express lane.",
+      code:
+`const SIGNAL_CHECKS: Array<[string, (j: Job, h: History) => boolean]> = [
+  ["region_mismatch", (j) => !sameRegion(j.addresses.bill, j.addresses.ship)],
+  ["first_order",     (_, h) => h.priorOrders === 0],
+  ["order_velocity",  (_, h) => h.ordersLastHour >= 4],
+];
+
+export function raisedSignals(job: Job, history: History): string[] {
+  const raised: string[] = [];
+  for (const [name, test] of SIGNAL_CHECKS) {
+    try {
+      if (test(job, history)) raised.push(name);
+    } catch (err) {
+      // Cannot answer => treat as raised. Fail toward a human, never past one.
+      raised.push(name);
+      log.warn({ job: job.id, check: name, err: String(err) }, "signal check unavailable");
+    }
+  }
+  return raised;
+}`
+    },
+    {
+      file: "src/fulfilment/lane.ts", step: "L149–182",
+      title: "Read one cell out of the table",
+      sub: "assignLane — a 3×3 lookup, and the inputs are written down with the answer",
+      note: "Row from the value band, column from <code class=\"file\">min(signals.length, 2)</code>, and the cell is the lane. Nine cells, four lane names, no arithmetic to argue about. The lane is pushed onto the event list <b>together with the inputs that produced it</b> — a later change to the table cannot retroactively rewrite why an old order went where it went. Note the guard: the pricing service owns the table, so an unknown lane name coming back is a deploy-skew bug and is treated as one.",
+      code:
+`export async function assignLane(job: Job, signals: string[]): Promise<Lane> {
+  const lane = await pricing.assignLane(totalCents(job.lines), signals);
+  if (!LANES.includes(lane)) {
+    throw new SkewError(\`pricing returned unknown lane "\${lane}"\`);
+  }
+  job.lane = lane;
+  job.events.push({
+    at: now(),
+    stage: "IN.4",
+    result: "ok",
+    lane,
+    because: { band: bandOf(totalCents(job.lines)), signals },
+  });
+  return lane;
+}`
+    },
+    {
+      file: "src/fulfilment/reserve.ts", step: "L204–241",
+      title: "Hold stock without double-selling",
+      sub: "reserveStock — compare-and-set against a version, never read-then-write",
+      note: "The read exists only to decide <b>whether to try</b>. The write is a compare-and-set against the exact version that read returned, so two workers racing for the last unit cannot both win — the loser sees a failed swap and reads again. Three lost races in a row is not backpressure to absorb, it is a hot SKU or a stuck writer, so it raises. The alternative — degrading to an unconditional write — is how a storefront sells inventory it does not have.",
+      code:
+`export async function reserveStock(job: Job, line: JobLine): Promise<Reservation> {
+  const warehouse = warehouseFor(job, line);
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const row = await inv.read(line.sku, warehouse);
+    if (row.available < line.qty) {
+      return { held: false, reason: "insufficient", onHand: row.available };
+    }
+    const swapped = await inv.compareAndSet(row.key, {
+      expectVersion: row.version,
+      available: row.available - line.qty,
+      heldFor: job.id,
+    });
+    if (swapped) {
+      return { held: true, warehouse, version: row.version + 1 };
+    }
+  }
+  throw new ContentionError(\`\${line.sku} @ \${warehouse}: lost 3 compare-and-set races\`);
+}`
+    },
+    {
+      file: "src/fulfilment/worker.ts", step: "L266–299",
+      title: "Advance exactly one stage",
+      sub: "advanceStage — append the outcome, then let the next call re-derive the position",
+      note: "There is no <code class=\"file\">currentStage</code> field anywhere. <code class=\"file\">nextStage</code> replays the event list against the stage set this job's lane actually runs, and returns the first stage with no successful event — which means a worker that dies mid-run costs one replay and nothing else. Failures are appended too, next to the retry rather than under it. The two signature stages <b>park</b> the job instead of blocking a worker on a human, and parking is a normal return, not an exception.",
+      code:
+`export async function advanceStage(job: Job): Promise<Job> {
+  const stage = nextStage(job);           // replayed from job.events
+  if (!stage) return finalise(job);       // nothing left in this lane
+  if (stage.needsSignature && !hasSignature(job, stage.id)) {
+    return park(job, \`waiting on a signature at \${stage.id}\`);
+  }
+  const startedAt = now();
+  try {
+    const out = await STAGE_IMPLS[stage.id](job);
+    job.events.push({ at: startedAt, stage: stage.id, result: "ok", ...out });
+  } catch (err) {
+    job.events.push({ at: startedAt, stage: stage.id, result: "failed", error: String(err) });
+    throw err;
+  } finally {
+    await jobs.appendEvent(job.id, job.events[job.events.length - 1]);
+  }
+  return job;
+}`
+    },
+    {
+      file: "src/fulfilment/idempotency.ts", step: "L318–352",
+      title: "The same webhook twice must not ship twice",
+      sub: "withIdempotencyKey — claim, settle, and treat mid-flight as neither done nor free",
+      note: "The wrapper distinguishes three states, and the middle one is the one people forget. <b>Unclaimed</b> means run it. <b>Claimed and settled</b> means a redelivery — hand back the stored result, ship nothing. <b>Claimed but not settled</b> means a sibling worker is still inside the function right now; that is not a replay and it is not safe to retry, so it raises and the queue redelivers later. Releasing the key on failure is what stops one bad run from poisoning the key for the full day of TTL.",
+      code:
+`export async function withIdempotencyKey<T>(
+  key: string,
+  fn: () => Promise<T>,
+): Promise<T | Replayed<T>> {
+  const claimed = await keys.claim(key, { ttlSeconds: 86400 });
+  if (!claimed) {
+    const prior = await keys.settledResult(key);
+    if (prior !== undefined) return { replayed: true, of: key, result: prior };
+    throw new InFlightError(key);         // sibling still running — redeliver later
+  }
+  try {
+    const result = await fn();
+    await keys.settle(key, result);
+    return result;
+  } catch (err) {
+    await keys.release(key);
+    throw err;
+  }
+}`
+    },
+  ];
+
+  const root = document.getElementById("accordion");
+
+  // Progress rail + live tally, injected above the accordion.
+  const meta = document.createElement("div");
+  meta.innerHTML =
+    '<div class="callout is-live">' +
+      '<p class="callout-q"><strong>Question:</strong> Did each function make sense? Mark every section below &mdash; got it or confused.</p>' +
+      '<div class="prail" id="prail" role="img" aria-label="Per-section comprehension"></div>' +
+      '<div class="tally" id="walkTally"></div>' +
+    '</div>';
+  root.parentNode.insertBefore(meta, root);
+  const prail = document.getElementById("prail");
+  const tallyEl = document.getElementById("walkTally");
+  const railSegs = [];
+  for (let i = 0; i < SECTIONS.length; i++){
+    const seg = document.createElement("span");
+    seg.className = "pseg";
+    prail.appendChild(seg);
+    railSegs.push(seg);
+  }
+
+  const stepState = {};                 // idx -> { rating, question }
+  const stepId = i => "code:s" + (i + 1);
+
+  function markStep(i){
+    const st = stepState[i] || (stepState[i] = {});
+    const q = (st.question || "").trim();
+    if (!st.rating && !q){ Capture.unmark(stepId(i)); }
+    else {
+      Capture.mark(stepId(i),
+        { rating: st.rating || null, question: q || undefined },
+        { anchor: { file: SECTIONS[i].file, step: SECTIONS[i].step } });
+    }
+    paintRail();
+    updateTally();
+  }
+
+  function paintRail(){
+    railSegs.forEach((seg, i) => {
+      const st = stepState[i] || {};
+      seg.dataset.state = st.rating ? st.rating : "";
+    });
+  }
+
+  function updateTally(){
+    const items = Capture.payload().items.filter(it => it.id.indexOf("code:s") === 0);
+    let rated = 0;
+    items.forEach(it => { if ((it.value || {}).rating) rated++; });
+    const remaining = SECTIONS.length - rated;
+    tallyEl.textContent = remaining === 0
+      ? "All " + SECTIONS.length + " functions marked"
+      : remaining + " of " + SECTIONS.length + " functions still need a read";
+  }
+
+  SECTIONS.forEach((s, i) => {
+    const item = document.createElement("div");
+    item.className = "acc-item";
+    item.dataset.idx = i;
+    const panelId = "accp-" + i;
+    const where = s.file + " · " + s.step;
+    item.innerHTML =
+      '<div class="acc-trigger is-open">' +
+        '<span class="step">' + s.step + '</span>' +
+        '<span><span class="ttl">' + s.title + '</span><span class="sub">' + s.sub + '</span></span>' +
+        '<button class="acc-caret" type="button" aria-expanded="true" aria-controls="' + panelId + '" aria-label="Toggle this section">&#9656;</button>' +
+      '</div>' +
+      '<div class="acc-panel open" id="' + panelId + '" role="region">' +
+        '<p class="note">' + s.note + '</p>' +
+        '<div class="codecard"><div class="codehead"><span class="fname">' + where + '</span>' +
+        '<button class="btn btn-secondary btn-sm" data-copyraw>Copy</button></div>' +
+        '<pre class="codelines"></pre></div>' +
+        '<div class="land" role="group" aria-label="Did this function make sense?">' +
+          '<span class="lab">Did this make sense?</span>' +
+          '<button class="landbtn btn btn-secondary btn-sm" type="button" data-rate="got_it" aria-pressed="false">&#10003; Got it</button>' +
+          '<button class="landbtn btn btn-secondary btn-sm" type="button" data-rate="confused" aria-pressed="false">&#10007; Confused</button>' +
+        '</div>' +
+        '<div class="askq reveal">' +
+          '<label class="qlabel" for="q-' + i + '">Ask a question about this function (optional)</label>' +
+          '<textarea id="q-' + i + '" class="reveal-box" rows="2" placeholder="Anchored to ' + where + ' — what is unclear?"></textarea>' +
+        '</div>' +
+      '</div>';
+    // build read-only code with line numbers
+    const pre = item.querySelector("pre");
+    s.code.split("\n").forEach((ln, idx) => {
+      const rowEl = document.createElement("div");
+      rowEl.className = "cl";
+      rowEl.innerHTML = '<span class="ln">' + (idx + 1) + '</span><span class="src"></span>';
+      rowEl.querySelector(".src").textContent = ln.length ? ln : "​";
+      pre.appendChild(rowEl);
+    });
+    root.appendChild(item);
+  });
+
+  // One signal per section: Got it / Confused (single-select).
+  root.querySelectorAll(".landbtn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const item = btn.closest(".acc-item");
+      const i = Number(item.dataset.idx);
+      const st = stepState[i] || (stepState[i] = {});
+      st.rating = btn.dataset.rate;
+      item.querySelectorAll(".landbtn").forEach(b => b.setAttribute("aria-pressed", b === btn ? "true" : "false"));
+      // Escape hatch: rating the section reveals the text box (reveal on selection); a
+      // Confused rating reframes it as the "what's confusing" reason box so a negative
+      // signal always has a place to say why. Never trapped in the two buttons.
+      const askq = item.querySelector(".askq");
+      const qlabel = askq.querySelector(".qlabel");
+      const qta = askq.querySelector("textarea");
+      const where = SECTIONS[i].file + " · " + SECTIONS[i].step;
+      askq.classList.add("is-open");
+      if (st.rating === "confused"){
+        qlabel.textContent = "What's confusing about this function? (optional — helps route a fix)";
+        qta.placeholder = "Anchored to " + where + " — what didn't land?";
+      } else {
+        qlabel.textContent = "Ask a question about this function (optional)";
+        qta.placeholder = "Anchored to " + where + " — what is unclear?";
+      }
+      markStep(i);
+    });
+  });
+
+  // Optional question per section.
+  root.querySelectorAll(".askq textarea").forEach(ta => {
+    ta.addEventListener("input", () => {
+      const i = Number(ta.closest(".acc-item").dataset.idx);
+      (stepState[i] || (stepState[i] = {})).question = ta.value;
+      markStep(i);
+    });
+  });
+
+  // Raw copy buttons — copy the source text only, not the gutter line numbers.
+  root.querySelectorAll("[data-copyraw]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const pre = btn.closest(".codecard").querySelector("pre");
+      const text = Array.from(pre.querySelectorAll(".src")).map(s => s.textContent.replace("​", "")).join("\n");
+      copyText(text, btn);
+    });
+  });
+
+  // Independent toggle — every panel is pre-opened so the read-then-mark control
+  // for ALL sections is visible up front; collapsing one never hides the others.
+  // The trigger is a DIV so its title/subtitle prose is selectable; the row stays
+  // click-to-toggle, and the inner .acc-caret <button> is the keyboard-focusable
+  // control (its click bubbles to the row handler). A click that ends a text
+  // selection inside the row is ignored so click-drag selects instead of toggling.
+  const triggers = Array.from(root.querySelectorAll(".acc-trigger"));
+  triggers.forEach(t => {
+    t.addEventListener("click", () => {
+      const sel = window.getSelection && window.getSelection();
+      if (sel && !sel.isCollapsed && t.contains(sel.anchorNode)) return;
+      const caret = t.querySelector(".acc-caret");
+      const panel = document.getElementById(caret.getAttribute("aria-controls"));
+      const isOpen = caret.getAttribute("aria-expanded") === "true";
+      caret.setAttribute("aria-expanded", String(!isOpen));
+      t.classList.toggle("is-open", !isOpen);
+      panel.classList.toggle("open", !isOpen);
+    });
+  });
+
+  paintRail();
+  updateTally();
+})();
+
+/* ─────────── (B) Tabs — switching ─────────── */
+document.querySelectorAll("[data-tabs]").forEach(group => {
+  const tabs = Array.from(group.querySelectorAll(".tabbtn"));
+  const panes = Array.from(group.querySelectorAll(".tabpane"));
+  tabs.forEach(tab => tab.addEventListener("click", () => {
+    tabs.forEach(t => t.setAttribute("aria-selected", String(t === tab)));
+    panes.forEach(p => p.classList.toggle("active", p.dataset.pane === tab.dataset.tab));
+  }));
+});
+
+/* ─────────── (B) Tabs — a single flag per record ─────────── */
+(function(){
+  const group = document.querySelector("[data-tabs]");
+  if (!group) return;
+  const FACETS = [
+    { tab: "config", id: "config",       label: "Config" },
+    { tab: "rules",  id: "lane-rules",   label: "Lane rules" },
+    { tab: "job",    id: "job-record",   label: "Job record" },
+    { tab: "cust",   id: "customer-view", label: "Customer view" },
+  ];
+  const fid = id => "tabs:" + id;
+  const state = {};   // facet id -> { rating: "ok"|"off"|null, note }
+
+  FACETS.forEach(f => {
+    const pane = group.querySelector('[data-pane="' + f.tab + '"]');
+    state[f.id] = { rating: null, note: "" };
+    // Pre-opened per-pane prompt: single-select + always-visible note, so the
+    // reviewer answers in place — no toggle, no progressive disclosure.
+    const block = document.createElement("div");
+    block.className = "callout facetask";
+    block.innerHTML =
+      '<p class="callout-q"><strong>Question:</strong> Does ' + f.label + ' read right?</p>' +
+      '<div class="facetrate" role="group" aria-label="Your read on ' + f.label + '">' +
+        '<button class="ratebtn btn btn-secondary btn-sm" type="button" data-val="ok" aria-pressed="false">&#10003; Looks right</button>' +
+        '<button class="ratebtn btn btn-secondary btn-sm" type="button" data-val="off" aria-pressed="false">&#10007; Something off</button>' +
+      '</div>' +
+      '<div class="flagnote reveal">' +
+        '<label for="fn-' + f.id + '">What\'s off in ' + f.label + '? (optional)</label>' +
+        '<input id="fn-' + f.id + '" class="facetnote" type="text" placeholder="One line — what reads wrong or unclear">' +
+      '</div>';
+    pane.appendChild(block);
+
+    const rateBtns = Array.from(block.querySelectorAll(".ratebtn"));
+    const note = block.querySelector(".facetnote");
+
+    function apply(){
+      const st = state[f.id];
+      if (!st.rating && !st.note.trim()){
+        Capture.unmark(fid(f.id));
+      } else {
+        Capture.mark(fid(f.id), { rating: st.rating || null, note: st.note.trim() || undefined }, { anchor: f.id });
+      }
+      paint();
+    }
+    const noteWrap = block.querySelector(".flagnote");
+    rateBtns.forEach(b => b.addEventListener("click", () => {
+      state[f.id].rating = b.dataset.val;
+      rateBtns.forEach(x => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+      // Escape hatch: "Something off" reveals the note box to say what is off (reveal
+      // on selection); "Looks right" hides it (a positive needs no reason).
+      if (b.dataset.val === "off"){
+        noteWrap.classList.add("is-open");
+        try { note.focus(); } catch(e){ /* focus is best-effort */ }
+      } else {
+        noteWrap.classList.remove("is-open");
+      }
+      apply();
+    }));
+    note.addEventListener("input", () => { state[f.id].note = note.value; apply(); });
+  });
+
+  // Plain-text tally under the strip.
+  const meter = document.createElement("div");
+  meter.className = "callout is-live";
+  meter.style.marginTop = "14px";
+  group.querySelector(".tabstrip").insertAdjacentElement("afterend", meter);
+  function paint(){
+    let marked = 0;
+    FACETS.forEach(f => { if (state[f.id].rating) marked++; });
+    const remaining = FACET_COUNT - marked;
+    meter.innerHTML = '<span class="callout-label">Your reads &mdash; updates as you mark records</span>' +
+      (remaining === 0
+        ? "All " + FACET_COUNT + " records marked"
+        : remaining + " of " + FACET_COUNT + " records still need a read");
+  }
+  paint();
+})();
+
+/* ─────────── (C) Lane table + 24h clock + SVG stage map ─────────── */
+(function(){
+  // Seventeen stages, one tile each — no grouping, no sub-steps.
+  // rule: "notexpress" runs everywhere but Express · "held"/"insured" are lane-only
+  //       · "cold"/"split" are switched on by a handling flag, not by the lane
+  //       · undefined = always.
+  const TILES = [
+    {id:"IN·1", name:"Session validated",  track:"intake"},
+    {id:"IN·2", name:"Address normalised", track:"intake"},
+    {id:"IN·3", name:"Signals raised",     track:"intake", rule:"notexpress"},
+    {id:"IN·4", name:"Lane assigned",      track:"intake"},
+    {id:"RS·1", name:"Stock check",        track:"reserve"},
+    {id:"RS·2", name:"Warehouse chosen",   track:"reserve"},
+    {id:"RS·3", name:"Shipment split",     track:"reserve", rule:"split"},
+    {id:"RS·4", name:"Cold-chain plan",    track:"reserve", rule:"cold"},
+    {id:"ST·1", name:"Payment capture",    track:"settle"},
+    {id:"ST·2", name:"Tax finalised",      track:"settle"},
+    {id:"ST·3", name:"Manual review",      track:"settle", rule:"held", gate:true},
+    {id:"ST·4", name:"Value declared",     track:"settle", rule:"insured"},
+    {id:"ST·5", name:"Invoice issued",     track:"settle"},
+    {id:"DP·1", name:"Pick list",          track:"dispatch"},
+    {id:"DP·2", name:"Pack & weigh",       track:"dispatch"},
+    {id:"DP·3", name:"Lead sign-off",      track:"dispatch", rule:"notexpress", gate:true},
+    {id:"DP·4", name:"Carrier handoff",    track:"dispatch"},
+  ];
+  const TRACK_FILL   = { intake:"#dbe9f9", reserve:"#e2f0d9", settle:"#f7e7cf", dispatch:"#f0dde2" };
+  const TRACK_STROKE = { intake:"#378ADD", reserve:"#639922", settle:"#C98A2E", dispatch:"#8C3344" };
+
+  // The table, mirrored from src/pricing/rules.py. Rows are value bands,
+  // columns are 0 / 1 / 2-or-more raised signals.
+  const LANE_TABLE = {
+    low:  ["Express",  "Standard", "Held"],
+    mid:  ["Standard", "Standard", "Held"],
+    high: ["Insured",  "Insured",  "Held"],
+  };
+  const PROMISE = {
+    Express:  "same-day handoff",
+    Standard: "24h handoff",
+    Insured:  "24h handoff, signature",
+    Held:     "clock paused until review",
+  };
+
+  // Service checks: three run on every lane, three more once the express
+  // shortcut is off, and the rest are switched on one at a time.
+  const ALWAYS_CHECKS = ["check-inventory", "check-address", "check-payment-auth"];
+  const SCORED_CHECKS = ["check-signal-score", "check-export-controls", "check-duplicate-order"];
+
+  const els = {
+    value: document.getElementById("orderval"),
+    valueVal: document.getElementById("valueVal"),
+    cold: document.getElementById("cold"),
+    split: document.getElementById("split"),
+    laneName: document.getElementById("laneName"),
+    cellRef: document.getElementById("cellRef"),
+    promise: document.getElementById("promise"),
+    offCount: document.getElementById("offCount"),
+    checkCount: document.getElementById("checkCount"),
+    checkList: document.getElementById("checkList"),
+    svg: document.getElementById("stepmap"),
+  };
+  const riskBoxes = Array.from(document.querySelectorAll("[data-risk]"));
+
+  function classify(){
+    const dollars = Number(els.value.value);
+    const band = dollars < 400 ? "low" : (dollars < 1200 ? "mid" : "high");
+    const raised = riskBoxes.filter(b => b.checked).length;
+    const column = Math.min(raised, 2);
+    return { lane: LANE_TABLE[band][column], band, raised, column, dollars };
+  }
+
+  function tileActive(t, lane){
+    const held = lane === "Held";
+    switch (t.rule){
+      case "notexpress": return lane !== "Express";
+      case "held":       return held;
+      case "insured":    return lane === "Insured";
+      // A held job is not planned past review, so the handling flags cannot
+      // light a tile — this is the guard the dimmed controls promise.
+      case "cold":       return !held && els.cold.checked;
+      case "split":      return !held && els.split.checked;
+      default:           return true;
+    }
+  }
+
+  function checksFor(lane){
+    let list = ALWAYS_CHECKS.map(n => ({ name: n, cond: false }));
+    if (lane !== "Express"){
+      list = list.concat(SCORED_CHECKS.map(n => ({ name: n, cond: false })));
+    }
+    if (lane === "Held")    list.push({ name: "check-manual-queue",     cond: true });
+    if (lane === "Insured") list.push({ name: "check-declared-value",   cond: true });
+    if (lane !== "Held" && els.cold.checked) list.push({ name: "check-cold-chain-route", cond: true });
+    return list;
+  }
+
+  function cellLabel(band, column, raised){
+    return band + " × " + (column === 2 ? "2+" : String(raised));
+  }
+
+  function drawMap(lane){
+    const svg = els.svg;
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    const NS = "http://www.w3.org/2000/svg";
+    const cols = 5, w = 190, h = 62, gapX = 12, gapY = 16, padX = 6, padY = 6;
+    TILES.forEach((t, i) => {
+      const col = i % cols, row = Math.floor(i / cols);
+      const x = padX + col * (w + gapX);
+      const y = padY + row * (h + gapY);
+      const active = tileActive(t, lane);
+      const g = document.createElementNS(NS, "g");
+      const rect = document.createElementNS(NS, "rect");
+      rect.setAttribute("x", x); rect.setAttribute("y", y);
+      rect.setAttribute("width", w); rect.setAttribute("height", h);
+      rect.setAttribute("rx", 6);
+      rect.setAttribute("fill", active ? TRACK_FILL[t.track] : "#F4F6FA");
+      rect.setAttribute("stroke", active ? TRACK_STROKE[t.track] : "#DCDFE3");
+      rect.setAttribute("stroke-width", active ? 1.5 : 1);
+      rect.setAttribute("opacity", active ? 1 : 0.7);
+      g.appendChild(rect);
+      if (t.gate && active){
+        const bar = document.createElementNS(NS, "rect");
+        bar.setAttribute("x", x); bar.setAttribute("y", y);
+        bar.setAttribute("width", 5); bar.setAttribute("height", h);
+        bar.setAttribute("rx", 2.5);
+        bar.setAttribute("fill", "#8C3344");
+        g.appendChild(bar);
+      }
+      const num = document.createElementNS(NS, "text");
+      num.setAttribute("x", x + 16); num.setAttribute("y", y + 25);
+      num.setAttribute("font-family", "IBM Plex Mono, monospace");
+      num.setAttribute("font-size", "13");
+      num.setAttribute("font-weight", "500");
+      num.setAttribute("fill", active ? "#1B2A4A" : "#A3A9B6");
+      num.textContent = t.id;
+      g.appendChild(num);
+      const nm = document.createElementNS(NS, "text");
+      nm.setAttribute("x", x + 16); nm.setAttribute("y", y + 45);
+      nm.setAttribute("font-family", "IBM Plex Sans, sans-serif");
+      nm.setAttribute("font-size", "11.5");
+      nm.setAttribute("fill", active ? "#48546E" : "#A3A9B6");
+      nm.textContent = t.name;
+      g.appendChild(nm);
+      if (!active){
+        const tag = document.createElementNS(NS, "text");
+        tag.setAttribute("x", x + w - 14); tag.setAttribute("y", y + 25);
+        tag.setAttribute("text-anchor", "end");
+        tag.setAttribute("font-family", "IBM Plex Mono, monospace");
+        tag.setAttribute("font-size", "9.5");
+        tag.setAttribute("fill", "#A3A9B6");
+        tag.textContent = "off";
+        g.appendChild(tag);
+      }
+      svg.appendChild(g);
+    });
+  }
+
+  function render(){
+    const { lane, band, raised, column, dollars } = classify();
+    els.valueVal.textContent = "$" + dollars.toLocaleString("en-US");
+    els.laneName.textContent = lane;
+    els.cellRef.textContent = cellLabel(band, column, raised);
+    els.promise.textContent = PROMISE[lane];
+
+    // A stage that is off is a routing decision, not a defect — render it neutral.
+    const off = TILES.filter(t => !tileActive(t, lane));
+    // No lane runs the full set: Manual review and Value declared exclude each
+    // other, so the count below is never zero.
+    els.offCount.innerHTML =
+      '<span class="neutral">' + off.length + " of " + TILES.length + " (" + off.map(t => t.id).join(", ") + ")</span>";
+
+    const cs = checksFor(lane);
+    els.checkCount.textContent = cs.length;
+    els.checkList.innerHTML = cs
+      .map(c => '<span class="' + (c.cond ? "cond" : "") + '">' + (c.cond ? "+ " : "&bull; ") + c.name + (c.cond ? " (switched on)" : "") + '</span>')
+      .join("<br>");
+
+    // A held job is not planned past review, so the handling flags have nothing
+    // to act on yet — dim them rather than pretending they changed the map.
+    const held = lane === "Held";
+    [els.cold, els.split].forEach(cb => cb.closest(".opt").classList.toggle("dim", held));
+
+    drawMap(lane);
+  }
+
+  [els.value, els.cold, els.split].forEach(el => el.addEventListener("input", render));
+  riskBoxes.forEach(b => b.addEventListener("input", render));
+  render();
+
+  /* ── 24-hour clock ── */
+  const clock = document.getElementById("clock");
+  const clockVal = document.getElementById("clockVal");
+  const trackRow = document.getElementById("trackRow");
+  const clockOutcome = document.getElementById("clockOutcome");
+  const budgetLeft = document.getElementById("budgetLeft");
+  // Cumulative deadlines measured from payment capture, not per-track durations.
+  const TRACKS = [
+    { key: "intake",   label: "INTAKE",   due: 1  },
+    { key: "reserve",  label: "RESERVE",  due: 3  },
+    { key: "settle",   label: "SETTLE",   due: 8  },
+    { key: "dispatch", label: "DISPATCH", due: 24 },
+  ];
+  const MARK = { closed: "✓", current: "▸", pending: "—", late: "✗" };
+  const WORD = { closed: "closed", current: "running", pending: "queued", late: "overdue" };
+
+  function setTrack(t, state){
+    const el = trackRow.querySelector("." + t.key);
+    el.classList.toggle("pos", state === "closed");
+    el.classList.toggle("live", state === "current");
+    el.classList.toggle("neutral", state === "pending");
+    el.classList.toggle("neg", state === "late");
+    el.textContent = MARK[state] + " " + t.label + " " + WORD[state];
+  }
+
+  function renderClock(){
+    const hours = Number(clock.value);
+    const late = hours > 24;
+    clockVal.textContent = late ? "24h+" : hours + "h";
+    let currentTaken = false;
+    TRACKS.forEach(t => {
+      let state;
+      if (late) state = "late";
+      else if (hours >= t.due) state = "closed";
+      else if (!currentTaken){ state = "current"; currentTaken = true; }
+      else state = "pending";
+      setTrack(t, state);
+    });
+    budgetLeft.innerHTML = late
+      ? '<span class="neg">0h of 24h — over by ' + (hours - 24) + 'h</span>'
+      : (24 - hours) + "h of 24h";
+
+    let label, msg;
+    if (late){
+      label = "Past the promise";
+      msg = 'Nothing is cancelled and no stage is skipped &mdash; the job keeps going. The storefront applies a <span class="neg">10% credit</span> without being asked and the parcel moves to the front of the pick queue.';
+    } else if (hours < 1){
+      label = "Hour 0–1 · intake window";
+      msg = "Validation, address normalisation, signals and the lane lookup all land inside the first hour. A job still in intake at sixty minutes is the oldest thing on the queue by definition.";
+    } else if (hours < 3){
+      label = "Hours 1–3 · reserve window";
+      msg = "Stock is held and a warehouse is chosen. Nothing has been picked and nothing has been charged, so this is the last cheap place to cancel.";
+    } else if (hours < 8){
+      label = "Hours 3–8 · settle window";
+      msg = 'Capture, tax, invoice. A <b>Held</b> job spends its entire budget in this window waiting on a person, which is why the lane readout says the clock is paused rather than running.';
+    } else {
+      label = "Hours 8–24 · dispatch window";
+      msg = "Pick, pack, sign-off, handoff. The promise is measured at carrier handoff, not at delivery — everything after DP·4 belongs to the carrier's own clock.";
+    }
+    clockOutcome.innerHTML = '<span class="callout-label">Clock · ' + label + '</span><p style="margin:0">' + msg + '</p>';
+  }
+  clock.addEventListener("input", renderClock);
+  renderClock();
+
+  /* ── Commit a configuration once ── */
+  const PARAMS = [
+    { el: els.value, id: "concept:value", def: 250, unit: "USD",   label: "Order value",        kind: "range" },
+    { el: clock,     id: "concept:clock", def: 0,   unit: "hours", label: "Hours since capture", kind: "range" },
+  ];
+  const RISK_META = [
+    { id: "concept:signal-region",   label: "Signal: billing/shipping regions disagree" },
+    { id: "concept:signal-first",    label: "Signal: first order on this account" },
+    { id: "concept:signal-velocity", label: "Signal: four or more orders in an hour" },
+  ];
+  riskBoxes.forEach((b, k) => PARAMS.push({ el: b, id: RISK_META[k].id, def: false, unit: "signal", label: RISK_META[k].label, kind: "bool" }));
+  PARAMS.push({ el: els.cold,  id: "concept:cold",  def: false, unit: "flag", label: "Cold-chain item in basket", kind: "bool" });
+  PARAMS.push({ el: els.split, id: "concept:split", def: false, unit: "flag", label: "Ships to more than one address", kind: "bool" });
+
+  const wrap = document.querySelector("#view-concept .wrap");
+  const cfg = document.createElement("div");
+  cfg.className = "cfgbar";
+  cfg.innerHTML =
+    '<h3>Commit your configuration</h3>' +
+    '<p class="callout-q" style="margin:0 0 10px"><strong>Question:</strong> Which operating point should the lane table default to?</p>' +
+    '<p class="hint">Drag the sliders and toggle the flags above to explore. When the operating point is right, commit it once — then send it with Submit to Claude below.</p>' +
+    '<div class="cfg-readout" id="cfgReadout"></div>' +
+    '<div class="cfg-note">' +
+      '<label for="cfgNote">Add a note for Claude (optional) — anything the sliders can\'t say</label>' +
+      '<textarea id="cfgNote" rows="2" placeholder="e.g. hold anything over $1,200 even with zero signals"></textarea>' +
+    '</div>' +
+    '<button class="btn btn-primary" id="commitBtn" type="button">Commit these values</button>';
+  wrap.appendChild(cfg);
+  const cfgReadout = document.getElementById("cfgReadout");
+  const cfgNote = document.getElementById("cfgNote");
+  const commitBtn = document.getElementById("commitBtn");
+
+  function changedParams(){
+    return PARAMS.filter(p => {
+      const cur = p.kind === "range" ? Number(p.el.value) : p.el.checked;
+      return cur !== p.def;
+    });
+  }
+
+  function renderReadout(){
+    const changed = changedParams();
+    if (changed.length === 0){
+      cfgReadout.innerHTML = '<span style="color:var(--text)">All ' + SLIDER_COUNT + ' parameters at the agent\'s proposed defaults</span>';
+    } else {
+      const rows = changed.map(p => {
+        const cur = p.kind === "range" ? Number(p.el.value) : p.el.checked;
+        return "<li>" + p.label + ": " + (p.kind === "range" ? (cur + " (was " + p.def + ")") : "on") + "</li>";
+      }).join("");
+      cfgReadout.innerHTML = changed.length + " of " + SLIDER_COUNT + " parameters changed from default:<ul>" + rows + "</ul>";
+    }
+  }
+
+  // Exploring is free — drag updates the preview, nothing is captured until commit.
+  PARAMS.forEach(p => p.el.addEventListener("input", renderReadout));
+
+  commitBtn.addEventListener("click", () => {
+    PARAMS.forEach(p => {
+      const cur = p.kind === "range" ? Number(p.el.value) : p.el.checked;
+      if (cur === p.def){ Capture.unmark(p.id); }
+      else { Capture.mark(p.id, { value: cur, default: p.def, unit: p.unit }, { anchor: p.id.replace("concept:", "") }); }
+    });
+    // Escape hatch: an optional free-text note committed alongside the vector so the
+    // human is never confined to the numbers. Excluded from coverage (see setCoverage).
+    const noteTxt = (cfgNote.value || "").trim();
+    if (noteTxt){ Capture.mark("concept:note", { note: noteTxt }, { anchor: "commit-note", note: noteTxt }); }
+    else { Capture.unmark("concept:note"); }
+  });
+
+  renderReadout();
+})();
+</script>
+</body>
+</html>

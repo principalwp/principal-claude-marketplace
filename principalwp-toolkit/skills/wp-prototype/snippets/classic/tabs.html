@@ -1,0 +1,22 @@
+<!-- Classic nav tabs (paste inside .wrap, after <h1>). The data-tab /
+     data-tab-panel attributes are wired up by the prototype runtime —
+     clicking switches panels. Keep wp-clearfix on the wrapper: the tab links
+     float, so without it the wrapper's box collapses to a sliver (breaks
+     data-note outlines and spacing). -->
+<div data-tab-group>
+	<h2 class="nav-tab-wrapper wp-clearfix">
+		<a href="#" class="nav-tab nav-tab-active" data-tab="general">General</a>
+		<a href="#" class="nav-tab" data-tab="display">Display</a>
+		<a href="#" class="nav-tab" data-tab="advanced">Advanced</a>
+	</h2>
+
+	<div data-tab-panel="general">
+		<p>General tab content.</p>
+	</div>
+	<div data-tab-panel="display" style="display: none">
+		<p>Display tab content.</p>
+	</div>
+	<div data-tab-panel="advanced" style="display: none">
+		<p>Advanced tab content.</p>
+	</div>
+</div>

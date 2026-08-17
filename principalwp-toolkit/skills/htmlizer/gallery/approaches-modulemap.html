@@ -1,0 +1,849 @@
+<!doctype html>
+<!-- Example gallery page: interactive approaches + module map, rendered
+     from invented Northwind pipeline data — no real source material. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>release-dispatch.mjs — approaches and module overview</title>
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzhDMzM0NCIvPjxwYXRoIGQ9Ik0zMCAyMiBINTggYTE4IDE4IDAgMCAxIDAgMzYgSDQyIFY3OCBIMzAgWiBNNDIgMzMgVjQ3IEg1NiBhNyA3IDAgMCAwIDAgLTE0IFoiIGZpbGw9IiNmZmYiLz48L3N2Zz4=">
+
+<link rel="stylesheet" href="base.css">
+<script src="capture.js"></script>
+<script>window.CAPTURE_SUBMIT_URL = ""; /* static example page - feedback falls back to the clipboard */</script>
+
+<style>
+/* page-specific LAYOUT only — typography, color, headings, buttons, forms all
+   come from base.css. We set color only for intentionally-secondary text
+   (muted/faint) and never restate the base body size, body color, or heading
+   scale here. Spacing uses the --space-* rhythm tokens. */
+
+section{padding:var(--space-2) 0 var(--space-4)}
+.section-sep{border:0;border-top:1px solid var(--border);margin:var(--space-2) 0 0}
+
+/* the design question + the live decision status both use the shared .callout
+   component from base.css (left accent bar + tint). Page adds nothing here. */
+
+/* ── three approaches ── */
+/* centered flex track for the three approaches: justify-content:center keeps the row
+   centered so any overflow spills symmetrically (left+right), never right-only. Equal
+   flex basis reproduces the old equal-thirds when the row fits. */
+.cards{display:flex;justify-content:center;gap:var(--space-3);align-items:start;margin-top:var(--space-3)}
+.card{flex:1 1 0}
+.card h3{margin:0 0 var(--space-1)}
+.card .tagline{color:var(--text);margin:0 0 var(--space-2)}
+.card .recommended{font-weight:600;margin:0 0 var(--space-2)}
+
+pre.code{margin:0 0 var(--space-2);font-size:13px;line-height:1.55}
+.cline{display:block;padding-left:34px;position:relative;white-space:pre}
+.cline .ln{position:absolute;left:0;top:0;width:24px;text-align:right;color:var(--text-faint);user-select:none}
+.cline .cm{color:var(--text-muted)}
+
+/* pros/cons: a green ✓ for a real positive, a red ✗ for a real negative — the
+   sign is unambiguous (a bare "-" used to read as neutral). Uses .pos/.neg. */
+.proscons{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--space-1)}
+.proscons li{display:flex;gap:9px;align-items:flex-start;margin:0;line-height:1.5}
+.proscons .mk{font-family:var(--font-mono);font-weight:700;flex:none;width:14px;text-align:center}
+
+/* two genuinely-distinct actions per card: 'Choose this' (as-is) + 'Use as base' (adapt).
+   stacked full-width with a small gap; the active disposition flips to solid cranberry. */
+.appr-actions{margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--border);display:flex;flex-direction:column;gap:var(--space-1)}
+.appr-actions .btn{width:100%}
+/* signal the hidden notes box so picking-unlocks-notes is discoverable pre-selection */
+.appr-hint{color:var(--text-muted);font-size:13px;margin:4px 0 0;text-align:center}
+.card.is-selected .appr-hint{display:none}
+.appr-comment{margin-top:var(--space-3);display:none}
+.card.is-selected .appr-comment{display:block}
+.appr-comment label{display:block}
+.appr-comment textarea{min-height:78px}
+
+/* escape hatch for the fixed option set: 'None of these — describe your own'.
+   single-select, mutually exclusive with picking A/B/C; selecting reveals a text box. */
+.appr-other{margin:var(--space-3) 0 var(--space);border:1px solid var(--border-strong);border-radius:var(--r-md);background:var(--surface);padding:var(--space-3)}
+.appr-other.is-selected{border-color:var(--accent);background:var(--accent-wash)}
+.appr-other .other-btn{width:100%}
+.appr-other.is-selected .appr-hint{display:none}
+/* the "None of these" free-text box uses the shared .reveal/.reveal-box utilities
+   (base.css); the page only keeps the label-block rule the reveal API doesn't cover. */
+.appr-other-comment label{display:block}
+
+.rationale-block{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);padding:var(--space-3);margin-top:var(--space-3);line-height:1.55}
+
+/* ── module overview (grouped list + detail panel) ── */
+/* helper line is NORMAL selectable body text — not a heading, not callout-q, not weight 800 */
+.mod-help{color:var(--text);margin:var(--space-2) 0 0}
+.map-grid{display:grid;grid-template-columns:1fr 360px;gap:var(--space-3);align-items:start;margin-top:var(--space-3)}
+.mod-groups{display:flex;flex-direction:column;gap:var(--space-3)}
+.mod-group > h4{margin:0 0 var(--space-1)}
+.mod-group .count{color:var(--text-faint);font-weight:400;font-family:var(--font-mono);font-size:13px}
+.mod-list{border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;background:var(--surface)}
+.mod-row{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--border);background:var(--surface);cursor:pointer;padding:var(--space-2);font:inherit;color:var(--text)}
+.mod-row:last-child{border-bottom:0}
+.mod-row:hover{background:var(--surface-2)}
+.mod-row.is-selected{background:var(--accent-wash);box-shadow:inset 3px 0 0 var(--accent)}
+.mod-row .mod-head{display:flex;align-items:baseline;gap:var(--space-1)}
+.mod-row .mod-name{font-family:var(--font-mono);font-size:14.5px;color:var(--ink);font-weight:500}
+.mod-row .mod-file{font-family:var(--font-mono);font-size:12.5px;color:var(--text-faint)}
+.mod-row .mod-desc{color:var(--text);margin-top:4px;line-height:1.5}
+/* NO resting flag chrome: the row click is the affordance. The marker is empty until the
+   module is flagged, then it reads "Flagged ✓" in the cranberry accent. */
+.mod-row .mod-flagged{font-family:var(--font-mono);font-size:12px;color:var(--accent);font-weight:600;margin-left:auto;white-space:nowrap}
+.mod-count{margin-left:8px}
+
+.panel{border:1px solid var(--border);border-radius:var(--r-lg);background:var(--surface);position:sticky;top:16px;align-self:start;padding:var(--space-3)}
+.panel .p-kind{font-family:var(--font-mono);font-size:13px;color:var(--text-muted);margin:0 0 var(--space-1)}
+/* module name is a code identifier → mono; size/weight stay on the base h3 scale */
+.panel h3{font-family:var(--font-mono);word-break:break-word;margin:0 0 var(--space-2)}
+.panel .lbl{font-size:13px;font-weight:600;color:var(--text-muted);margin:var(--space-2) 0 4px}
+.panel .fileline{font-family:var(--font-mono);font-size:13px;word-break:break-all}
+.panel .desc{margin:0}
+.panel .nbrs{display:flex;flex-wrap:wrap;gap:var(--space-1)}
+.panel .nbr{font-family:var(--font-mono);font-size:12.5px;color:var(--accent);background:none;border:0;border-bottom:1px solid transparent;cursor:pointer;padding:0}
+.panel .nbr:hover{border-color:var(--accent)}
+.panel .empty{color:var(--text-faint);font-size:13.5px}
+.panel .copyline{font-family:var(--font-mono);font-size:12.5px;color:var(--text-muted);background:none;border:0;border-bottom:1px solid transparent;cursor:pointer;padding:0;margin-top:var(--space-1)}
+.panel .copyline:hover{color:var(--accent);border-color:var(--accent)}
+.panel .flag-area{margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--border)}
+/* the flag reason textarea uses the shared .reveal-box utility (base.css) for
+   width + min-height; the page keeps only the gap above it. */
+.panel .flag-area textarea{margin-top:var(--space-2)}
+
+.foot{padding:var(--space-4) 0 var(--space-1);color:var(--text-muted);font-size:13.5px}
+.foot .mono{color:var(--text)}
+
+@media (max-width:900px){
+  .cards{flex-direction:column;align-items:stretch}
+  .card{flex:0 0 auto}
+  .map-grid{grid-template-columns:1fr}
+  .panel{position:static}
+}
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <h1>release-dispatch.mjs — approaches and module overview</h1>
+  <p class="lede"><code class="file">release-dispatch.mjs</code> is the ~980-line Node worker that turns a tagged storefront release candidate into a staged rollout: build the artifacts, put them in front of one canary region, widen to a quarter of traffic, then the full fleet — purging the edge cache and writing a release record on the way out. Below: the wave-gating decision it makes, then a hand-derived overview of its functions.</p>
+</header>
+
+<!-- ════════════ A · THREE CODE APPROACHES ════════════ -->
+<section class="wrap">
+  <h2>Three ways to decide a rollout wave is safe to widen</h2>
+  <p>Every wave moves more shoppers onto a new build, and the dispatcher has to decide — without a human watching — whether to widen, hold, or roll back. This is the ADR-031 decision recorded in the file's header comment; here are the three options it weighed. Each card offers two distinct actions: <b>Choose this</b> to take the approach as-is, or <b>Use as base</b> to adopt it and adapt it with noted changes. Picking either on any card is a single choice across all of them. If none fit, pick <b>None of these</b> below to describe your own. All of this is optional — you can also leave the decision open and only flag modules in the overview.</p>
+
+  <div class="callout">
+    <p class="callout-q"><strong>Question:</strong> What evidence should <span class="mono">release-dispatch</span> require before it moves a build from the canary region to 25% of traffic and then to the full fleet — and what signal makes it roll the wave back instead?</p>
+  </div>
+
+  <div class="cards">
+
+    <div class="card" data-appr="A">
+      <h3>Fixed soak timer between waves</h3>
+      <p class="tagline">Wait a set number of minutes after each wave, then widen. Measure nothing.</p>
+      <pre class="code" id="snip-a"></pre>
+      <ul class="proscons">
+        <li class="pro"><span class="mk pos">&#10003;</span><span>Ten lines of code; nothing to configure per service.</span></li>
+        <li class="pro"><span class="mk pos">&#10003;</span><span>Predictable wall-clock rollout duration.</span></li>
+        <li class="con"><span class="mk neg">&#10007;</span><span>A broken checkout reaches every region on schedule anyway.</span></li>
+        <li class="con"><span class="mk neg">&#10007;</span><span>No rollback trigger at all — someone has to notice (NW-101).</span></li>
+      </ul>
+      <div class="appr-actions" data-appr="A"></div>
+      <div class="appr-comment" data-appr="A"></div>
+    </div>
+
+    <div class="card" data-appr="B">
+      <h3>Absolute thresholds on live checkout metrics</h3>
+      <p class="recommended"><span class="pos">&#10003;</span> Agent recommended this one — it is what shipped.</p>
+      <p class="tagline">Poll error rate, checkout p95 and cart conversion against fixed ceilings; widen on pass, roll back on breach (ADR-031).</p>
+      <pre class="code" id="snip-b"></pre>
+      <ul class="proscons">
+        <li class="pro"><span class="mk pos">&#10003;</span><span>A breach is a rollback trigger, not a page for a human.</span></li>
+        <li class="pro"><span class="mk pos">&#10003;</span><span>Three-valued verdict (pass / pending / breach) lets a quiet window keep sampling.</span></li>
+        <li class="pro"><span class="mk pos">&#10003;</span><span>Thresholds are readable in review and reproducible in a replay.</span></li>
+        <li class="con"><span class="mk neg">&#10007;</span><span>Ceilings drift; Black Friday traffic needs a seasonal override.</span></li>
+      </ul>
+      <div class="appr-actions" data-appr="B"></div>
+      <div class="appr-comment" data-appr="B"></div>
+    </div>
+
+    <div class="card" data-appr="C">
+      <h3>Canary-vs-control cohort comparison</h3>
+      <p class="tagline">Hold back a control cohort and compare its conversion against the canary's.</p>
+      <pre class="code" id="snip-c"></pre>
+      <ul class="proscons">
+        <li class="pro"><span class="mk pos">&#10003;</span><span>Immune to threshold drift and to seasonal traffic shifts.</span></li>
+        <li class="pro"><span class="mk pos">&#10003;</span><span>Catches a regression that is bad but still under the ceiling.</span></li>
+        <li class="con"><span class="mk neg">&#10007;</span><span>The canary region books too few orders per window for the test to mean anything (NW-102).</span></li>
+        <li class="con"><span class="mk neg">&#10007;</span><span>Holding back a control cohort costs revenue on every release.</span></li>
+      </ul>
+      <div class="appr-actions" data-appr="C"></div>
+      <div class="appr-comment" data-appr="C"></div>
+    </div>
+
+  </div>
+
+  <!-- escape hatch for the fixed A/B/C set: single-select, mutually exclusive with the cards -->
+  <div class="appr-other" id="appr-other" data-appr="other">
+    <button class="btn btn-secondary other-btn" id="other-btn" type="button" aria-pressed="false">None of these — describe your own</button>
+    <p class="appr-hint" id="other-hint">Pick this if no approach fits; a text box opens to describe what you'd do instead.</p>
+    <div class="reveal appr-other-comment" id="other-comment">
+      <label for="other-ta">Describe the approach you'd take</label>
+      <textarea class="reveal-box" id="other-ta" placeholder="None of these fit because… here's the approach I'd take instead."></textarea>
+    </div>
+  </div>
+
+  <div class="callout" id="decision">
+    <p class="reco">Recommended: <strong>approach 02 (B)</strong> <span class="why" tabindex="0">(why)<span class="why-pop">It is the only one of the three that can stop a bad wave on its own, and unlike 03 it works at the order volume the canary region actually sees.</span></span> <a class="readmore" href="#why-02">Read more &rarr;</a></p>
+  </div>
+
+  <div class="rationale-block" id="why-02">
+    <b>Why the agent picked approach 02.</b> Approach 01 has no failure signal, so the only thing standing between a bad build and the full fleet is whoever happens to be looking — that is the NW-101 postmortem in one sentence. Approach 03 is the better idea and the wrong tool right now: the canary region books roughly forty orders in a fifteen-minute window, so a conversion comparison is measuring noise, and holding back a control cohort costs real revenue on every release. Approach 02 gives up statistical rigour to get a verdict the dispatcher can act on: three ceilings, a three-valued verdict so a quiet window holds instead of failing, and a breach that goes straight to <span class="mono">rollbackWave</span>. What would change the call: if the canary cohort grew past a few hundred orders per window, 03's comparison would start to beat fixed ceilings and 02 becomes the fallback rather than the gate.
+  </div>
+</section>
+
+<hr class="section-sep">
+
+<!-- ════════════ B · MODULE OVERVIEW (grouped list) ════════════ -->
+<section class="wrap">
+  <h2>Module overview <span class="tag mod-count" id="mod-count"></span></h2>
+  <p>A <b>hand-derived overview</b>, not a full static call graph: every entry is a symbol in <code class="file">release-dispatch.mjs</code> (or an imported lib function it calls), grouped by role. The file is layered rather than star-shaped — the entry point hands off to a stage queue, the queue drives six stages, and the stages all bottom out in the same handful of service clients and the audit trail — so the grouped list below reads closer to the code than a node-link diagram would.</p>
+
+  <p class="mod-help" id="mod-help">Every row is a feedback target — click any module to open its detail and comment box, then flag it or leave a note for Claude.</p>
+
+  <div class="map-grid">
+    <div class="mod-groups" id="modgroups"></div>
+
+    <aside class="panel" id="panel">
+      <p class="p-kind" id="p-kind">Select a module</p>
+      <h3 id="p-name">&mdash;</h3>
+      <p class="desc" id="p-desc">Click any module in the list to read what it does, see what it calls and is called by, and flag it for Claude with an optional comment.</p>
+      <div class="reveal" id="p-detail">
+        <div class="lbl">File : line</div>
+        <div class="fileline" id="p-file"></div>
+        <button class="copyline" id="p-copy" type="button">copy file:line</button>
+        <div class="lbl">Calls &rarr;</div>
+        <div class="nbrs" id="p-out"><span class="empty">&mdash;</span></div>
+        <div class="lbl">Called by &larr;</div>
+        <div class="nbrs" id="p-in"><span class="empty">&mdash;</span></div>
+        <div class="flag-area">
+          <button class="btn btn-secondary btn-sm" id="p-flag" type="button" aria-pressed="false">Flag for review</button>
+          <textarea class="reveal-box" id="p-comment" placeholder="Comment for Claude (optional) — what to look at, or what to change."></textarea>
+        </div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<footer class="foot wrap">
+  Source of truth: <a href="https://git.example.com/northwind/storefront/blob/b7c31d0/tools/release-dispatch.mjs"><code class="file">tools/release-dispatch.mjs</code></a> @ <span class="mono">b7c31d0</span>.
+  Modules and their call relationships were read from the file's top-level <span class="mono">function</span> declarations and call sites; imported symbols traced into <code class="file">tools/lib/rollout-plan.mjs</code> and its siblings. Everything on this page is an invented example built for the gallery.
+</footer>
+
+<!-- ─────────── three approaches: snippets + single-select adjudication ─────────── -->
+<script>
+(function(){
+  "use strict";
+
+  var SNIPPETS = {
+    a:
+"// Rejected: advance on a timer, measure nothing\n" +
+"for (const wave of plan.waves) {\n" +
+"  await runWave(wave);\n" +
+"  await sleep(SOAK_MINUTES * 60_000);   // 12 min, every wave\n" +
+"}\n" +
+"\n" +
+"// A build that broke checkout is live in every region\n" +
+"// 36 minutes later, on schedule, with nothing to stop it.",
+    b:
+"const GATE_THRESHOLDS = {\n" +
+"  checkout_error_rate: { max: 0.008,   window: '5m'  },\n" +
+"  checkout_p95_ms:     { max: 900,     window: '5m'  },\n" +
+"  cart_conversion:     { minRatio: 0.92, window: '15m' },\n" +
+"};\n" +
+"\n" +
+"async function waitForSteadyState(wave, deadlineMs) {\n" +
+"  const started = Date.now();\n" +
+"  while (Date.now() - started < deadlineMs) {\n" +
+"    const v = await evaluateGate(wave, GATE_THRESHOLDS);\n" +
+"    if (v.status === 'pass')   return v;\n" +
+"    if (v.status === 'breach') throw new GateBreach(v);\n" +
+"    await sleep(POLL_INTERVAL_MS);   // 'pending' -> keep sampling\n" +
+"  }\n" +
+"  throw new GateTimeout(wave.id);\n" +
+"}",
+    c:
+"// Rejected for now: canary cohort vs a held-back control cohort\n" +
+"const canary  = await metrics.cohort(wave.cohort,  '15m');\n" +
+"const control = await metrics.cohort(wave.control, '15m');\n" +
+"const lift = welchTTest(canary.conversion, control.conversion);\n" +
+"\n" +
+"// Right in principle. The canary region books ~40 orders in a\n" +
+"// 15-minute window, so this measures noise, not the build (NW-102)."
+  };
+  var SK2APP = { a:"A", b:"B", c:"C" };
+
+  function esc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+  // plain monospace code with a // comment dimmed to a neutral muted tone (no decorative color)
+  function renderLine(line){
+    var ci = line.indexOf("//");
+    if (ci < 0) return esc(line);
+    return esc(line.slice(0, ci)) + '<span class="cm">' + esc(line.slice(ci)) + "</span>";
+  }
+
+  Object.keys(SNIPPETS).forEach(function(k){
+    var pre = document.getElementById("snip-" + k);
+    if (!pre) return;
+    pre.innerHTML = "";
+    SNIPPETS[k].split("\n").forEach(function(line, idx){
+      var row = document.createElement("span");
+      row.className = "cline";
+      var g = document.createElement("span"); g.className = "ln"; g.textContent = String(idx + 1);
+      var t = document.createElement("span"); t.innerHTML = renderLine(line);
+      row.appendChild(g); row.appendChild(t);
+      pre.appendChild(row);
+    });
+  });
+
+  // ── single-select adjudication across the approaches AND the "other" escape ──
+  // Each approach card carries TWO genuinely-distinct actions: 'Choose this' (take the
+  // approach as-is) and 'Use as base' (adopt it and adapt it with noted changes). These
+  // mean different dispositions, so both are kept — the test for collapsing a control is
+  // meaning, not count, and only REDUNDANT controls get collapsed. Picking either action on
+  // any card is a single selection ACROSS all cards: it clears any pick on the other cards
+  // and clears "Other". The chosen card shows the cranberry selected state; the active
+  // button shows which disposition is set. Selecting either reveals the notes box inside
+  // the card. A fourth mutually-exclusive option — "None of these — describe your own" — is
+  // the escape hatch for the fixed set: it clears any A/B/C pick and reveals a free-text
+  // box. Capture records the chosen id with its disposition ('choose' | 'base' | 'other').
+  var APPS = ["A","B","C"];
+  var PROPOSAL = "B";
+  var PROPOSAL_LABEL = "approach 02 — absolute thresholds on live checkout metrics";
+  // st.selected ∈ { null, 'A','B','C','other' }; st.disposition ∈ { null, 'choose','base','other' }
+  var st = { selected:null, disposition:null, notes:{ A:"", B:"", C:"", other:"" } };
+  var refs = {};   // id -> { card, choose, base, textarea }
+  var otherRefs = null;   // { wrap, btn, textarea }
+
+  function applyMark(){
+    if (!st.selected) return;
+    var note = (st.notes[st.selected] || "").trim();
+    Capture.mark(st.selected, st.disposition, { note: note ? note : null });
+  }
+
+  function select(id, disp){
+    if (st.selected && st.selected !== id){ Capture.unmark(st.selected); }
+    st.selected = id;
+    st.disposition = disp;
+    applyMark();
+    refresh();
+  }
+
+  function clearSelection(){
+    if (st.selected){ Capture.unmark(st.selected); }
+    st.selected = null;
+    st.disposition = null;
+    refresh();
+  }
+
+  // tap the active disposition again to clear; a different disposition switches in place.
+  function onDisp(id, disp){
+    if (st.selected === id && st.disposition === disp){ clearSelection(); }
+    else { select(id, disp); }
+  }
+
+  function paintBtn(btn, on, restLabel, onLabel){
+    btn.classList.toggle("is-selected", on);
+    btn.classList.toggle("btn-primary", on);
+    btn.classList.toggle("btn-secondary", !on);
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+    btn.textContent = on ? onLabel : restLabel;
+  }
+
+  function buildFoot(id){
+    var actions = document.querySelector('.appr-actions[data-appr="' + id + '"]');
+    var commentWrap = document.querySelector('.appr-comment[data-appr="' + id + '"]');
+
+    // two distinct actions; the active disposition flips to solid cranberry (.btn.is-selected).
+    var choose = document.createElement("button");
+    choose.type = "button"; choose.className = "btn btn-secondary"; choose.textContent = "Choose this";
+    choose.setAttribute("aria-pressed", "false");
+    choose.addEventListener("click", function(){ onDisp(id, "choose"); });
+
+    var base = document.createElement("button");
+    base.type = "button"; base.className = "btn btn-secondary"; base.textContent = "Use as base";
+    base.setAttribute("aria-pressed", "false");
+    base.addEventListener("click", function(){ onDisp(id, "base"); });
+
+    actions.appendChild(choose);
+    actions.appendChild(base);
+
+    // signal that picking unlocks the (otherwise hidden) notes box; hidden once selected
+    var hint = document.createElement("p");
+    hint.className = "appr-hint";
+    hint.textContent = "Choose this = take it as-is · Use as base = adapt it. Either opens a notes box.";
+    actions.appendChild(hint);
+
+    var label = document.createElement("label");
+    label.textContent = "Notes for Claude (optional)";
+    var ta = document.createElement("textarea");
+    ta.placeholder = "What would you change to use this as your base? Leave blank to take it as-is.";
+    ta.addEventListener("input", function(){
+      st.notes[id] = ta.value;
+      if (st.selected === id){ applyMark(); refresh(); }
+    });
+    commentWrap.appendChild(label);
+    commentWrap.appendChild(ta);
+
+    refs[id] = {
+      card: document.querySelector('.card[data-appr="' + id + '"]'),
+      choose: choose, base: base, textarea: ta
+    };
+  }
+  APPS.forEach(buildFoot);
+
+  // ── "None of these — describe your own" escape hatch ──
+  (function buildOther(){
+    var wrap = document.getElementById("appr-other");
+    var btn = document.getElementById("other-btn");
+    var ta = document.getElementById("other-ta");
+    var comment = document.getElementById("other-comment");
+    btn.addEventListener("click", function(){
+      if (st.selected === "other"){ clearSelection(); }   // tap the active pick to clear
+      else { select("other", "other"); }
+    });
+    ta.addEventListener("input", function(){
+      st.notes.other = ta.value;
+      if (st.selected === "other"){ applyMark(); refresh(); }
+    });
+    otherRefs = { wrap: wrap, btn: btn, textarea: ta, comment: comment };
+  })();
+
+  function refresh(){
+    APPS.forEach(function(id){
+      var r = refs[id];
+      var isSel = st.selected === id;
+      r.card.classList.toggle("is-selected", isSel);
+      paintBtn(r.choose, isSel && st.disposition === "choose", "Choose this", "✓ Chosen");
+      paintBtn(r.base, isSel && st.disposition === "base", "Use as base", "✓ Base to adapt");
+      if (r.textarea.value !== st.notes[id]){ r.textarea.value = st.notes[id]; }
+    });
+
+    var otherOn = st.selected === "other";
+    otherRefs.wrap.classList.toggle("is-selected", otherOn);
+    otherRefs.comment.classList.toggle("is-open", otherOn);
+    paintBtn(otherRefs.btn, otherOn, "None of these — describe your own", "✓ Describing your own");
+    if (otherRefs.textarea.value !== st.notes.other){ otherRefs.textarea.value = st.notes.other; }
+
+    var diffTag;
+    if (!st.selected){ diffTag = "none-yet"; }
+    else if (st.selected === "other"){ diffTag = "override:other"; }
+    else if (st.selected === PROPOSAL){ diffTag = st.disposition === "choose" ? "agree" : "agree-as-base"; }
+    else { diffTag = "override:favours-" + st.selected; }
+
+    Capture.setMeta({
+      approachProposal: { agent: PROPOSAL, label: PROPOSAL_LABEL },
+      approachDecision: {
+        selected: st.selected,
+        disposition: st.disposition,
+        note: st.selected ? ((st.notes[st.selected] || "").trim() || null) : null,
+        agreesWithProposal: st.selected === PROPOSAL && st.disposition === "choose",
+        diff: diffTag
+      }
+    });
+  }
+
+  Capture.setMeta({ approachProposal: { agent: PROPOSAL, label: PROPOSAL_LABEL } });
+  refresh();
+})();
+</script>
+
+<!-- ─────────── module overview: grouped list + detail panel + per-module flag ─────────── -->
+<script>
+(function(){
+  "use strict";
+  var F  = "tools/release-dispatch.mjs";
+  var LP = "tools/lib/rollout-plan.mjs";
+  var LG = "tools/lib/health-gates.mjs";
+
+  var KIND_LABEL = {
+    entry:"command entry", plan:"rollout planning", stage:"rollout stage",
+    gate:"health gate", recovery:"rollback path", client:"service client",
+    record:"release record", config:"config + thresholds"
+  };
+  var GROUP_ORDER = ["entry","plan","stage","gate","recovery","client","record","config"];
+
+  // nodes — id, label, kind, file, line, desc
+  // Invented example: a staged release dispatcher for an online storefront.
+  var N = [
+    { id:"dispatchRelease", label:"dispatchRelease", kind:"entry", file:F, line:"612–948",
+      desc:"Top-level entry. Reads the release tag and target repos off argv, loads config, builds the rollout plan, hands the plan to the stage queue, and writes the release record on the way out. Deliberately thin — it owns no rollout logic of its own." },
+    { id:"parseDispatchArgs", label:"parseDispatchArgs", kind:"entry", file:F, line:"84",
+      desc:"Parses --tag, --repo, --dry-run and --skip-canary into a frozen options object. Rejects a tag that does not match the release-tag pattern before anything touches the fleet." },
+    { id:"runStageQueue", label:"runStageQueue", kind:"entry", file:F, line:"396",
+      desc:"The executor. Walks STAGE_SEQUENCE, runs each stage, asks the gate whether the wave held, and hands off to rollbackWave the moment a stage throws or a gate breaches. Every stage transition is written to the audit trail before the next one starts." },
+
+    { id:"buildRolloutPlan", label:"buildRolloutPlan", kind:"plan", file:F, line:"148",
+      desc:"Turns a release tag into an ordered list of waves — which artifacts, which cohorts, in which order, with which gate deadline. Pure: it reads the changeset and config and returns a plan, so a dry run produces the same plan the real dispatch would execute." },
+    { id:"resolveChangeset", label:"resolveChangeset", kind:"plan", file:F, line:"203",
+      desc:"Diffs the release tag against the last recorded release to get the set of changed paths. Paths under src/checkout/ raise the wave's sensitivity, which lengthens its soak deadline." },
+    { id:"orderWavesByDependency", label:"orderWavesByDependency", kind:"plan", file:LP, line:"import",
+      desc:"Topologically orders the waves so a service ships before anything that calls it — checkout-api ahead of the storefront pages that consume it. Throws on a dependency cycle instead of picking an arbitrary order." },
+    { id:"pickCanaryCohort", label:"pickCanaryCohort", kind:"plan", file:LP, line:"import",
+      desc:"Chooses the canary cohort for this release: the smallest configured region whose recent order volume clears the minimum sample floor. Falls back to the configured default when no region qualifies." },
+    { id:"estimateBlastRadius", label:"estimateBlastRadius", kind:"plan", file:F, line:"246",
+      desc:"Estimates the share of sessions each wave exposes, from the changed paths and the cohort sizes. Feeds the gate deadline — a wide wave soaks longer than a narrow one." },
+
+    { id:"stageBuildArtifacts", label:"stageBuildArtifacts", kind:"stage", file:F, line:"455",
+      desc:"Builds and uploads the immutable artifacts for the tag, one per repo in the plan. Idempotent by content hash: re-running a release that already built is a no-op that returns the existing artifact ids." },
+    { id:"stageCanary", label:"stageCanary", kind:"stage", file:F, line:"486",
+      desc:"Puts the new artifacts in front of the canary cohort only, by flipping the rollout flag for that cohort, then blocks on the health gate for the wave's deadline." },
+    { id:"stageExpand", label:"stageExpand", kind:"stage", file:F, line:"521",
+      desc:"Widens the rollout flag from the canary cohort to a quarter of sessions. No new artifacts are deployed here — this stage only moves traffic, which is what makes rolling it back a flag flip rather than a redeploy." },
+    { id:"stageFullFleet", label:"stageFullFleet", kind:"stage", file:F, line:"549",
+      desc:"Promotes the artifacts to the default for every region and clears the cohort-scoped flag overrides. This is the point of no cheap return: past here a rollback means restoring the previous build." },
+    { id:"stagePurgeEdgeCache", label:"stagePurgeEdgeCache", kind:"stage", file:F, line:"574",
+      desc:"Purges the edge cache for the surfaces the changeset touched, by tag rather than by URL. Runs after the fleet promotion so no edge node can re-populate from the old origin build." },
+    { id:"stageAnnounceRelease", label:"stageAnnounceRelease", kind:"stage", file:F, line:"597",
+      desc:"Renders the release notes and posts them to the release feed. Failure here is logged and does not fail the release — the build is already live and rolling back over a failed announcement would be worse." },
+
+    { id:"evaluateGate", label:"evaluateGate", kind:"gate", file:LG, line:"import",
+      desc:"Scores a wave's live metrics against GATE_THRESHOLDS and returns pass, pending or breach. Three values, not two: pending means the window is too quiet to judge, and a quiet window must hold rather than fail." },
+    { id:"probeErrorRate", label:"probeErrorRate", kind:"gate", file:LG, line:"import",
+      desc:"Reads the checkout 5xx rate for the cohort over the threshold window. Returns null rather than zero when no requests were sampled, so an empty window cannot read as a perfect score." },
+    { id:"probeCheckoutLatency", label:"probeCheckoutLatency", kind:"gate", file:LG, line:"import",
+      desc:"Reads the p95 latency of the checkout session endpoint for the cohort. The p95 rather than the mean, because the failure mode this catches is a slow tail on payment authorisation." },
+    { id:"probeCartConversion", label:"probeCartConversion", kind:"gate", file:LG, line:"import",
+      desc:"Reads cart-to-order conversion for the cohort against the trailing seven-day baseline for the same hour of the week. The hour-of-week baseline is what keeps a quiet overnight window from reading as a regression." },
+    { id:"waitForSteadyState", label:"waitForSteadyState", kind:"gate", file:F, line:"334",
+      desc:"Polls the gate until it passes, breaches, or the wave deadline expires. A breach throws immediately; a timeout throws too, because an undecidable wave is not a wave to widen." },
+
+    { id:"rollbackWave", label:"rollbackWave", kind:"recovery", file:F, line:"700",
+      desc:"Undoes the furthest-advanced wave. Before the fleet promotion this is a flag flip back to the previous cohort split; after it, it calls restorePreviousBuild. Always posts to the release feed, because a silent rollback is how the same bad build ships twice." },
+    { id:"restorePreviousBuild", label:"restorePreviousBuild", kind:"recovery", file:F, line:"744",
+      desc:"Re-promotes the artifact ids from the last successful release record. Deploys nothing new — the previous artifacts are immutable and still present, so restoring is a pointer move." },
+
+    { id:"deployClient", label:"deployClient", kind:"client", file:"tools/lib/deploy-client.mjs", line:"import",
+      desc:"Wraps the deploy platform's artifact and promotion endpoints. Retries idempotent calls, never retries a promotion, and surfaces the platform's own request id in every error." },
+    { id:"edgeCacheClient", label:"edgeCacheClient", kind:"client", file:"tools/lib/edge-cache.mjs", line:"import",
+      desc:"Tag-scoped purge API for the edge cache. Purge is asynchronous, so the client polls the purge job to completion rather than returning on the accepted response." },
+    { id:"metricsClient", label:"metricsClient", kind:"client", file:"tools/lib/metrics.mjs", line:"import",
+      desc:"Cohort-scoped time-series reads. Every query is bounded by an explicit window and cohort id; there is no unscoped query on this client, which is what keeps a probe from silently measuring the whole fleet." },
+    { id:"featureFlagClient", label:"featureFlagClient", kind:"client", file:"tools/lib/flags.mjs", line:"import",
+      desc:"Reads and writes the rollout flag that decides which cohorts see the new build. Writes are compare-and-set against the flag's current version so two concurrent dispatches cannot clobber each other." },
+    { id:"releaseFeedClient", label:"releaseFeedClient", kind:"client", file:"tools/lib/release-feed.mjs", line:"import",
+      desc:"Posts release notes, rollback notices and gate breaches to the team's release feed. Every failure here is non-fatal and logged." },
+
+    { id:"readLastRelease", label:"readLastRelease", kind:"record", file:F, line:"111",
+      desc:"Loads the most recent successful release record for the repo. Returns null on a first-ever release, which the plan builder treats as a full changeset." },
+    { id:"writeReleaseRecord", label:"writeReleaseRecord", kind:"record", file:F, line:"861",
+      desc:"Writes the terminal record for this dispatch: tag, artifact ids, cohort progression, gate verdicts and outcome. Written once, at the end, whether the release completed or rolled back." },
+    { id:"appendAuditTrail", label:"appendAuditTrail", kind:"record", file:F, line:"889",
+      desc:"Appends one line per stage transition to the release audit log. Append-only and flushed synchronously, so a crashed dispatch still leaves a readable trail of how far it got." },
+    { id:"renderReleaseNotes", label:"renderReleaseNotes", kind:"record", file:F, line:"660",
+      desc:"Renders human-readable notes from the changeset and the ticket keys found in its commit subjects. Groups by repo and links each ticket key once." },
+
+    { id:"RELEASE_CONFIG", label:"RELEASE_CONFIG", kind:"config", file:F, line:"41",
+      desc:"Per-repo release settings: cohort definitions, minimum sample floors, artifact retention and the seasonal threshold overrides. Loaded once at module top and frozen." },
+    { id:"STAGE_SEQUENCE", label:"STAGE_SEQUENCE", kind:"config", file:F, line:"62",
+      desc:"The ordered stage list the queue walks, with each stage's gate requirement and default deadline. Changing rollout shape means editing this list, not the executor." },
+    { id:"GATE_THRESHOLDS", label:"GATE_THRESHOLDS", kind:"config", file:F, line:"71",
+      desc:"The three ceilings a wave is judged against — checkout error rate, checkout p95, cart conversion ratio — each with its own sampling window (ADR-031)." }
+  ];
+
+  // edges — caller → callee (used only for the Calls / Called-by lists)
+  var E = [
+    ["dispatchRelease","parseDispatchArgs"],
+    ["dispatchRelease","RELEASE_CONFIG"],
+    ["dispatchRelease","readLastRelease"],
+    ["dispatchRelease","buildRolloutPlan"],
+    ["dispatchRelease","runStageQueue"],
+    ["dispatchRelease","writeReleaseRecord"],
+
+    ["runStageQueue","STAGE_SEQUENCE"],
+    ["runStageQueue","stageBuildArtifacts"],
+    ["runStageQueue","stageCanary"],
+    ["runStageQueue","stageExpand"],
+    ["runStageQueue","stageFullFleet"],
+    ["runStageQueue","stagePurgeEdgeCache"],
+    ["runStageQueue","stageAnnounceRelease"],
+    ["runStageQueue","evaluateGate"],
+    ["runStageQueue","rollbackWave"],
+    ["runStageQueue","appendAuditTrail"],
+
+    ["buildRolloutPlan","resolveChangeset"],
+    ["buildRolloutPlan","orderWavesByDependency"],
+    ["buildRolloutPlan","pickCanaryCohort"],
+    ["buildRolloutPlan","estimateBlastRadius"],
+    ["resolveChangeset","readLastRelease"],
+    ["orderWavesByDependency","RELEASE_CONFIG"],
+    ["pickCanaryCohort","RELEASE_CONFIG"],
+    ["pickCanaryCohort","metricsClient"],
+    ["estimateBlastRadius","resolveChangeset"],
+    ["estimateBlastRadius","GATE_THRESHOLDS"],
+
+    ["stageBuildArtifacts","deployClient"],
+    ["stageBuildArtifacts","appendAuditTrail"],
+    ["stageCanary","deployClient"],
+    ["stageCanary","featureFlagClient"],
+    ["stageCanary","waitForSteadyState"],
+    ["stageCanary","appendAuditTrail"],
+    ["stageExpand","featureFlagClient"],
+    ["stageExpand","waitForSteadyState"],
+    ["stageExpand","appendAuditTrail"],
+    ["stageFullFleet","deployClient"],
+    ["stageFullFleet","featureFlagClient"],
+    ["stageFullFleet","appendAuditTrail"],
+    ["stagePurgeEdgeCache","edgeCacheClient"],
+    ["stagePurgeEdgeCache","appendAuditTrail"],
+    ["stageAnnounceRelease","renderReleaseNotes"],
+    ["stageAnnounceRelease","releaseFeedClient"],
+    ["stageAnnounceRelease","appendAuditTrail"],
+
+    ["evaluateGate","GATE_THRESHOLDS"],
+    ["evaluateGate","probeErrorRate"],
+    ["evaluateGate","probeCheckoutLatency"],
+    ["evaluateGate","probeCartConversion"],
+    ["probeErrorRate","metricsClient"],
+    ["probeCheckoutLatency","metricsClient"],
+    ["probeCartConversion","metricsClient"],
+    ["waitForSteadyState","evaluateGate"],
+    ["waitForSteadyState","metricsClient"],
+
+    ["rollbackWave","featureFlagClient"],
+    ["rollbackWave","restorePreviousBuild"],
+    ["rollbackWave","releaseFeedClient"],
+    ["rollbackWave","appendAuditTrail"],
+    ["restorePreviousBuild","deployClient"],
+    ["restorePreviousBuild","readLastRelease"],
+
+    ["renderReleaseNotes","resolveChangeset"],
+    ["writeReleaseRecord","appendAuditTrail"],
+    ["writeReleaseRecord","RELEASE_CONFIG"]
+  ];
+
+  var byId = {};
+  N.forEach(function(n){ byId[n.id] = n; });
+
+  window.__moduleCount = N.length;
+  window.__moduleIds = N.map(function(n){ return n.id; });
+
+  // per-module flag state
+  var flagged = {};   // id -> note string (presence in map = flagged/engaged)
+
+  function markModule(id){
+    var note = (flagged[id] || "").trim();
+    Capture.mark(id, "flag", note ? { note: note } : {});
+  }
+  function unmarkModule(id){ Capture.unmark(id); }
+
+  // ── build the grouped list ──
+  var groupsHost = document.getElementById("modgroups");
+  var rowEls = {};   // id -> row button
+  var rowFlag = {};  // id -> flag indicator span
+
+  GROUP_ORDER.forEach(function(kind){
+    var members = N.filter(function(n){ return n.kind === kind; });
+    if (!members.length) return;
+    var group = document.createElement("div");
+    group.className = "mod-group";
+    var h = document.createElement("h4");
+    h.textContent = KIND_LABEL[kind] + " ";
+    var c = document.createElement("span"); c.className = "count"; c.textContent = "(" + members.length + ")";
+    h.appendChild(c);
+    group.appendChild(h);
+
+    var list = document.createElement("div");
+    list.className = "mod-list";
+    members.forEach(function(n){
+      // a DIV, not a <button>: the row's name/file/description are readable prose that
+      // must stay selectable (text inside a <button> can't be selected and reads as a
+      // draggable control). role+tabindex+keydown preserve click/keyboard activation.
+      var row = document.createElement("div");
+      row.className = "mod-row";
+      row.setAttribute("role", "button");
+      row.setAttribute("tabindex", "0");
+      var head = document.createElement("div"); head.className = "mod-head";
+      var name = document.createElement("span"); name.className = "mod-name"; name.textContent = n.label;
+      var file = document.createElement("span"); file.className = "mod-file"; file.textContent = n.file.split("/").pop() + ":" + n.line;
+      // NO resting flag chrome — the row click is the affordance. Empty until flagged,
+      // then it reads "Flagged ✓". (Set in setFlagIndicator.)
+      var flag = document.createElement("span"); flag.className = "mod-flagged"; flag.textContent = "";
+      head.appendChild(name); head.appendChild(file); head.appendChild(flag);
+      var d = document.createElement("div"); d.className = "mod-desc";
+      var firstSentence = n.desc.match(/^[\s\S]*?[.](?:\s|$)/);
+      d.textContent = firstSentence ? firstSentence[0].trim() : n.desc;
+      row.appendChild(head); row.appendChild(d);
+      row.addEventListener("click", function(){ selectModule(n.id); });
+      row.addEventListener("keydown", function(ev){
+        if (ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); selectModule(n.id); }
+      });
+      list.appendChild(row);
+      rowEls[n.id] = row;
+      rowFlag[n.id] = flag;
+    });
+    group.appendChild(list);
+    groupsHost.appendChild(group);
+  });
+
+  // ── detail panel ──
+  var pKind = document.getElementById("p-kind");
+  var pName = document.getElementById("p-name");
+  var pDesc = document.getElementById("p-desc");
+  var pDetail = document.getElementById("p-detail");
+  var pFile = document.getElementById("p-file");
+  var pCopy = document.getElementById("p-copy");
+  var pOut = document.getElementById("p-out");
+  var pIn = document.getElementById("p-in");
+  var pFlag = document.getElementById("p-flag");
+  var pComment = document.getElementById("p-comment");
+  var selected = null;
+
+  function nbr(id){
+    var n = byId[id]; if (!n) return null;
+    var b = document.createElement("button"); b.type = "button"; b.className = "nbr"; b.textContent = n.label;
+    b.addEventListener("click", function(){ selectModule(id); });
+    return b;
+  }
+  function fillList(container, ids){
+    container.innerHTML = "";
+    if (!ids.length){ container.innerHTML = '<span class="empty">&mdash;</span>'; return; }
+    ids.forEach(function(id){ var c = nbr(id); if (c) container.appendChild(c); });
+  }
+
+  function selectModule(id){
+    var n = byId[id]; if (!n) return;
+    selected = id;
+    Object.keys(rowEls).forEach(function(k){
+      var on = k === id;
+      rowEls[k].classList.toggle("is-selected", on);
+      if (on){ rowEls[k].setAttribute("aria-current", "true"); }
+      else { rowEls[k].removeAttribute("aria-current"); }
+    });
+
+    pKind.textContent = KIND_LABEL[n.kind];
+    pName.textContent = n.label;
+    pDesc.textContent = n.desc;
+    pDetail.classList.add("is-open");
+    pFile.textContent = n.file + " : " + n.line;
+    fillList(pOut, E.filter(function(e){ return e[0] === id; }).map(function(e){ return e[1]; }));
+    fillList(pIn, E.filter(function(e){ return e[1] === id; }).map(function(e){ return e[0]; }));
+
+    var isFlagged = Object.prototype.hasOwnProperty.call(flagged, id);
+    pFlag.classList.toggle("is-selected", isFlagged);
+    pFlag.classList.toggle("btn-primary", isFlagged);
+    pFlag.classList.toggle("btn-secondary", !isFlagged);
+    pFlag.setAttribute("aria-pressed", isFlagged ? "true" : "false");
+    pFlag.textContent = isFlagged ? "Flagged — remove" : "Flag for review";
+    pComment.value = isFlagged ? flagged[id] : "";
+  }
+
+  pCopy.addEventListener("click", function(){
+    if (!selected) return;
+    var n = byId[selected];
+    var text = n.file + ":" + n.line;
+    if (navigator.clipboard && window.isSecureContext){ navigator.clipboard.writeText(text)["catch"](function(){}); }
+    var prev = pCopy.textContent; pCopy.textContent = "copied"; setTimeout(function(){ pCopy.textContent = prev; }, 1100);
+  });
+
+  function setFlagIndicator(id){
+    var on = Object.prototype.hasOwnProperty.call(flagged, id);
+    var el = rowFlag[id];
+    el.textContent = on ? "Flagged ✓" : "";
+    el.classList.toggle("is-on", on);
+    updateFlagSummary();
+  }
+
+  // running flagged-count, surfaced on the section heading,
+  // so the list reads as actionable rather than read-only reference.
+  var countEl = document.getElementById("mod-count");
+  function updateFlagSummary(){
+    var n = 0, k;
+    for (k in flagged){ if (Object.prototype.hasOwnProperty.call(flagged, k)){ n++; } }
+    var flaggedText = n === 0 ? "none flagged" : (n + " flagged");
+    if (countEl){ countEl.textContent = N.length + " modules · " + flaggedText; }
+  }
+  updateFlagSummary();
+
+  pFlag.addEventListener("click", function(){
+    if (!selected) return;
+    if (Object.prototype.hasOwnProperty.call(flagged, selected)){
+      delete flagged[selected];
+      unmarkModule(selected);
+    } else {
+      flagged[selected] = pComment.value || "";
+      markModule(selected);
+    }
+    setFlagIndicator(selected);
+    selectModule(selected);
+  });
+
+  function paintFlagButton(on){
+    pFlag.classList.toggle("is-selected", on);
+    pFlag.classList.toggle("btn-primary", on);
+    pFlag.classList.toggle("btn-secondary", !on);
+    pFlag.setAttribute("aria-pressed", on ? "true" : "false");
+    pFlag.textContent = on ? "Flagged — remove" : "Flag for review";
+  }
+
+  pComment.addEventListener("input", function(){
+    if (!selected) return;
+    var val = pComment.value;
+    if (val.trim()){
+      // a real comment engages the module even before the explicit flag tap
+      flagged[selected] = val;
+      markModule(selected);
+      paintFlagButton(true);
+    } else if (Object.prototype.hasOwnProperty.call(flagged, selected)){
+      // cleared back to empty — un-flag rather than leaving a stray mark in Capture
+      delete flagged[selected];
+      unmarkModule(selected);
+      paintFlagButton(false);
+    }
+    setFlagIndicator(selected);
+  });
+})();
+</script>
+
+<!-- ─────────── shared capture coordinator: one init, one coverage rule, one rollup ─────────── -->
+<script>
+(function(){
+  "use strict";
+  var moduleTotal = window.__moduleCount || 0;
+  // coverage denominator = the page's guaranteed one-tap surfaces: the approach decision
+  // (single-select picks ONE of the 3 cards, or the "Other" escape) counts as 3, plus
+  // every module in the overview.
+  Capture.init({ view:"approaches-modulemap", total: 3 + moduleTotal });
+
+  // approach surface = the 3 cards + the "other" escape (single-select picks ONE of them).
+  var COVERAGE_IDS = {};
+  ["A","B","C","other"].concat(window.__moduleIds || []).forEach(function(id){ COVERAGE_IDS[id] = true; });
+  Capture.setCoverage(function(id){ return COVERAGE_IDS[id] === true; });
+
+  function classify(items){
+    // The derived verdict has exactly TWO values: approve | request_changes
+    // (null until there is any signal). Notes on the pick, "Use as base"
+    // (adopt-and-adapt), and flagged modules are FEEDBACK — they ride along in
+    // the payload items and never change the verdict.
+    if (!items || !items.length) return null;
+    var pick = null;          // 'choose' | 'base' | 'other' on the chosen approach
+    for (var i = 0; i < items.length; i++){
+      var it = items[i], id = it.id;
+      if (id === "A" || id === "B" || id === "C" || id === "other"){
+        pick = it.value;   // 'choose' | 'base' | 'other'
+      }
+    }
+    // "none of these" rejects all presented approaches — the one blocking
+    // gesture on this page → request_changes.
+    if (pick === "other") return "request_changes";
+    return "approve";
+  }
+
+  Capture.onChange(function(snapshot){
+    var v = classify(snapshot.items);
+    if (v !== snapshot.verdict){ Capture.rollup(v); }
+  });
+})();
+</script>
+
+</body>
+</html>

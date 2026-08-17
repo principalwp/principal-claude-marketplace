@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<!--
+  Example page — Principal WP htmlizer gallery, built from invented data (fictional company "Northwind").
+  Demonstrates the "prototype" view: animation, interaction, and SVG editing.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prototype review — motion, release order, SVG · Principal WP</title>
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzhDMzM0NCIvPjxwYXRoIGQ9Ik0zMCAyMiBINTggYTE4IDE4IDAgMCAxIDAgMzYgSDQyIFY3OCBIMzAgWiBNNDIgMzMgVjQ3IEg1NiBhNyA3IDAgMCAwIDAgLTE0IFoiIGZpbGw9IiNmZmYiLz48L3N2Zz4=">
+<link rel="stylesheet" href="base.css">
+<style>
+/* ---- page-specific layout only; shared house style lives in base.css ---- */
+.intro{color:var(--text);margin:0 0 var(--space-3);max-width:72ch}
+section{padding:0 0 var(--space-4)}
+.view-head{margin:var(--space-4) 0 var(--space-2)}
+.grid2{display:grid;grid-template-columns:minmax(280px,1fr) minmax(300px,1.05fr);gap:24px;align-items:start}
+@media(max-width:820px){.grid2{grid-template-columns:1fr}}
+.row-actions{display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;margin-top:var(--space-2)}
+.note{font-size:15px;color:var(--text);margin:var(--space-1) 0 0}
+.field{margin:0 0 var(--space-3)}
+.field-label{display:flex;justify-content:space-between;align-items:baseline;font-size:15px;font-weight:600;color:var(--ink);margin-bottom:var(--space-1)}
+.field-label .val{font-size:14px;font-weight:600;color:var(--ink)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.range-wrap{position:relative}
+.range-tick{position:absolute;top:-3px;width:2px;height:18px;background:var(--border-strong);pointer-events:none}
+
+/* ===== (A) ANIMATION — easing editor + live preview ===== */
+.bz-wrap{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}
+.bz-curve{flex:0 0 auto}
+.bz-svg{display:block;touch-action:none}
+.bz-box{fill:none;stroke:var(--border);stroke-width:1}
+.bz-diag{stroke:var(--border);stroke-width:1;stroke-dasharray:3 3}
+.bz-curveline{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linecap:round}
+.bz-ctl{stroke:var(--border-strong);stroke-width:1.5}
+.bz-anchor{fill:var(--text-muted)}
+.bz-handle{fill:var(--accent);stroke:#fff;stroke-width:2}
+.bz-side{flex:1 1 190px;display:flex;flex-direction:column;gap:12px;min-width:180px}
+.preset-row{display:flex;gap:var(--space-1);flex-wrap:wrap}
+/* custom-easing escape box: shared .reveal handles hide/show; page keeps the
+   flex column layout, re-applied at .is-open so it wins over .reveal.is-open's
+   display:block. The textarea inside uses the shared .reveal-box. */
+.custom-ease{margin-top:var(--space-1)}
+.custom-ease.is-open{display:flex;flex-direction:column;gap:var(--space-1)}
+.custom-ease .note{margin:0}
+.codeline{font-family:var(--font-mono);font-size:14px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);border-radius:var(--r-md);padding:12px 14px;margin-top:var(--space-1);white-space:pre-wrap;word-break:break-word}
+.warnbar{display:flex;gap:var(--space-1);align-items:flex-start;font-size:14px;color:var(--text);background:var(--surface-2);border:1px solid var(--border);border-left:3px solid var(--warning);border-radius:var(--r-md);padding:10px 12px;margin-top:var(--space-2)}
+.anim-decide{margin-top:var(--space-3);border-top:1px solid var(--border);padding-top:var(--space-3)}
+
+.stage{--ease:cubic-bezier(.4,0,.2,1);--dur:120ms;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px;min-height:280px;overflow:hidden}
+.demo-row{display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-3);min-height:44px}
+.demo-label{font-size:14px;color:var(--text);width:104px;flex:0 0 104px}
+/* The motion-preview "toast" is the artifact under test, NOT a transient
+   notification — it must NOT pick up the shared fixed-position .toast from
+   base.css, so it carries its own page-scoped class. */
+.demo-toast{display:flex;align-items:center;gap:10px;background:var(--ink);color:var(--accent-fg);border-radius:var(--r-md);padding:10px 14px;font-size:14px;
+  transform:translateX(140%);opacity:0;transition:transform var(--dur) var(--ease),opacity var(--dur) var(--ease)}
+.demo-toast .dot{width:8px;height:8px;border-radius:50%;background:var(--success);flex:0 0 8px}
+.stage.play .demo-toast{transform:translateX(0);opacity:1}
+.panel{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden}
+.panel-head{padding:10px 14px;font-size:15px;font-weight:600;color:var(--ink)}
+.panel-body{max-height:0;opacity:0;padding:0 14px;font-size:14px;color:var(--text);
+  transition:max-height var(--dur) var(--ease),opacity var(--dur) var(--ease),padding var(--dur) var(--ease)}
+.stage.play .panel-body{max-height:80px;opacity:1;padding:0 14px 12px}
+.track{flex:1;height:10px;background:var(--border);border-radius:999px;overflow:hidden}
+.fill{height:100%;width:8%;background:var(--accent);border-radius:999px;transition:width var(--dur) var(--ease)}
+.stage.play .fill{width:100%}
+.swatch{width:44px;height:44px;border-radius:var(--r-md);background:var(--border);border:1px solid var(--border-strong);transition:background-color var(--dur) var(--ease),border-color var(--dur) var(--ease)}
+.stage.play .swatch{background:var(--accent);border-color:var(--accent-hover)}
+/* The motion preview IS the artifact under review here, so opt its stage elements
+   back into transitions even under the global prefers-reduced-motion guard —
+   otherwise the demo the reviewer is here to judge would be frozen. */
+@media (prefers-reduced-motion:reduce){
+  .stage .demo-toast,.stage .panel-body,.stage .fill,.stage .swatch{transition-duration:var(--dur)!important}
+}
+
+/* ===== (B) INTERACTION — pick the one misplaced step ===== */
+.picklist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.pickrow{display:flex;align-items:center;gap:14px;width:100%;text-align:left;
+  padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);
+  font-family:var(--font-sans);cursor:pointer;transition:border-color 120ms ease,background-color 120ms ease}
+.pickrow:hover{border-color:var(--ink)}
+.pickrow:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.pickrow[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-wash)}
+.pickrow .num{font-family:var(--font-mono);font-size:14px;color:var(--text);min-width:26px;text-align:right;flex:0 0 auto}
+.pickrow .nm{font-size:16px;color:var(--ink);font-weight:500;flex:1}
+.pickrow .ph{font-family:var(--font-mono);font-size:14px;color:var(--text);flex:0 0 auto}
+.pickrow .mark{flex:0 0 auto;width:15px;height:15px;border-radius:50%;border:2px solid var(--border-strong);box-sizing:border-box}
+.pickrow[aria-pressed="true"] .mark{border-color:var(--accent);background:var(--accent);box-shadow:inset 0 0 0 2px var(--surface)}
+.pick-hint{font-size:15px;color:var(--text);margin:0 0 var(--space-2)}
+.live-region{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+/* ===== (C) SVG — recolor + keep/flag ===== */
+.svgcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px;display:flex;flex-direction:column;gap:var(--space-2)}
+.svgcard:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.svgstage{display:flex;align-items:center;justify-content:center;min-height:150px;padding:18px;background:var(--surface-2);border-radius:var(--r-md)}
+.svgstage svg{display:block;max-width:100%;height:auto}
+.pmark-stage svg{width:96px;height:96px}
+.logo-stage svg{width:100%;max-width:340px;height:auto}
+.svg-meta{font-family:var(--font-mono);font-size:13px;color:var(--text-muted);display:flex;justify-content:space-between;gap:8px}
+.svgstage [data-el]{cursor:pointer}
+.svgstage [data-el]:hover{filter:drop-shadow(0 0 1.5px var(--accent))}
+.svgstage [data-el].sel{outline:1px dashed var(--accent);filter:drop-shadow(0 0 2px var(--accent))}
+.svg-edit{display:flex;flex-direction:column;gap:var(--space-2);border-top:1px solid var(--border);padding-top:var(--space-3)}
+.svg-sel{font-family:var(--font-mono);font-size:13px;color:var(--text)}
+.svg-sel b{color:var(--ink);font-weight:600}
+.swatches{display:flex;gap:var(--space-1);flex-wrap:wrap;align-items:center}
+.callout .swatches{margin-top:var(--space-2)}
+.swatch-btn{width:28px;height:28px;border-radius:var(--r-sm);border:1px solid var(--border-strong);cursor:pointer;padding:0}
+.swatch-btn[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:1px}
+.swatch-btn[disabled]{opacity:.4;cursor:not-allowed}
+.fillmap{font-family:var(--font-mono);font-size:13px;color:var(--text-muted);display:flex;flex-direction:column;gap:4px}
+.fillmap:empty{display:none}
+.fillmap .fm-row{display:flex;gap:8px;align-items:center}
+.fillmap .fm-sw{width:12px;height:12px;border-radius:2px;border:1px solid var(--border-strong);flex:0 0 auto}
+.fate{display:flex;gap:var(--space-1)}
+/* Keep (pressed) reads positive via the cranberry selected fill; Flag (pressed)
+   must read NEGATIVE, not just glyph-different — give it the error treatment so a
+   flagged mark is unmistakable from a kept one at the control level. */
+.fate [data-fate="flag"][aria-pressed="true"]{background:var(--error);border-color:var(--error);color:var(--accent-fg)}
+.fate [data-fate="flag"][aria-pressed="true"]:hover{background:var(--error-hover);border-color:var(--error-hover);color:var(--accent-fg)}
+/* flag reason box uses the shared .reveal + .reveal-box (base.css) */
+/* callout sits in the flex column; let the column gap govern its spacing */
+.svg-edit .callout{margin:0}
+
+footer{padding:var(--space-4) 0;font-family:var(--font-mono);font-size:13px;color:var(--text-muted);border-top:1px solid var(--border);margin-top:var(--space-4)}
+/* transient "Saved" toast uses the shared .toast + .is-show (base.css) */
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <h1>Prototype review</h1>
+  <p class="lede">Three working surfaces built on a sample release run: tune a motion setting, flag a misplaced step in the checklist, and recolor the brand marks. Make your calls, then submit once.</p>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ (A) ANIMATION ============ -->
+  <section id="animation">
+    <h2 class="view-head">Tune the motion</h2>
+    <p class="intro">Shape the easing curve and duration; the preview replays a few sample UI motions as you change it. The brand default is 120ms on the standard curve.</p>
+
+    <div class="callout">
+      <p class="callout-q"><strong>Question:</strong> Keep the brand default, or hand back exact easing + duration?</p>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="field">
+          <div class="field-label"><span>Easing</span><span class="val mono" id="easeVal">cubic-bezier(0.4,0,0.2,1)</span></div>
+          <div class="bz-wrap">
+            <div class="bz-curve">
+              <svg id="bzCurve" class="bz-svg" width="190" height="270" viewBox="0 0 190 270" role="img" aria-label="Easing curve for the selected preset">
+                <rect class="bz-box" x="25" y="65" width="140" height="140"></rect>
+                <line class="bz-diag" x1="25" y1="205" x2="165" y2="65"></line>
+                <line class="bz-ctl" id="bzL1"></line>
+                <line class="bz-ctl" id="bzL2"></line>
+                <path class="bz-curveline" id="bzPath"></path>
+                <circle class="bz-anchor" cx="25" cy="205" r="3.5"></circle>
+                <circle class="bz-anchor" cx="165" cy="65" r="3.5"></circle>
+                <circle class="bz-handle" id="bzH1" r="6" aria-hidden="true"></circle>
+                <circle class="bz-handle" id="bzH2" r="6" aria-hidden="true"></circle>
+              </svg>
+            </div>
+            <div class="bz-side">
+              <div class="preset-row" id="presetRow" role="group" aria-label="Easing presets">
+                <button type="button" class="btn btn-secondary btn-sm preset-chip" data-bz="0.4,0,0.2,1" aria-pressed="true">Standard</button>
+                <button type="button" class="btn btn-secondary btn-sm preset-chip" data-bz="0,0,0.58,1" aria-pressed="false">Ease-out</button>
+                <button type="button" class="btn btn-secondary btn-sm preset-chip" data-bz="0.2,0,0,1" aria-pressed="false">Emphasized</button>
+                <button type="button" class="btn btn-secondary btn-sm preset-chip" data-bz="0.34,1.4,0.64,1" aria-pressed="false">Snappy</button>
+                <button type="button" class="btn btn-secondary btn-sm preset-chip" data-bz="0.45,0.05,0.55,0.95" aria-pressed="false">Gentle</button>
+                <button type="button" class="btn btn-secondary btn-sm preset-chip" data-bz="custom" id="customChip" aria-pressed="false" aria-expanded="false" aria-controls="customEaseWrap">Other / Custom…</button>
+              </div>
+              <p class="note">Pick a preset to shape the curve, then set the duration below. The preview replays on every change.</p>
+              <div class="reveal custom-ease" id="customEaseWrap">
+                <label for="customEaseBox">Custom easing</label>
+                <textarea id="customEaseBox" class="reveal-box" rows="2" maxlength="200" placeholder="Paste a cubic-bezier — e.g. cubic-bezier(.17,.67,.83,.67) — or describe a custom curve / spring the presets don't cover"></textarea>
+                <p class="note">A valid 4-number cubic-bezier updates the curve and preview live; anything else is captured as your written request.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label"><span>Duration</span><span class="val mono" id="durVal">120ms</span></div>
+          <div class="range-wrap">
+            <input type="range" id="durRange" min="60" max="600" step="20" value="120" aria-label="Duration in milliseconds">
+            <span class="range-tick" id="durTick" style="left:11.1%" title="original 120ms" aria-hidden="true"></span>
+          </div>
+          <p class="note">Brand transitions sit at 120ms (tick marks the original). Higher values are here to feel the curve; keep production motion short.</p>
+        </div>
+
+        <div class="codeline mono" id="cssOut">.el { transition: all 120ms cubic-bezier(.4,0,.2,1); }</div>
+        <div class="warnbar" id="warnBar" hidden>
+          <span class="mono" aria-hidden="true">⚠</span><span>Slower than the brand's 120ms ceiling. Fine for previewing the curve; trim it before shipping.</span>
+        </div>
+
+        <div class="anim-decide">
+          <div class="row-actions">
+            <button type="button" class="btn btn-secondary" id="replayBtn">↻ Replay</button>
+            <button type="button" class="btn btn-secondary" id="keepBtn">Keep brand default</button>
+          </div>
+          <label for="animNote" style="margin-top:var(--space-2)">Note (optional)</label>
+          <input id="animNote" type="text" maxlength="160" placeholder="e.g. overshoot lingered on the toast">
+        </div>
+      </div>
+
+      <div class="stage play" id="stage" aria-label="Live motion preview">
+        <div class="demo-row">
+          <span class="demo-label">Status toast</span>
+          <div class="demo-toast"><span class="dot"></span>Canary healthy at 10%</div>
+        </div>
+        <div class="demo-row">
+          <span class="demo-label">Accordion</span>
+          <div class="panel">
+            <div class="panel-head">Checkout smoke suite</div>
+            <div class="panel-body">Ran on staging in 4m12s. Cart, session and payment specs all green.</div>
+          </div>
+        </div>
+        <div class="demo-row">
+          <span class="demo-label">Progress</span>
+          <div class="track"><div class="fill"></div></div>
+        </div>
+        <div class="demo-row">
+          <span class="demo-label">State swatch</span>
+          <div class="swatch"></div>
+        </div>
+        <p class="note">The preview replays every time you change the curve or duration.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ (B) INTERACTION ============ -->
+  <section id="interaction">
+    <h2 class="view-head">Spot a misplaced step</h2>
+    <p class="intro">These eight steps are Northwind's storefront release run, in the order the agent proposed.</p>
+
+    <div class="callout">
+      <p class="callout-q"><strong>Question:</strong> Which single step is out of place? (or confirm the order is fine)</p>
+    </div>
+
+    <div class="card">
+      <p class="pick-hint">Pick one step — clicking it again clears the pick.</p>
+      <ul class="picklist" id="picklist" aria-label="Release steps in proposed order" role="list"></ul>
+      <label for="pickNote" style="margin-top:var(--space-2)">Note (optional)</label>
+      <input id="pickNote" type="text" maxlength="160" placeholder="e.g. this has to happen before any traffic moves">
+      <div class="live-region" id="pickLive" aria-live="polite" aria-atomic="true"></div>
+    </div>
+  </section>
+
+  <!-- ============ (C) SVG ============ -->
+  <section id="svg">
+    <h2 class="view-head">Recolor or flag the brand marks</h2>
+    <p class="intro">Both files are inlined live from <span class="mono">../assets/</span>. Click any shape to recolor it with a brand token. Download serializes exactly what is on screen.</p>
+
+    <div class="callout">
+      <p class="callout-q"><strong>Question:</strong> Keep each mark as-is, or recolor / flag it?</p>
+    </div>
+
+    <div class="grid2">
+      <div class="svgcard" data-asset="pmark" tabindex="0" aria-label="P-mark asset card">
+        <div class="svgstage pmark-stage" id="pmarkStage" aria-label="Principal P-mark"></div>
+        <div class="svg-meta mono"><span>p-mark.svg</span><span>viewBox 0 0 100 100</span></div>
+        <div class="row-actions">
+          <button type="button" class="btn btn-secondary" data-dl="pmark">Download SVG</button>
+        </div>
+      </div>
+
+      <div class="svgcard" data-asset="logo" tabindex="0" aria-label="Wordmark asset card">
+        <div class="svgstage logo-stage" id="logoStage" aria-label="Principal wordmark"></div>
+        <div class="svg-meta mono"><span>logo.svg</span><span>full wordmark</span></div>
+        <div class="row-actions">
+          <button type="button" class="btn btn-secondary" data-dl="logo">Download SVG</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Principal WP · content from <code class="file">northwind/storefront/docs/release-checklist.md</code> · marks from assets/p-mark.svg + assets/logo.svg
+  </footer>
+</main>
+
+<div class="toast" id="miniToast">Saved</div>
+
+<script src="capture.js"></script>
+<script>
+"use strict";
+
+/* ============================================================
+   SHARED CAPTURE WIRING — one batched submit for the whole page.
+   This page hosts three review surfaces (motion, pick, svg); each
+   wires its native interaction through the single window.Capture
+   instance. capture.js injects ONE fixed bar with "Submit to Claude"
+   + "Copy as prompt"; base.css themes it to the light house style.
+   Stable ids are namespaced per view (anim: / pick: / svg:).
+   total = 1 motion + 1 misplaced-step pick + 2 svg assets = 4.
+   ============================================================ */
+window.CAPTURE_SUBMIT_URL = ""; /* static example page - feedback falls back to the clipboard */
+Capture.init({ view: 'prototype', total: 4 });
+
+(function rollupModule(){
+  // Derive the single page-level routable verdict. It has exactly TWO values:
+  // approve | request_changes. Every mark on this page — a per-asset Make changes
+  // disposition, recolor edits, a re-picked step, an edited motion — is FEEDBACK:
+  // it rides along in the payload items and never changes the verdict. This page
+  // has no whole-set decline / blocking gesture, so the verdict is simply approve
+  // (it stays null until the first mark lands).
+  var inRollup = false;
+  Capture.onChange(function(p){
+    if (inRollup) return;                      // guard re-entrancy (rollup notifies too)
+    if (p.verdict === 'approve') return;
+    inRollup = true; Capture.rollup('approve'); inRollup = false;
+  });
+})();
+
+/* ============================================================
+   (A) MOTION — one easing/duration setting, live preview.
+   Resting state keeps the brand default; adjusting hands back values.
+   ============================================================ */
+(function animationModule(){
+  var stage    = document.getElementById('stage');
+  var durRange = document.getElementById('durRange');
+  var easeVal  = document.getElementById('easeVal');
+  var durVal   = document.getElementById('durVal');
+  var cssOut   = document.getElementById('cssOut');
+  var warnBar  = document.getElementById('warnBar');
+  var replay   = document.getElementById('replayBtn');
+  var keepBtn  = document.getElementById('keepBtn');
+  var animNote = document.getElementById('animNote');
+  var presetRow= document.getElementById('presetRow');
+  var customChip= document.getElementById('customChip');
+  var customWrap= document.getElementById('customEaseWrap');
+  var customBox = document.getElementById('customEaseBox');
+
+  var pathEl = document.getElementById('bzPath');
+  var l1 = document.getElementById('bzL1'), l2 = document.getElementById('bzL2');
+  var h1 = document.getElementById('bzH1'), h2 = document.getElementById('bzH2');
+
+  var BRAND_BEZ = [0.4, 0, 0.2, 1];   // brand default curve
+  var BRAND_DUR = 120;
+  var ANIM_ID   = 'anim:pipeline-motion';
+
+  var state   = { bez: BRAND_BEZ.slice(), dur: BRAND_DUR };
+  var verdict = 'keep_original';      // resting state: default-to-keep
+  var customActive = false;           // ESCAPE-HATCH: "Other / Custom…" preset is the active choice
+
+  // Parse a cubic-bezier 4-tuple out of free text (e.g. "cubic-bezier(.17,.67,.83,.67)").
+  // Returns null for anything that isn't a valid easing tuple (bezier x must be 0..1),
+  // so prose/spring descriptions don't draw a garbage curve — they're still captured as text.
+  function parseBez(txt){
+    var m = (txt || '').match(/-?\d*\.?\d+/g);
+    if (!m || m.length < 4) return null;
+    var n = m.slice(0, 4).map(Number);
+    for (var i = 0; i < 4; i++){ if (!isFinite(n[i])) return null; }
+    if (n[0] < 0 || n[0] > 1 || n[2] < 0 || n[2] > 1) return null;
+    return n;
+  }
+  function showCustom(on){
+    customWrap.classList.toggle('is-open', on);
+    customChip.setAttribute('aria-expanded', on ? 'true' : 'false');
+  }
+  function applyCustom(){
+    var b = parseBez(customBox.value);
+    if (b){ state.bez = b; }
+  }
+
+  // ---- curve geometry: y=1 at top (py 65), y=0 at bottom (py 205) ----
+  var GEO = { x0: 25, y0: 205, W: 140, Vh: 140 };
+  function round2(n){ return Math.round(n * 100) / 100; }
+  function toPx(x, y){ return [GEO.x0 + x * GEO.W, GEO.y0 - y * GEO.Vh]; }
+  function easeStr(){ var b = state.bez; return 'cubic-bezier(' + round2(b[0]) + ',' + round2(b[1]) + ',' + round2(b[2]) + ',' + round2(b[3]) + ')'; }
+  function brandStr(){ return 'cubic-bezier(' + BRAND_BEZ.join(',') + ')'; }
+  function isBrand(){
+    var b = state.bez;
+    return b[0] === BRAND_BEZ[0] && b[1] === BRAND_BEZ[1] && b[2] === BRAND_BEZ[2] && b[3] === BRAND_BEZ[3] &&
+           state.dur === BRAND_DUR;
+  }
+
+  function drawCurve(){
+    var b = state.bez;
+    var p0 = toPx(0,0), p1 = toPx(b[0],b[1]), p2 = toPx(b[2],b[3]), p3 = toPx(1,1);
+    pathEl.setAttribute('d', 'M' + p0[0] + ' ' + p0[1] + ' C' + p1[0] + ' ' + p1[1] + ' ' + p2[0] + ' ' + p2[1] + ' ' + p3[0] + ' ' + p3[1]);
+    l1.setAttribute('x1', p0[0]); l1.setAttribute('y1', p0[1]); l1.setAttribute('x2', p1[0]); l1.setAttribute('y2', p1[1]);
+    l2.setAttribute('x1', p3[0]); l2.setAttribute('y1', p3[1]); l2.setAttribute('x2', p2[0]); l2.setAttribute('y2', p2[1]);
+    h1.setAttribute('cx', p1[0]); h1.setAttribute('cy', p1[1]);
+    h2.setAttribute('cx', p2[0]); h2.setAttribute('cy', p2[1]);
+  }
+
+  function syncPresets(){
+    var cur = state.bez.map(round2).join(',');
+    var chips = presetRow.querySelectorAll('.preset-chip');
+    for (var i = 0; i < chips.length; i++){
+      var dz = chips[i].getAttribute('data-bz');
+      if (dz === 'custom'){ chips[i].setAttribute('aria-pressed', customActive ? 'true' : 'false'); continue; }
+      var pv = dz.split(',').map(Number).map(round2).join(',');
+      chips[i].setAttribute('aria-pressed', (!customActive && pv === cur) ? 'true' : 'false');
+    }
+  }
+
+  function render(){
+    var es = easeStr();
+    stage.style.setProperty('--ease', es);
+    stage.style.setProperty('--dur', state.dur + 'ms');
+    easeVal.textContent = es;
+    durVal.textContent  = state.dur + 'ms';
+    durRange.value      = String(state.dur);
+    cssOut.textContent  = '.el { transition: all ' + state.dur + 'ms ' + es + '; }';
+    warnBar.hidden = state.dur <= BRAND_DUR;
+    drawCurve(); syncPresets();
+  }
+
+  // Record one mark for the single motion (default-to-keep; editing flips to use_edited).
+  function markAnim(v){
+    verdict = v;
+    if (v === 'keep_original'){ state.bez = BRAND_BEZ.slice(); state.dur = BRAND_DUR; customActive = false; showCustom(false); render(); }
+    var customText = (customActive ? (customBox.value || '') : '').trim();
+    var changed = (v === 'keep_original') ? false : (!isBrand() || !!customText);
+    Capture.mark(ANIM_ID, {
+      interaction: 'easing_editor',
+      verdict: v,                                  // 'keep_original' | 'use_edited'
+      preset: customActive ? 'custom' : 'preset',  // ESCAPE-HATCH: human escaped the fixed preset set
+      customEasing: customText || undefined,       // the free-text easing the human typed/pasted
+      original: { type: 'cubic-bezier', easing: brandStr(), bezier: BRAND_BEZ.slice(), durationMs: BRAND_DUR, delayMs: 0 },
+      edited:   { type: 'cubic-bezier', easing: easeStr(),  bezier: state.bez.map(round2), durationMs: state.dur, delayMs: 0 },
+      changedFromOriginal: changed
+    }, { note: animNote.value || undefined, anchor: 'pipeline-motion' });
+  }
+
+  function play(){
+    stage.classList.remove('play');
+    void stage.offsetWidth; // force reflow so removal commits before re-adding
+    stage.classList.add('play');
+  }
+
+  // ---- preset chips (single-select easing presets + "Other / Custom…" escape) ----
+  presetRow.addEventListener('click', function(e){
+    var b = e.target.closest('.preset-chip'); if (!b) return;
+    if (b.getAttribute('data-bz') === 'custom'){
+      customActive = true;
+      showCustom(true);
+      applyCustom();                 // honor anything already typed; empty keeps the current curve
+      render(); play(); markAnim('use_edited');
+      customBox.focus();
+      return;
+    }
+    customActive = false;
+    showCustom(false);
+    state.bez = b.getAttribute('data-bz').split(',').map(Number);
+    render(); play(); markAnim('use_edited');
+  });
+
+  // ---- custom easing free-text box (revealed by the "Other / Custom…" chip) ----
+  customBox.addEventListener('input', function(){
+    customActive = true;
+    applyCustom();
+    render(); play(); markAnim('use_edited');
+  });
+
+  // ---- duration slider ----
+  durRange.addEventListener('input', function(){ state.dur = parseInt(durRange.value, 10); render(); play(); markAnim('use_edited'); });
+
+  replay.addEventListener('click', play);
+  keepBtn.addEventListener('click', function(){ markAnim('keep_original'); play(); });
+  animNote.addEventListener('input', function(){ markAnim(verdict); });
+
+  render();
+  play();
+  markAnim('keep_original'); // pre-mark so coverage is complete and silence == keep
+})();
+
+
+/* ============================================================
+   (B) INTERACTION — pick the ONE step that looks misplaced.
+   A human picks one thing (never rank, never multi-select); clicking the
+   selected step again clears it. One mark carries the single verdict.
+   ============================================================ */
+(function pickModule(){
+  // Invented release checklist for the Northwind storefront (northwind/storefront),
+  // shown in the order the agent proposed. Exactly one step sits in the wrong
+  // place — its phase label reappears after that block has closed.
+  var STEPS = [
+    { num:'1', name:'Freeze the release branch',                 phase:'Prep'    },
+    { num:'2', name:'Tag the build and push the image',          phase:'Prep'    },
+    { num:'3', name:'Restore staging from the nightly snapshot', phase:'Check'   },
+    { num:'4', name:'Run the checkout smoke suite',              phase:'Check'   },
+    { num:'5', name:'Send 10% of storefront traffic to the new build', phase:'Rollout' },
+    { num:'6', name:'Rehearse the rollback',                     phase:'Check'   },
+    { num:'7', name:'Widen the rollout to all traffic',          phase:'Rollout' },
+    { num:'8', name:'Watch checkout error rate for an hour',     phase:'Watch'   }
+  ];
+
+  var listEl = document.getElementById('picklist');
+  var note   = document.getElementById('pickNote');
+  var live   = document.getElementById('pickLive');
+
+  var PROPOSED = STEPS.map(function(s){ return s.num; }); // the agent's proposed order
+  var BY_NUM = {};
+  STEPS.forEach(function(s){ BY_NUM[s.num] = s; });
+
+  var selected = null;      // num of the single picked step, or null
+  var PICK_ID = 'pick:misplaced-step';
+
+  function nameOf(num){ return BY_NUM[num].name; }
+  function announce(msg){ live.textContent = msg; }
+
+  // Row is a <div role="button"> (not a real <button>) so the readable step
+  // name/phase stays selectable and click-drag selects text instead of feeling
+  // like grabbing a control. tabindex + keydown keep it a real toggle for
+  // keyboard/AT; the single-select pick is unchanged.
+  function buildRow(s, idx){
+    var li = document.createElement('li');
+    li.setAttribute('role', 'listitem');
+    var row = document.createElement('div');
+    row.className = 'pickrow';
+    row.setAttribute('role', 'button');
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('data-num', s.num);
+    row.setAttribute('aria-pressed', 'false');
+    row.innerHTML =
+      '<span class="num" aria-hidden="true">' + (idx + 1) + '</span>' +
+      '<span class="nm"></span>' +
+      '<span class="ph">' + s.phase + '</span>' +
+      '<span class="mark" aria-hidden="true"></span>';
+    row.querySelector('.nm').textContent = s.name; // textContent => safe for "&"
+    li.appendChild(row);
+    return li;
+  }
+
+  function mark(){
+    var pos = selected ? (PROPOSED.indexOf(selected) + 1) : null;
+    Capture.mark(PICK_ID, {
+      interaction: 'pick-one',
+      itemType: 'pipeline-step',
+      proposedOrder: PROPOSED.slice(),
+      selected: selected,                                    // step num or null
+      selectedName: selected ? nameOf(selected) : null,
+      selectedPosition: pos,
+      verdict: selected ? 'flag_misplaced' : 'order_ok'
+    }, { note: note.value || undefined, anchor: selected ? ('step-' + selected) : 'order' });
+  }
+
+  function render(){
+    var rows = listEl.querySelectorAll('.pickrow');
+    for (var i = 0; i < rows.length; i++){
+      var on = rows[i].getAttribute('data-num') === selected;
+      rows[i].setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+  }
+
+  function choose(num){
+    selected = (selected === num) ? null : num;
+    render();
+    mark();
+    announce(selected
+      ? ('Flagged ' + nameOf(selected) + ' as misplaced.')
+      : 'Cleared — order looks right.');
+  }
+
+  STEPS.forEach(function(s, i){ listEl.appendChild(buildRow(s, i)); });
+
+  listEl.addEventListener('click', function(e){
+    var row = e.target.closest('.pickrow');
+    if (!row) return;
+    choose(row.getAttribute('data-num'));
+  });
+
+  // Enter/Space toggle the focused row (the div replaces a native button, so we
+  // restore activation keys). preventDefault stops Space from scrolling.
+  listEl.addEventListener('keydown', function(e){
+    if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+    var row = e.target.closest('.pickrow');
+    if (!row) return;
+    e.preventDefault();
+    choose(row.getAttribute('data-num'));
+  });
+
+  note.addEventListener('input', mark);
+
+  render();
+  mark(); // default-to-OK: pre-mark so coverage is complete and silence == order looks right
+})();
+
+
+/* ============================================================
+   (C) SVG — inline real marks, single recolor + keep/flag, download.
+   ============================================================ */
+(function svgModule(){
+  // Inlined from ../assets/p-mark.svg and ../assets/logo.svg — path data verbatim.
+  // Inlining (vs fetch) keeps Download working over file:// too.
+  var PMARK =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">' +
+    '<rect x="4" y="4" width="92" height="92" stroke="#1B2A4A" stroke-width="8" fill="none"></rect>' +
+    '<path d="M30 22 H58 a18 18 0 0 1 0 36 H42 V78 H30 Z M42 33 V47 H56 a7 7 0 0 0 0 -14 Z" fill="#1B2A4A"></path>' +
+    '</svg>';
+
+  var LOGO =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="440 1060 1620 380">' +
+    '<path fill="#8C3344" d="M1905.27,1307.54h37.9l-39.88,129.39h-31.31l-24.81-62.44-24.36,62.44h-31.4l-40.51-129.39h38.35l20.93,74.62,30.86-73.99h12.27l31.4,73.99,20.57-74.62Z"></path>' +
+    '<path fill="#8C3344" d="M2007.6,1307.54c13.77,0,25.2,4.41,34.29,13.22,9.08,8.81,13.62,19.99,13.62,33.52s-4.54,24.74-13.62,33.61c-9.08,8.87-20.51,13.31-34.29,13.31h-19.4v35.73h-35.64v-129.39h55.04ZM2003.36,1370.07c4.63,0,8.38-1.46,11.23-4.38,2.86-2.92,4.29-6.69,4.29-11.32s-1.43-8.4-4.29-11.32c-2.86-2.92-6.6-4.38-11.23-4.38h-15.16v31.4h15.16Z"></path>' +
+    '<path fill="#1B2A4A" d="M983.82,1076.92c12.63,0,24.08,2.83,34.36,8.47,10.27,5.65,18.37,13.52,24.28,23.62,5.92,10.1,8.87,21.33,8.87,33.69,0,18.86-6.45,34.54-19.35,47.03-12.9,12.5-28.95,18.75-48.17,18.75h-32.29v59.78h-41.36v-191.34h73.65ZM981.95,1170.18c8.09,0,14.68-2.58,19.75-7.74,5.07-5.16,7.61-11.74,7.61-19.75s-2.51-14.56-7.54-19.68c-5.03-5.11-11.63-7.67-19.81-7.67h-30.42v54.84h30.42Z"></path>' +
+    '<path fill="#1B2A4A" d="M1144.68,1119.88h13.08v37.63h-17.21c-11.21,0-19.24,2.65-24.08,7.94-4.85,5.29-7.27,13.99-7.27,26.09v76.72h-39.9v-147.57h25.49l7.07,18.15c10.14-12.63,24.42-18.95,42.83-18.95Z"></path>' +
+    '<path fill="#1B2A4A" d="M1175.28,1101.07v-37.09h39.76v37.09h-39.76ZM1175.28,1268.26v-147.57h39.9v147.57h-39.9Z"></path>' +
+    '<path fill="#1B2A4A" d="M1329.94,1117.21c16.72,0,30.02,5.58,39.9,16.75,9.87,11.16,14.81,26.13,14.81,44.9v89.4h-39.9v-82.99c0-22.06-8.59-33.09-25.75-33.09-10.23,0-18.3,3.45-24.22,10.34-5.92,6.89-8.87,16.3-8.87,28.22v77.52h-39.9v-147.57h27.35l7.74,18.28c5.69-6.76,12.79-12.07,21.28-15.94,8.49-3.87,17.68-5.8,27.55-5.8Z"></path>' +
+    '<path fill="#1B2A4A" d="M1484.71,1272.39c-10.94,0-21.26-2.02-30.96-6.07-9.7-4.05-18.01-9.54-24.95-16.48s-12.41-15.26-16.41-24.95c-4-9.69-6-19.97-6-30.82s2-21.08,6-30.69c4-9.61,9.47-17.83,16.41-24.68,6.94-6.85,15.28-12.25,25.02-16.21,9.74-3.96,20.12-5.94,31.16-5.94,19.03,0,35.38,5.54,49.03,16.61,13.65,11.08,22.3,25.73,25.95,43.97h-39.63c-3.2-7.29-7.96-12.96-14.28-17.01-6.32-4.05-13.43-6.07-21.35-6.07-10.76,0-19.77,3.85-27.02,11.54-7.25,7.69-10.87,17.23-10.87,28.62s3.65,21.02,10.94,28.89c7.29,7.87,16.28,11.81,26.95,11.81,8.09,0,15.21-2.13,21.35-6.4,6.14-4.27,10.9-10.36,14.28-18.28h40.16c-3.47,18.59-12.17,33.6-26.08,45.03-13.92,11.43-30.49,17.15-49.7,17.15Z"></path>' +
+    '<path fill="#1B2A4A" d="M1582.08,1101.07v-37.09h39.76v37.09h-39.76ZM1582.08,1268.26v-147.57h39.9v147.57h-39.9Z"></path>' +
+    '<path fill="#1B2A4A" d="M1733.27,1116.54c14.59,0,27.77,3.36,39.56,10.07,11.79,6.72,21.02,16.03,27.69,27.95,6.67,11.92,10.01,25.22,10.01,39.9s-3.34,28-10.01,39.96c-6.67,11.96-15.9,21.33-27.69,28.09-11.79,6.76-24.97,10.14-39.56,10.14s-28.47-4.14-40.56-12.41v61.24h-39.9v-200.81h26.29l6.8,13.48c13.25-11.74,29.04-17.61,47.37-17.61ZM1701.18,1223.36c7.61,7.7,17.19,11.54,28.75,11.54s21.15-3.82,28.75-11.48c7.61-7.65,11.41-17.3,11.41-28.95s-3.8-21.3-11.41-28.95c-7.6-7.65-17.19-11.48-28.75-11.48s-21.15,3.85-28.75,11.54c-7.61,7.69-11.41,17.32-11.41,28.89s3.8,21.2,11.41,28.89Z"></path>' +
+    '<path fill="#1B2A4A" d="M1954.89,1120.41h29.89v147.57h-31.36l-3.47-13.21c-13.43,11.74-29.35,17.61-47.77,17.61-14.59,0-27.8-3.38-39.63-10.14-11.83-6.76-21.08-16.12-27.75-28.09-6.67-11.96-10.01-25.29-10.01-39.96s3.34-27.82,10.01-39.7c6.67-11.87,15.92-21.17,27.75-27.89,11.83-6.72,25.04-10.07,39.63-10.07,18.77,0,34.91,6,48.43,18.01l4.27-14.14ZM1876.64,1223.09c7.61,7.7,17.19,11.54,28.75,11.54s21.15-3.82,28.75-11.48c7.6-7.65,11.41-17.3,11.41-28.95s-3.8-21.3-11.41-28.95c-7.61-7.65-17.19-11.48-28.75-11.48s-21.15,3.85-28.75,11.54c-7.6,7.69-11.41,17.32-11.41,28.89s3.8,21.2,11.41,28.89Z"></path>' +
+    '<path fill="#1B2A4A" d="M2015.62,1268.26v-204.28h39.9v204.28h-39.9Z"></path>' +
+    '<path fill="#1B2A4A" d="M444.37,1063.97v372.96h30.95v-342.02h311.07v311.07h-207.66v-67.59h0s52.12,0,52.12,0h0c54.43,0,98.54-44.11,98.54-98.53s-44.11-98.53-98.54-98.53h0s-98.54,0-98.54,0v295.6h285.02v-372.96h-372.96ZM578.73,1187.76h52.12c28.79,0,52.11,23.33,52.11,52.11s-23.32,52.11-52.11,52.11h0s-52.12,0-52.12,0v-104.22Z"></path>' +
+    '</svg>';
+
+  document.getElementById('pmarkStage').innerHTML = PMARK;
+  document.getElementById('logoStage').innerHTML = LOGO;
+
+  /* ---- capture: single recolor + per-asset keep/flag ---- */
+  var TOKENS = [
+    { token: 'navy',       hex: '#1B2A4A' },
+    { token: 'cranberry',  hex: '#8C3344' },
+    { token: 'steel-blue', hex: '#A8C0CF' },
+    { token: 'navy-60',    hex: '#767F92' },
+    { token: 'off-white',  hex: '#F4F6FA' },
+    { token: 'white',      hex: '#FFFFFF' }
+  ];
+  var STAGE_ID = { pmark: 'pmarkStage', logo: 'logoStage' };
+  var assets = {}; // asset -> { fate, edits[], note, selected, panel }
+
+  function svgOf(asset){ return document.getElementById(STAGE_ID[asset]).querySelector('svg'); }
+
+  // Make each top-level path/rect addressable + remember its source paint as the
+  // honest 'from' for recorded edits and the revert baseline.
+  function tagEls(asset, prefix){
+    var svg = svgOf(asset);
+    var kids = svg.children, n = 0;
+    for (var i = 0; i < kids.length; i++){
+      var el = kids[i];
+      if (el.tagName === 'path' || el.tagName === 'rect'){
+        el.setAttribute('data-el', prefix + '-' + n);
+        el.setAttribute('data-of', el.getAttribute('fill') || '');
+        el.setAttribute('data-os', el.getAttribute('stroke') || '');
+        n++;
+      }
+    }
+    return n;
+  }
+
+  function paintProp(el){
+    var f = el.getAttribute('fill');
+    return (f && f !== 'none') ? 'fill' : (el.getAttribute('stroke') ? 'stroke' : 'fill');
+  }
+
+  function buildPanel(){
+    var swatches = TOKENS.map(function(t){
+      return '<button type="button" class="swatch-btn" data-hex="' + t.hex + '" data-token="' + t.token +
+             '" style="background:' + t.hex + '" title="' + t.token + ' ' + t.hex + '" aria-label="' + t.token + '"></button>';
+    }).join('');
+    var panel = document.createElement('div');
+    panel.className = 'svg-edit';
+    panel.innerHTML =
+      '<div class="callout is-live">' +
+        '<span class="callout-label">Selection</span>' +
+        '<div class="svg-sel" data-sel>Click a shape to recolor it.</div>' +
+        '<div class="swatches" data-swatches>' + swatches + '</div>' +
+      '</div>' +
+      '<button type="button" class="btn btn-secondary btn-sm" data-revert>↺ Revert colors</button>' +
+      '<div class="fillmap" data-fillmap></div>' +
+      '<div class="fate" role="group" aria-label="Decision for this asset">' +
+        '<button type="button" class="btn btn-secondary btn-sm" data-fate="keep" aria-pressed="true">✓ Keep</button>' +
+        '<button type="button" class="btn btn-secondary btn-sm" data-fate="flag" aria-pressed="false">⚑ Flag</button>' +
+      '</div>' +
+      '<textarea class="reveal reveal-box" data-note rows="2" maxlength="240" placeholder="What is wrong / what to change? (optional)"></textarea>';
+    return panel;
+  }
+
+  function select(asset, el){
+    var st = assets[asset];
+    var svg = svgOf(asset);
+    var prev = svg.querySelectorAll('[data-el].sel');
+    for (var i = 0; i < prev.length; i++){ prev[i].classList.remove('sel'); }
+    st.selected = el || null;
+    var panel = st.panel;
+    var sel = panel.querySelector('[data-sel]');
+    if (el){
+      el.classList.add('sel');
+      sel.innerHTML = 'Selected <b>' + el.getAttribute('data-el') + '</b> — pick a brand token.';
+    } else {
+      sel.textContent = 'Click a shape to recolor it.';
+    }
+    var cur = el ? (el.getAttribute(paintProp(el)) || '') : '';
+    panel.querySelectorAll('.swatch-btn').forEach(function(b){
+      b.disabled = !el;
+      b.setAttribute('aria-pressed', el && b.getAttribute('data-hex').toUpperCase() === cur.toUpperCase() ? 'true' : 'false');
+    });
+  }
+
+  function recordEdit(asset, el, property, from, to, toHex){
+    var st = assets[asset];
+    var target = '#' + el.getAttribute('data-el');
+    st.edits = st.edits.filter(function(e){ return !(e.target === target && e.property === property); });
+    st.edits.push({ target: target, property: property, from: from, to: to, toHex: toHex });
+  }
+
+  function applyToken(asset, hex, token){
+    var st = assets[asset]; var el = st.selected; if (!el) return;
+    var prop = paintProp(el);
+    var src = prop === 'fill' ? el.getAttribute('data-of') : el.getAttribute('data-os');
+    var from = src || el.getAttribute(prop) || '';
+    el.setAttribute(prop, hex);
+    recordEdit(asset, el, prop, from, 'token:' + token, hex);
+    renderFillMap(asset);
+    select(asset, el); // refresh swatch pressed-state
+    markAsset(asset);
+  }
+
+  function revertEl(el){
+    var of = el.getAttribute('data-of'), os = el.getAttribute('data-os');
+    if (of) el.setAttribute('fill', of); else el.removeAttribute('fill');
+    if (os) el.setAttribute('stroke', os); else el.removeAttribute('stroke');
+  }
+
+  function revertAsset(asset){
+    var st = assets[asset];
+    var svg = svgOf(asset);
+    var els = svg.querySelectorAll('[data-el]');
+    for (var i = 0; i < els.length; i++){ revertEl(els[i]); }
+    st.edits = [];
+    select(asset, null);
+    renderFillMap(asset);
+    markAsset(asset);
+  }
+
+  function renderFillMap(asset){
+    var st = assets[asset];
+    var map = st.panel.querySelector('[data-fillmap]');
+    map.innerHTML = st.edits.map(function(e){
+      var sw = e.toHex ? '<span class="fm-sw" style="background:' + e.toHex + '"></span>' : '';
+      return '<div class="fm-row">' + sw + '<span>' + e.target + ' · ' + e.property + ': ' +
+             (e.from || '—') + ' → ' + e.to + '</span></div>';
+    }).join('');
+  }
+
+  function setFate(asset, fate){
+    var st = assets[asset];
+    st.fate = fate;
+    var panel = st.panel;
+    panel.querySelectorAll('.fate button').forEach(function(b){
+      b.setAttribute('aria-pressed', b.getAttribute('data-fate') === fate ? 'true' : 'false');
+    });
+    panel.querySelector('[data-note]').classList.toggle('is-open', fate === 'flag');
+    markAsset(asset);
+  }
+
+  // Disposition is derived from fate + edits: Flag => request_changes; Keep with
+  // recolor edits => approve_with_edits; Keep clean => approve.
+  function markAsset(asset){
+    var st = assets[asset];
+    var disp = st.fate === 'flag' ? 'request_changes' : (st.edits.length ? 'approve_with_edits' : 'approve');
+    Capture.mark('svg:' + asset, {
+      disposition: disp,
+      edits: st.edits.slice()
+    }, {
+      note: (st.fate === 'flag' && st.note) ? st.note : undefined,
+      anchor: asset
+    });
+  }
+
+  function wirePanel(asset){
+    var st = assets[asset];
+    var panel = st.panel;
+    panel.addEventListener('click', function(e){
+      var sw = e.target.closest('.swatch-btn');
+      if (sw && !sw.disabled){ applyToken(asset, sw.getAttribute('data-hex'), sw.getAttribute('data-token')); return; }
+      if (e.target.closest('[data-revert]')){ revertAsset(asset); return; }
+      var fate = e.target.closest('[data-fate]');
+      if (fate){ setFate(asset, fate.getAttribute('data-fate')); return; }
+    });
+    panel.querySelector('[data-note]').addEventListener('input', function(){
+      st.note = this.value; markAsset(asset);
+    });
+  }
+
+  // wire each card: tag elements, inject panel, selection on the live SVG.
+  document.querySelectorAll('.svgcard').forEach(function(card){
+    var asset = card.getAttribute('data-asset');
+    assets[asset] = { fate: 'keep', edits: [], note: '', selected: null, panel: null };
+    tagEls(asset, asset);
+    var panel = buildPanel();
+    assets[asset].panel = panel;
+    card.insertBefore(panel, card.querySelector('.row-actions'));
+    wirePanel(asset);
+
+    var stage = document.getElementById(STAGE_ID[asset]);
+    stage.addEventListener('click', function(e){
+      var el = e.target.closest('[data-el]');
+      select(asset, el && stage.contains(el) ? el : null);
+    });
+
+    // arrow keys move between cards (keyboard navigation)
+    card.addEventListener('keydown', function(e){
+      if (e.target && e.target.tagName === 'INPUT') return;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft'){
+        var cards = Array.prototype.slice.call(document.querySelectorAll('.svgcard'));
+        var idx = cards.indexOf(card);
+        var nxt = e.key === 'ArrowRight' ? idx + 1 : idx - 1;
+        if (nxt >= 0 && nxt < cards.length){ cards[nxt].focus(); e.preventDefault(); }
+      }
+    });
+
+    select(asset, null); // disable swatches until a shape is picked
+    markAsset(asset);    // default-to-keep: pre-mark every asset so coverage is complete
+  });
+
+  function serialize(svgEl){
+    var s = new XMLSerializer().serializeToString(svgEl);
+    if (s.indexOf('<?xml') !== 0){
+      s = '<?xml version="1.0" encoding="UTF-8"?>\n' + s;
+    }
+    return s;
+  }
+
+  function download(which){
+    var stage = document.getElementById(which === 'pmark' ? 'pmarkStage' : 'logoStage');
+    var svg = stage.querySelector('svg');
+    if (!svg) return;
+    // Serialize a cleaned clone: recolor edits persist, capture-only attributes stripped.
+    var clean = svg.cloneNode(true);
+    clean.querySelectorAll('[data-el]').forEach(function(el){
+      el.removeAttribute('data-el'); el.removeAttribute('data-of'); el.removeAttribute('data-os');
+      el.classList.remove('sel');
+      if (!el.getAttribute('class')) el.removeAttribute('class');
+    });
+    var name = which === 'pmark' ? 'principal-p-mark.svg' : 'principal-logo.svg';
+    var blob = new Blob([serialize(clean)], { type:'image/svg+xml;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
+    showToast('Saved ' + name);
+  }
+
+  document.querySelectorAll('[data-dl]').forEach(function(btn){
+    btn.addEventListener('click', function(){ download(btn.getAttribute('data-dl')); });
+  });
+})();
+
+
+/* ============================================================
+   Shared helper — transient saved/copied toast
+   ============================================================ */
+var _toastTimer = null;
+function showToast(msg){
+  var t = document.getElementById('miniToast');
+  t.textContent = msg;
+  t.classList.add('is-show');
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(function(){ t.classList.remove('is-show'); }, 1800);
+}
+</script>
+</body>
+</html>

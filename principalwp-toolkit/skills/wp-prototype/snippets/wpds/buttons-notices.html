@@ -1,0 +1,40 @@
+<!-- WPDS buttons -->
+<p>
+	<button class="components-button is-primary">Primary</button>
+	<button class="components-button is-secondary">Secondary</button>
+	<button class="components-button is-tertiary">Tertiary</button>
+	<button class="components-button is-destructive">Destructive</button>
+	<button class="components-button is-primary" disabled>Disabled</button>
+	<button class="components-button has-icon" aria-label="Settings"><span class="dashicons dashicons-admin-generic"></span></button>
+</p>
+
+<!-- Notices -->
+<div class="components-notice"><span>Info notice.</span></div>
+<div class="components-notice is-success"><span>Success notice.</span></div>
+<div class="components-notice is-warning"><span>Warning notice.</span></div>
+<div class="components-notice is-error"><span>Error notice.</span></div>
+
+<!-- Snackbar (bottom-left toast; position it fixed in your prototype if needed) -->
+<div class="components-snackbar">Post published. <button class="components-button is-tertiary" style="color:#fff">Undo</button></div>
+
+<!-- Status badges (for list views) -->
+<p>
+	<span class="wpds-badge">Neutral</span>
+	<span class="wpds-badge is-success">Published</span>
+	<span class="wpds-badge is-warning">Pending</span>
+	<span class="wpds-badge is-error">Failed</span>
+</p>
+
+<!-- Flagging awkward sample content ("Seed the awkward case" in SKILL.md).
+     When a sample item misbehaves — no alt text, over-long caption, wrong
+     shape — flag it with these two, never with invented scaffolding styles:
+     the flag should look like UI the block could actually ship. -->
+
+<!-- 1. A warning badge overlaid on the offending item -->
+<div style="position:relative; width:120px">
+	<div style="aspect-ratio:4/3; background:#dcdcde"></div><!-- the thumbnail -->
+	<span class="wpds-badge is-warning" style="position:absolute; top:6px; left:6px">No alt text</span>
+</div>
+
+<!-- 2. The matching inspector-side notice — name the count and the consequence -->
+<div class="components-notice is-warning"><span>2 of 6 images have no alt text. Screen readers will skip them.</span></div>

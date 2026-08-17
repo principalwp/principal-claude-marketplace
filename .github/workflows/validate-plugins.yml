@@ -1,0 +1,135 @@
+name: Validate plugins
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # The claude-code package ships its runtime as a platform-native OPTIONAL
+      # dependency fetched by a postinstall script. On hosted runners that fetch
+      # intermittently stalls or is skipped, leaving "added 1 package" but no usable
+      # `claude` binary. Force the optional dep, verify, and retry with a real
+      # reinstall. (Pattern taken from anthropics/claude-plugins-community's
+      # .github/actions/validate-plugins action.)
+      - name: Install Claude Code CLI
+        run: |
+          set -euo pipefail
+          PKG="@anthropic-ai/claude-code@latest"
+          for attempt in 1 2 3; do
+            if [ "$attempt" -gt 1 ]; then
+              root="$(npm root -g 2>/dev/null || true)/@anthropic-ai/claude-code"
+              case "$root" in */node_modules/@anthropic-ai/claude-code) rm -rf "$root";; esac
+              npm cache clean --force >/dev/null 2>&1 || true
+            fi
+            timeout -k 10 300 npm install -g --include=optional "$PKG" || true
+            claude --version && exit 0 || true
+            sleep $((attempt * 10))
+          done
+          echo "::error::claude CLI did not become usable after 3 attempts" >&2
+          exit 1
+
+      # The layout gate. This is the check that catches an un-re-pointed PR:
+      # files added at a root path that no longer belongs to any plugin.
+      - name: Check plugin layout
+        run: |
+          set -euo pipefail
+          chmod +x ci/check-plugin-layout.sh
+          ci/check-plugin-layout.sh .
+
+      # Catches: malformed JSON, missing required fields, bare `source` without ./
+      # Does NOT catch: nonexistent source paths, dependency cycles, layout.
+      # Not --strict: we omit `version` on purpose, and --strict fails on that warning.
+      - name: Validate manifests
+        run: |
+          set -euo pipefail
+          claude plugin validate .
+          for d in */; do
+            [ -f "${d}.claude-plugin/plugin.json" ] || continue
+            echo "validating ${d%/}"
+            claude plugin validate "${d%/}"
+          done
+
+      # Only `install` resolves source paths and dependency graphs.
+      - name: Install every plugin for real
+        env:
+          CLAUDE_CONFIG_DIR: ${{ runner.temp }}/cc-config
+        run: |
+          set -euo pipefail
+          mkdir -p "$CLAUDE_CONFIG_DIR"
+          claude plugin marketplace add "$GITHUB_WORKSPACE"
+          for name in $(python3 -c "import json;print(' '.join(p['name'] for p in json.load(open('.claude-plugin/marketplace.json'))['plugins']))"); do
+            echo "::group::install $name"
+            claude plugin install "$name@principalwp"   # exits 1 on bad source path or dependency cycle
+            echo "::endgroup::"
+          done
+          claude plugin list
+
+      - name: Assert every plugin installed and enabled
+        env:
+          CLAUDE_CONFIG_DIR: ${{ runner.temp }}/cc-config
+        run: |
+          set -euo pipefail
+          claude plugin list --json > plugins.json
+          python3 - <<'PY'
+          import json, sys
+          want = {p["name"] for p in json.load(open(".claude-plugin/marketplace.json"))["plugins"]}
+          got  = {p["id"].split("@")[0]: p["enabled"] for p in json.load(open("plugins.json"))}
+          missing  = sorted(want - set(got))
+          disabled = sorted(n for n in want & set(got) if not got[n])
+          if missing:  print("::error::not installed: " + ", ".join(missing))
+          if disabled: print("::error::installed but disabled: " + ", ".join(disabled))
+          sys.exit(1 if (missing or disabled) else 0)
+          PY
+
+      # Runs against the INSTALLED copies, where each plugin is isolated.
+      - name: Check cross-plugin reference paths
+        env:
+          CLAUDE_CONFIG_DIR: ${{ runner.temp }}/cc-config
+        run: |
+          set -euo pipefail
+          chmod +x ci/check-plugin-paths.sh
+          rc=0
+          for p in "$CLAUDE_CONFIG_DIR"/plugins/cache/principalwp/*/; do
+            d=$(find "$p" -mindepth 1 -maxdepth 1 -type d | head -1)
+            [ -n "$d" ] || continue
+            ci/check-plugin-paths.sh "$(dirname "$d")" "$(basename "$d")" || rc=1
+          done
+          exit $rc
+
+      # A SKILL.md honours `allowed-tools:`; an agent (a file under */agents/*.md)
+      # honours `tools:`. The two frontmatter dialects are not interchangeable —
+      # a SKILL.md carrying `tools:` sets a restriction Claude Code silently
+      # ignores, so the skill runs unrestricted with no indication anything is
+      # wrong. This step fails on the wrong key for the component type, and
+      # also fails anything with no YAML frontmatter or no `description:` at
+      # all, since that is frontmatter that will not load either.
+      - name: Skill and agent frontmatter
+        run: |
+          set -euo pipefail
+          rc=0
+          while IFS= read -r f; do
+            head -1 "$f" | grep -q '^---$' || { echo "::error file=$f::missing YAML frontmatter"; rc=1; continue; }
+            fm=$(awk 'NR>1 && /^---$/{exit} NR>1' "$f")
+            echo "$fm" | grep -q '^description:' || { echo "::error file=$f::frontmatter missing description:"; rc=1; }
+            case "$f" in
+              */agents/*.md)
+                echo "$fm" | grep -q '^allowed-tools:' && { echo "::error file=$f::agent frontmatter uses allowed-tools: (agents are restricted with tools:, allowed-tools: is a skill-only key and does nothing here)"; rc=1; }
+                ;;
+              */SKILL.md)
+                echo "$fm" | grep -q '^tools:' && { echo "::error file=$f::skill frontmatter uses tools: (skills are restricted with allowed-tools:, tools: is an agent-only key and is silently ignored here)"; rc=1; }
+                ;;
+            esac
+          done < <(find . -path ./.git -prune -o \( -name 'SKILL.md' -o -path '*/agents/*.md' \) -print)
+          exit $rc

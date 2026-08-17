@@ -24,11 +24,11 @@ Pull the latest version and restart Claude Code:
 
 ### WordPress Starter Pipeline
 
-**[How the Starter Pipeline works →](https://principalwp.github.io/principal-claude-marketplace/principal-wp-starter-pipeline.html)** — a visual walkthrough of the phases and gates.
+**[How the Starter Pipeline works →](https://principalwp.github.io/principal-claude-marketplace/principal-wp-starter-pipeline.html)** — a visual walkthrough of the phases and checkpoints.
 
 Build or make changes to a WordPress plugin or theme through a pipeline inside
-Claude Code: gated agent phases (requirements, research, spec, code, review) turn
-your request into a reviewed, tested pull request, with three human gates and a
+Claude Code: checkpointed agent phases (requirements, research, spec, code, review) turn
+your request into a reviewed, tested pull request, with three human checkpoints and a
 closeout that makes your next run better. Run it with
 `/principal-wp-starter-pipeline "<task>"` from a component repo. The first run in a
 project performs a one-time setup (E2E test stack, WordPress Agent Skills).

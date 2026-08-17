@@ -10,17 +10,17 @@ single plugin: **principalwp-toolkit**.
 /plugin install principalwp-toolkit@principalwp
 ```
 
-Restart Claude Code to apply.
+After you install, you will need to restart Claude Code to apply.
 
 ## What's in it
 
 ### htmlizer
 
-Turn the thing you'd otherwise paste as text — a plan, a review, competing
-approaches, a design, a config change — into a self-contained interactive HTML
-page served over local HTTP. Hand over the `http://` link; the reader annotates
-the page and hits Submit, and their feedback returns into the session so you can
-act on it. Trigger it by saying *htmlize*, *htmlizer*, or *render in html*.
+A skill that renders your agent’s markdown as a page you can read. 
+Instead of reviewing a wall of markdown to help you make decisions,
+view it as a designed self-contained interactive HTML page served over local HTTP.
+You visualize decisions, flag issues, and send it back to your interactive session
+so it can act on it. Trigger it by saying "*htmlize* this or *show me in htmlize*.
 
 ### wp-prototype
 

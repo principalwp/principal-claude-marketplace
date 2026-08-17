@@ -10,10 +10,10 @@
     {
       "name": "principalwp-toolkit",
       "source": "./principalwp-toolkit",
-      "description": "Three Principal WP tools in one install: htmlizer (render a plan, review, or design into an interactive local HTML page and get the reader's feedback back into the session), wp-prototype (clickable single-file mockups of WordPress admin UI), and the WordPress Starter Pipeline (turn one component change into a reviewed, tested PR through gated agent phases).",
+      "description": "Principal WP's Claude Code tools in one install: htmlizer (turn a plan, review, or design into an interactive local HTML page and get the reader's feedback back into the session), wp-prototype (clickable single-file mockups of WordPress admin UI), writing-for-llms and anti-ai-slop (write and sharpen skills, agents, and prose), and the WordPress Starter Pipeline (one WordPress component change to a reviewed, tested PR through gated agent phases).",
       "author": { "name": "Principal WP", "url": "https://principalwp.com" },
       "category": "development",
-      "keywords": ["wordpress", "prototype", "review", "html", "pipeline", "gutenberg", "wp-admin"]
+      "keywords": ["wordpress", "prototype", "review", "html", "pipeline", "writing", "editing", "gutenberg", "wp-admin"]
     }
   ]
 }

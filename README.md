@@ -30,6 +30,19 @@ canvas plus its inspector sidebar, or a WP 7.0 DataViews screen. Built from real
 wp-admin CSS and WordPress design tokens. One interactive mockup by default, or two
 or three side by side when you're choosing between layouts.
 
+### writing-for-llms
+
+Write or review any document an LLM agent consumes — a skill, an agent, a
+`CLAUDE.md`/`AGENTS.md`, or a reference file. Runs a token audit, trim pass, and
+concision review so the instructions stay tight and unambiguous. Two modes:
+Create and Review.
+
+### anti-ai-slop
+
+Review and fix prose that reads as AI-generated — hedging, filler, giveaway
+phrasing — in either Fix mode (rewrites) or Detect mode (flags without editing).
+For human-facing writing, not model-instructing files (that's writing-for-llms).
+
 ### WordPress Starter Pipeline
 
 Take one change to a WordPress plugin or theme through a small pipeline inside

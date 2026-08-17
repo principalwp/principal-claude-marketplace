@@ -12,6 +12,14 @@ single plugin: **principalwp-toolkit**.
 
 After you install, you will need to restart Claude Code to apply.
 
+## Updating
+
+Pull the latest version and restart Claude Code:
+
+    claude plugin update principalwp-toolkit@principalwp
+
+(Or run `/plugin` and update it there.) No version to track — it always moves to the current tip of the repo.
+
 ## What's in it
 
 ### htmlizer

@@ -22,6 +22,23 @@ Pull the latest version and restart Claude Code:
 
 ## What's in it
 
+### WordPress Starter Pipeline
+
+**[How the Starter Pipeline works →](https://principalwp.github.io/principal-claude-marketplace/principal-wp-starter-pipeline.html)** — a visual walkthrough of the phases and gates.
+
+Take one change to a WordPress plugin or theme through a small pipeline inside
+Claude Code: gated agent phases (requirements, research, spec, code, review) turn
+your request into a reviewed, tested pull request, with three human gates and a
+closeout that makes your next run better. Run it with
+`/principal-wp-starter-pipeline "<task>"` from a component repo. The first run in a
+project performs a one-time setup (E2E test stack, WordPress Agent Skills).
+
+**Customizing the pipeline.** The pipeline reads an optional per-machine overrides
+file, `~/.claude/principal-wp-starter-pipeline-overrides.md`, at the start of every
+run and applies each `## <stage>` section to the matching agent. Its Feedback Loop
+proposes additions to that file, so your customizations survive plugin updates
+without ever editing the shipped agents.
+
 ### htmlizer
 
 A skill that renders your agent’s markdown as a page you can read. 
@@ -50,21 +67,6 @@ Create and Review.
 Review and fix prose that reads as AI-generated — hedging, filler, giveaway
 phrasing — in either Fix mode (rewrites) or Detect mode (flags without editing).
 For human-facing writing, not model-instructing files (that's writing-for-llms).
-
-### WordPress Starter Pipeline
-
-Take one change to a WordPress plugin or theme through a small pipeline inside
-Claude Code: gated agent phases (requirements, research, spec, code, review) turn
-your request into a reviewed, tested pull request, with three human gates and a
-closeout that makes your next run better. Run it with
-`/principal-wp-starter-pipeline "<task>"` from a component repo. The first run in a
-project performs a one-time setup (E2E test stack, WordPress Agent Skills).
-
-**Customizing the pipeline.** The pipeline reads an optional per-machine overrides
-file, `~/.claude/principal-wp-starter-pipeline-overrides.md`, at the start of every
-run and applies each `## <stage>` section to the matching agent. Its Feedback Loop
-proposes additions to that file, so your customizations survive plugin updates
-without ever editing the shipped agents.
 
 ## License
 

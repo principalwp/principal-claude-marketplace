@@ -26,7 +26,7 @@ Pull the latest version and restart Claude Code:
 
 **[How the Starter Pipeline works →](https://principalwp.github.io/principal-claude-marketplace/principal-wp-starter-pipeline.html)** — a visual walkthrough of the phases and gates.
 
-Take one change to a WordPress plugin or theme through a small pipeline inside
+Build or make changes to a WordPress plugin or theme through a pipeline inside
 Claude Code: gated agent phases (requirements, research, spec, code, review) turn
 your request into a reviewed, tested pull request, with three human gates and a
 closeout that makes your next run better. Run it with
